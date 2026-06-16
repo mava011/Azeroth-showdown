@@ -50,6 +50,10 @@
     border-radius:18px; padding:14px;}
   .title-sm{font-weight:900; font-size:16px; letter-spacing:.5px; margin:2px 0 8px;}
   .muted{color:var(--dim); font-size:13px; line-height:1.5;}
+  .vertext{font-size:12px; letter-spacing:1.5px; opacity:.55; margin-top:4px;}
+  #verBadge{position:fixed; right:7px; bottom:6px; z-index:50; pointer-events:none;
+    font:700 11px/1 system-ui,-apple-system,sans-serif; letter-spacing:.5px;
+    color:rgba(255,255,255,.5); text-shadow:0 1px 2px rgba(0,0,0,.6);}
   /* hero card */
   .hgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
   .hcard{position:relative; border-radius:16px; padding:10px; background:linear-gradient(180deg,#202a4a,#161d33);
@@ -184,7 +188,7 @@
 
   <!-- Title -->
   <div id="title" class="screen overlaybg">
-    <div class="logo"><h1>AZEROTH<br>SHOWDOWN</h1><p>Draft • Battle • Conquer</p></div>
+    <div class="logo"><h1>AZEROTH<br>SHOWDOWN</h1><p>Draft • Battle • Conquer</p><p class="vertext" id="verText"></p></div>
     <div style="flex:1"></div>
     <button class="btn" id="btnPlay">⚔️ &nbsp;PLAY</button>
     <button class="btn secondary" id="btnHeroes">🛡️ &nbsp;Heroes &amp; Creator</button>
@@ -254,6 +258,7 @@
   <div id="editor" class="hidden"><div class="sheet" id="editorSheet"></div></div>
 
   <div id="toast" class="toast"></div>
+  <div id="verBadge"></div>
   <div id="boot">LOADING…</div>
 </div>
 
@@ -276,6 +281,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 (function(){
 const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
+
+/* Build/version tag — bump on every build so it's unambiguous which build is live. */
+const BUILD = 'v0.4';
+(function showBuild(){
+  const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
+  const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
+})();
 
 /* ----------------------------- Ability catalog ----------------------------- */
 const ABILITIES = {
@@ -365,7 +377,7 @@ function frameCamera(){
   const w=window.innerWidth, h=window.innerHeight, aspect=w/h;
   camera.aspect=aspect;
   camera.fov = aspect<0.62 ? 52 : (aspect<1 ? 46 : 40);
-  const dir=new THREE.Vector3(0,0.82,0.62).normalize(); // above & toward the player's side
+  const dir=new THREE.Vector3(0,0.72,0.78).normalize(); // above & toward the player's side (~43° tilt, Clash-style)
   const center=CAM.target, corners=playCorners();
   let D=16;
   for(let it=0; it<60; it++){
