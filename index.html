@@ -290,7 +290,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.13';
+const BUILD = 'v0.14';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -452,7 +452,7 @@ function gradientMap(steps){
   tex.minFilter = THREE.NearestFilter; tex.magFilter = THREE.NearestFilter; tex.needsUpdate = true;
   return tex;
 }
-const GRAD = gradientMap(4);
+const GRAD = gradientMap(5);   // smoother cel-shading bands
 const toonCache = {};
 function toon(color){
   if(!toonCache[color]) toonCache[color] = new THREE.MeshToonMaterial({color, gradientMap:GRAD});
@@ -616,9 +616,10 @@ function addHood(g,col){
   m.position.set(0,1.78,-0.05); m.rotation.x=-0.12; g.add(m);
 }
 function addBlindfold(g,glow){
-  const band=part(new THREE.BoxGeometry(0.62,0.16,0.4), 0x191220); band.position.set(0,1.67,0.02); g.add(band);
-  const line=new THREE.Mesh(new THREE.BoxGeometry(0.64,0.035,0.41), new THREE.MeshBasicMaterial({color:glow}));
-  line.position.set(0,1.67,0.02); g.add(line);
+  const band=part(new THREE.BoxGeometry(0.7,0.18,0.46), 0x191220); band.position.set(0,1.7,0.16); g.add(band);
+  const line=new THREE.Mesh(new THREE.BoxGeometry(0.72,0.04,0.02),
+    new THREE.MeshBasicMaterial({color:glow, toneMapped:false}));
+  line.position.set(0,1.7,0.42); g.add(line);
 }
 function addWings(g){
   const mem=new THREE.MeshToonMaterial({color:0x2a1840, gradientMap:GRAD, side:THREE.DoubleSide});
@@ -652,9 +653,10 @@ function addCrescent(g){
   m.position.set(0,2.02,-0.02); m.rotation.x=Math.PI/2; m.rotation.z=-0.5; g.add(m);
 }
 function addMask(g,glow){
-  const visor=part(new THREE.BoxGeometry(0.5,0.34,0.32), 0x4a3a22); visor.position.set(0,1.66,0.18); g.add(visor);
-  for(const s of [-1,1]){ const e=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.05,0.02), new THREE.MeshBasicMaterial({color:glow}));
-    e.position.set(s*0.13,1.68,0.35); g.add(e); }
+  const visor=part(new THREE.BoxGeometry(0.56,0.4,0.34), 0x4a3a22); visor.position.set(0,1.68,0.3); g.add(visor);
+  const brow=part(new THREE.BoxGeometry(0.6,0.1,0.1), 0x3a2c18); brow.position.set(0,1.86,0.34); g.add(brow);
+  for(const s of [-1,1]){ const e=new THREE.Mesh(new THREE.BoxGeometry(0.11,0.05,0.02), new THREE.MeshBasicMaterial({color:glow, toneMapped:false}));
+    e.position.set(s*0.14,1.69,0.48); g.add(e); }
 }
 function addFurCollar(g){
   const c=part(new THREE.TorusGeometry(0.34,0.12,8,16), 0x6b5436); c.rotation.x=Math.PI/2; c.position.y=1.34; g.add(c);
@@ -682,76 +684,99 @@ function applyFeatures(g, look){
 /* ---------------------------- Hero models --------------------------------- */
 // returns a THREE.Group; userData holds animatable parts.
 const HERO_SCALE = 1.22;   // bigger, more readable chibi heroes
+// eyes (white + glowing iris), brows, nose, mouth — gives each face character
+function addFace(g, look){
+  const whiteMat=new THREE.MeshBasicMaterial({color:0xf1f1f4, toneMapped:false});
+  const iris=new THREE.MeshBasicMaterial({color:look.eyes, toneMapped:false});
+  for(const s of [-1,1]){
+    const w=new THREE.Mesh(new THREE.SphereGeometry(0.078,10,8), whiteMat);
+    w.position.set(s*0.145,1.69,0.34); w.scale.set(1,1.15,0.55); g.add(w);
+    const p=new THREE.Mesh(new THREE.SphereGeometry(0.042,8,6), iris);
+    p.position.set(s*0.155,1.69,0.40); g.add(p);
+    const brow=part(new THREE.BoxGeometry(0.14,0.04,0.05), look.hair);
+    brow.position.set(s*0.145,1.81,0.36); brow.rotation.z=s*0.16; g.add(brow);
+  }
+  const nose=part(new THREE.ConeGeometry(0.05,0.13,7), look.skin);
+  nose.position.set(0,1.61,0.43); nose.rotation.x=Math.PI/2; g.add(nose);
+  const mouth=new THREE.Mesh(new THREE.BoxGeometry(0.13,0.022,0.02),
+    new THREE.MeshBasicMaterial({color:0x6a2f2f, toneMapped:false}));
+  mouth.position.set(0,1.51,0.41); g.add(mouth);
+}
 function buildModel(hero, team){
   if(hero.companion) return buildBeast(hero, team);
   const g = new THREE.Group();
   const look = lookFor(hero);
-  const skin = look.skin, dark = 0x2b2f45, bulk = look.bulk;
+  const skin = look.skin, dark = 0x24293c, bulk = look.bulk;
+  const armorC = look.armor || hero.gem, trimC = mix(armorC,0xffffff,0.28);
   const base = team===0 ? 0x3a7bd5 : 0xe0524d;
 
-  // team base ring
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.55,0.07,8,20),
-    new THREE.MeshToonMaterial({color:base, gradientMap:GRAD}));
-  ring.rotation.x=-Math.PI/2; ring.position.y=0.04; g.add(ring);
+  // glowing team base ring
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.5,0.06,10,24),
+    new THREE.MeshBasicMaterial({color:base, toneMapped:false, transparent:true, opacity:0.92}));
+  ring.rotation.x=-Math.PI/2; ring.position.y=0.03; g.add(ring);
 
-  // legs
-  const legGeo = new THREE.CapsuleGeometry(0.13,0.3,3,8);
-  const lL=part(legGeo,dark); lL.position.set(-0.16,0.35,0); g.add(lL);
-  const lR=part(legGeo,dark); lR.position.set( 0.16,0.35,0); g.add(lR);
-
-  // cape (team-tinted) behind the body
-  const capeCol = team===0 ? mix(hero.gem,0x3a7bd5,0.4) : mix(hero.gem,0xe0524d,0.4);
-  const cape=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.9),
-    new THREE.MeshToonMaterial({color:capeCol, gradientMap:GRAD, side:THREE.DoubleSide}));
-  cape.position.set(0,0.92,-0.33); cape.rotation.x=0.18; cape.castShadow=true; g.add(cape);
-
-  // body (own material clone so we can flash it on hit without tinting shared cache)
-  const body=part(new THREE.CapsuleGeometry(0.34,0.5,4,12), hero.color); body.position.y=0.95; g.add(body);
-  body.material=body.material.clone();
-  // flowing robe for casters
-  if(look.robe){
-    const robe=part(new THREE.CylinderGeometry(0.3,0.62,1.02,12), look.robeCol||hero.color);
-    robe.position.y=0.51; g.add(robe);
+  // ---- legs (thigh + boot + armor cuff), as pivot groups so they can swing ----
+  function leg(side){
+    const grp=new THREE.Group(); grp.position.set(side*0.17,0.6,0);
+    const thigh=part(new THREE.CapsuleGeometry(0.15,0.24,5,12), hero.color); thigh.position.y=-0.16; grp.add(thigh);
+    const boot=part(new THREE.CapsuleGeometry(0.17,0.12,5,12), dark); boot.position.y=-0.40; grp.add(boot);
+    const toe=part(new THREE.SphereGeometry(0.16,10,8), dark); toe.position.set(0,-0.47,0.1); toe.scale.set(1,0.7,1.35); grp.add(toe);
+    const cuff=part(new THREE.TorusGeometry(0.16,0.04,8,14), armorC); cuff.rotation.x=Math.PI/2; cuff.position.y=-0.27; grp.add(cuff);
+    g.add(grp); return grp;
   }
-  // waist belt
-  const belt=part(new THREE.CylinderGeometry(0.36,0.36,0.14,12), 0x2b2f45); belt.position.y=0.72; g.add(belt);
-  // shoulder pads (armor-tinted, scaled with bulk)
-  const padGeo=new THREE.SphereGeometry(0.2,10,8); const padCol=look.armor||hero.gem;
-  const pL=part(padGeo,padCol); pL.position.set(-0.4*bulk,1.18,0); pL.scale.set(1.1,.8,1.1); g.add(pL);
-  const pR=part(padGeo,padCol); pR.position.set( 0.4*bulk,1.18,0); pR.scale.set(1.1,.8,1.1); g.add(pR);
-  // chest emblem
-  const emb=new THREE.Mesh(new THREE.CircleGeometry(0.12,12), new THREE.MeshBasicMaterial({color:hero.gem}));
-  emb.position.set(0,1.0,0.34); g.add(emb);
+  const lL=leg(-1), lR=leg(1);
 
-  // arms (groups so we can swing them)
-  const armGeo=new THREE.CapsuleGeometry(0.1,0.34,3,8);
-  const armL=new THREE.Group(); armL.position.set(-0.45*bulk,1.2,0);
-  const aLm=part(armGeo,hero.color); aLm.position.y=-0.2; armL.add(aLm); g.add(armL);
-  const armR=new THREE.Group(); armR.position.set(0.45*bulk,1.2,0);
-  const aRm=part(armGeo,hero.color); aRm.position.y=-0.2; armR.add(aRm); g.add(armR);
-  // hands
-  const handGeo=new THREE.SphereGeometry(0.1,8,6);
-  const hL=part(handGeo,skin); hL.position.y=-0.4; armL.add(hL);
-  const hR=part(handGeo,skin); hR.position.y=-0.4; armR.add(hR);
+  // cape
+  const capeCol = team===0 ? mix(hero.gem,0x3a7bd5,0.4) : mix(hero.gem,0xe0524d,0.4);
+  const cape=new THREE.Mesh(new THREE.PlaneGeometry(0.66,0.98),
+    new THREE.MeshToonMaterial({color:capeCol, gradientMap:GRAD, side:THREE.DoubleSide}));
+  cape.position.set(0,1.0,-0.34); cape.rotation.x=0.16; cape.castShadow=true; g.add(cape);
 
-  // head
-  const head=part(new THREE.SphereGeometry(0.36,14,12), skin); head.position.y=1.62; head.scale.set(1,1.02,1); g.add(head);
-  // hair cap
-  const cap=part(new THREE.SphereGeometry(0.38,14,10), look.hair); cap.position.y=1.72; cap.scale.set(1,0.66,1); g.add(cap);
-  // eyes (glow color per race/character)
-  const eyeGeo=new THREE.SphereGeometry(0.06,8,6);
-  const eyeMat=new THREE.MeshBasicMaterial({color:look.eyes});
-  const eL=new THREE.Mesh(eyeGeo,eyeMat); eL.position.set(-0.12,1.64,0.31); g.add(eL);
-  const eR=new THREE.Mesh(eyeGeo,eyeMat); eR.position.set( 0.12,1.64,0.31); g.add(eR);
+  // ---- torso ----
+  const body=part(new THREE.CapsuleGeometry(0.35,0.5,5,16), hero.color); body.position.y=1.0; g.add(body);
+  body.material=body.material.clone();
+  if(look.robe){
+    const robe=part(new THREE.CylinderGeometry(0.3,0.66,1.06,16), look.robeCol||hero.color); robe.position.y=0.52; g.add(robe);
+  }
+  // chestplate + emblem
+  const chest=part(new THREE.SphereGeometry(0.33,16,14), armorC); chest.position.set(0,1.14,0.05); chest.scale.set(1.02,0.84,0.8); g.add(chest);
+  const emb=new THREE.Mesh(new THREE.CircleGeometry(0.1,16), new THREE.MeshBasicMaterial({color:hero.gem, toneMapped:false}));
+  emb.position.set(0,1.13,0.42); g.add(emb);
+  // belt + buckle
+  const belt=part(new THREE.CylinderGeometry(0.37,0.37,0.13,16), dark); belt.position.y=0.74; g.add(belt);
+  const buckle=part(new THREE.BoxGeometry(0.14,0.1,0.06), trimC); buckle.position.set(0,0.74,0.36); g.add(buckle);
+
+  // ---- pauldrons (rounded pad + bright trim ring) ----
+  function pauldron(side){
+    const pad=part(new THREE.SphereGeometry(0.22,14,12), armorC); pad.position.set(side*0.46*bulk,1.3,0); pad.scale.set(1.18,0.86,1.18); g.add(pad);
+    const trim=part(new THREE.TorusGeometry(0.2,0.045,8,16), trimC); trim.position.set(side*0.46*bulk,1.24,0); trim.rotation.x=Math.PI/2.3; g.add(trim);
+  }
+  pauldron(-1); pauldron(1);
+
+  // ---- arms (upper arm + cuff + gauntlet hand), pivot groups ----
+  function arm(side){
+    const grp=new THREE.Group(); grp.position.set(side*0.47*bulk,1.28,0);
+    const up=part(new THREE.CapsuleGeometry(0.11,0.32,5,12), hero.color); up.position.y=-0.2; grp.add(up);
+    const cuff=part(new THREE.TorusGeometry(0.12,0.04,8,14), armorC); cuff.rotation.x=Math.PI/2; cuff.position.y=-0.36; grp.add(cuff);
+    const hand=part(new THREE.SphereGeometry(0.13,10,10), dark); hand.position.y=-0.45; grp.add(hand);
+    g.add(grp); return grp;
+  }
+  const armL=arm(-1), armR=arm(1);
+
+  // ---- neck + head + face ----
+  const neck=part(new THREE.CylinderGeometry(0.13,0.15,0.16,10), skin); neck.position.y=1.46; g.add(neck);
+  const head=part(new THREE.SphereGeometry(0.4,18,16), skin); head.position.y=1.66; head.scale.set(1,1.04,0.98); g.add(head);
+  const cap=part(new THREE.SphereGeometry(0.42,16,12), look.hair); cap.position.y=1.77; cap.scale.set(1.02,0.64,1.02); g.add(cap);
+  addFace(g, look);
   // race / character features (tusks, ears, horns, hoods, …)
   applyFeatures(g, look);
   // weapon in right hand (signature variant by character)
   const weapon=buildWeapon(hero.weapon, hero.gem, look.weaponStyle);
-  weapon.position.set(0,-0.42,0.05); armR.add(weapon);
+  weapon.position.set(0,-0.48,0.05); armR.add(weapon);
 
   g.scale.setScalar(HERO_SCALE);
   g.userData = {legL:lL, legR:lR, armL, armR, head, body, bodyMat:body.material,
-    weapon, weaponKind:swingKind(hero.weapon), bodyBase:{x:bulk,y:1,z:bulk},
+    weapon, weaponKind:swingKind(hero.weapon), bodyBase:{x:1.04*bulk,y:1,z:0.92*bulk},
     hero, t:Math.random()*6};
   return g;
 }
