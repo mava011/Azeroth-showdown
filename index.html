@@ -283,7 +283,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.9';
+const BUILD = 'v0.10';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -494,11 +494,125 @@ function buildTower(x,z,team){
   buildTower(-2.7,-7.0, 1); buildTower(2.7,-7.0, 1);
 })();
 
+/* ---------------------------- Hero looks ---------------------------------- */
+// Race-accurate appearance per hero id. feat = facial/body features to attach.
+const DEFAULT_LOOK = {skin:0xe8b98f, eyes:0x14182a, feat:[], bulk:1, robe:false, hair:0x3a2a1a};
+const HERO_LOOK = {
+  thrall:   {skin:0x6fae74, eyes:0x66e0ff, feat:['tusks','topknot','fur'],        bulk:1.14, robe:false, hair:0x1d140c, weaponStyle:'doomhammer'},
+  jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, feat:['ponytail'],                      bulk:0.94, robe:true,  hair:0xf3eccf, weaponStyle:'froststaff', robeCol:0x6fa8ff},
+  arthas:   {skin:0xccd6e2, eyes:0x9fe3ff, feat:['crown','beard'],                 bulk:1.10, robe:false, hair:0xeae6c8, weaponStyle:'frostmourne', armor:0x3a4255},
+  sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, feat:['hood','elfears'],               bulk:0.95, robe:false, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a},
+  illidan:  {skin:0x7d52b6, eyes:0x39ff14, feat:['horns','blindfold','wings'],     bulk:1.08, robe:false, hair:0x1c1030, weaponStyle:'warglaive'},
+  uther:    {skin:0xe8b98f, eyes:0xfff2b0, feat:['beard','fur'],                   bulk:1.13, robe:false, hair:0xf0e6c0, weaponStyle:'lighthammer', armor:0xe8c46b},
+  grommash: {skin:0x6aa05a, eyes:0xffd089, feat:['tusks','topknot','warpaint'],    bulk:1.20, robe:false, hair:0x140d06, weaponStyle:'gorehowl'},
+  malfurion:{skin:0x9f86c9, eyes:0xffcf66, feat:['antlers','elfears','beard'],     bulk:1.0,  robe:true,  hair:0x2f6f4b, weaponStyle:'naturestaff', robeCol:0x2f8f5b},
+  tyrande:  {skin:0xb49ad8, eyes:0xdfe8ff, feat:['elfears','crescent'],            bulk:0.95, robe:true,  hair:0x6f86c9, weaponStyle:'elunebow', robeCol:0x9b6fd6},
+  rexxar:   {skin:0x7e8a52, eyes:0xff8c42, feat:['mask','fur','tusks'],            bulk:1.16, robe:false, hair:0x14100a, weaponStyle:'beastaxe'},
+};
+function lookFor(hero){ return Object.assign({}, DEFAULT_LOOK, HERO_LOOK[hero.id]||{}); }
+
+// ---- feature attachments (added to the hero group, around the head ~y1.62) ----
+function addCone(g, r, h, color, x, y, z, rot, seg){
+  const m=part(new THREE.ConeGeometry(r,h,seg||8), color);
+  m.position.set(x,y,z); if(rot){ m.rotation.set(rot[0]||0,rot[1]||0,rot[2]||0); } g.add(m); return m;
+}
+function addTusks(g,skin){
+  const c=0xf2ecd2;
+  addCone(g,0.045,0.2,c, 0.13,1.5,0.27,[0.2,0,0.25]);
+  addCone(g,0.045,0.2,c,-0.13,1.5,0.27,[0.2,0,-0.25]);
+}
+function addElfEars(g,skin){
+  addCone(g,0.07,0.42,skin, 0.34,1.68,-0.02,[0,0,-1.15]);
+  addCone(g,0.07,0.42,skin,-0.34,1.68,-0.02,[0,0, 1.15]);
+}
+function addHorns(g){
+  const c=0x241f2b;
+  addCone(g,0.08,0.55,c, 0.17,1.86,0.02,[ -0.35,0,-0.55]);
+  addCone(g,0.08,0.55,c,-0.17,1.86,0.02,[ -0.35,0, 0.55]);
+}
+function addAntlers(g){
+  const c=0x7a5a32;
+  for(const s of [-1,1]){
+    addCone(g,0.05,0.5,c, s*0.16,1.95,0,[ -0.4,0, s*0.5]);
+    addCone(g,0.035,0.28,c, s*0.28,2.18,0.02,[ -0.2,0, s*1.0]);
+    addCone(g,0.035,0.26,c, s*0.20,2.22,-0.08,[ 0.3,0, s*0.5]);
+  }
+}
+function addHood(g,col){
+  const m=part(new THREE.ConeGeometry(0.46,0.62,12), col||0x2a2e44);
+  m.position.set(0,1.78,-0.05); m.rotation.x=-0.12; g.add(m);
+}
+function addBlindfold(g,glow){
+  const band=part(new THREE.BoxGeometry(0.62,0.16,0.4), 0x191220); band.position.set(0,1.67,0.02); g.add(band);
+  const line=new THREE.Mesh(new THREE.BoxGeometry(0.64,0.035,0.41), new THREE.MeshBasicMaterial({color:glow}));
+  line.position.set(0,1.67,0.02); g.add(line);
+}
+function addWings(g){
+  const mem=new THREE.MeshToonMaterial({color:0x2a1840, gradientMap:GRAD, side:THREE.DoubleSide});
+  for(const s of [-1,1]){
+    const w=new THREE.Mesh(new THREE.PlaneGeometry(0.85,1.05), mem);
+    w.position.set(s*0.5,1.2,-0.34); w.rotation.set(0.1, s*0.7, 0); w.castShadow=true; g.add(w);
+  }
+}
+function addWarpaint(g){
+  const r=new THREE.MeshBasicMaterial({color:0xcc2a22});
+  for(const s of [-1,1]){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.18,0.02), r);
+    m.position.set(s*0.14,1.6,0.34); g.add(m);
+  }
+}
+function addTopknot(g,hair){
+  const k=part(new THREE.CylinderGeometry(0.05,0.02,0.4,6), hair); k.position.set(0,2.02,-0.02); g.add(k);
+}
+function addPonytail(g,hair){
+  const k=part(new THREE.CapsuleGeometry(0.09,0.5,3,8), hair); k.position.set(0,1.5,-0.34); k.rotation.x=0.3; g.add(k);
+}
+function addBeard(g,hair){
+  const b=part(new THREE.ConeGeometry(0.2,0.34,8), hair); b.position.set(0,1.45,0.18); b.rotation.x=Math.PI; g.add(b);
+}
+function addCrown(g){
+  const band=part(new THREE.CylinderGeometry(0.37,0.37,0.1,12), 0x5b6472); band.position.y=1.86; g.add(band);
+  for(let i=0;i<5;i++){ const a=(i/5)*6.283; addCone(g,0.04,0.16,0x6b7686, Math.cos(a)*0.33,1.96,Math.sin(a)*0.33); }
+}
+function addCrescent(g){
+  const m=part(new THREE.TorusGeometry(0.22,0.04,8,16,Math.PI*1.1), 0xdfe8ff);
+  m.position.set(0,2.02,-0.02); m.rotation.x=Math.PI/2; m.rotation.z=-0.5; g.add(m);
+}
+function addMask(g,glow){
+  const visor=part(new THREE.BoxGeometry(0.5,0.34,0.32), 0x4a3a22); visor.position.set(0,1.66,0.18); g.add(visor);
+  for(const s of [-1,1]){ const e=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.05,0.02), new THREE.MeshBasicMaterial({color:glow}));
+    e.position.set(s*0.13,1.68,0.35); g.add(e); }
+}
+function addFurCollar(g){
+  const c=part(new THREE.TorusGeometry(0.34,0.12,8,16), 0x6b5436); c.rotation.x=Math.PI/2; c.position.y=1.34; g.add(c);
+}
+function applyFeatures(g, look){
+  for(const f of look.feat){
+    if(f==='tusks') addTusks(g,look.skin);
+    else if(f==='elfears') addElfEars(g,look.skin);
+    else if(f==='horns') addHorns(g);
+    else if(f==='antlers') addAntlers(g);
+    else if(f==='hood') addHood(g,look.cloak);
+    else if(f==='blindfold') addBlindfold(g,look.eyes);
+    else if(f==='wings') addWings(g);
+    else if(f==='warpaint') addWarpaint(g);
+    else if(f==='topknot') addTopknot(g,look.hair);
+    else if(f==='ponytail') addPonytail(g,look.hair);
+    else if(f==='beard') addBeard(g,look.hair);
+    else if(f==='crown') addCrown(g);
+    else if(f==='crescent') addCrescent(g);
+    else if(f==='mask') addMask(g,look.eyes);
+    else if(f==='fur') addFurCollar(g);
+  }
+}
+
 /* ---------------------------- Hero models --------------------------------- */
 // returns a THREE.Group; userData holds animatable parts.
 function buildModel(hero, team){
+  if(hero.companion) return buildBeast(hero, team);
   const g = new THREE.Group();
-  const skin = 0xe8b98f, dark = 0x2b2f45;
+  const look = lookFor(hero);
+  const skin = look.skin, dark = 0x2b2f45, bulk = look.bulk;
   const base = team===0 ? 0x3a7bd5 : 0xe0524d;
 
   // team base ring
@@ -520,21 +634,26 @@ function buildModel(hero, team){
   // body (own material clone so we can flash it on hit without tinting shared cache)
   const body=part(new THREE.CapsuleGeometry(0.34,0.5,4,12), hero.color); body.position.y=0.95; g.add(body);
   body.material=body.material.clone();
+  // flowing robe for casters
+  if(look.robe){
+    const robe=part(new THREE.CylinderGeometry(0.3,0.62,1.02,12), look.robeCol||hero.color);
+    robe.position.y=0.51; g.add(robe);
+  }
   // waist belt
   const belt=part(new THREE.CylinderGeometry(0.36,0.36,0.14,12), 0x2b2f45); belt.position.y=0.72; g.add(belt);
-  // shoulder pads
-  const padGeo=new THREE.SphereGeometry(0.2,10,8);
-  const pL=part(padGeo,hero.gem); pL.position.set(-0.4,1.18,0); pL.scale.set(1,.8,1); g.add(pL);
-  const pR=part(padGeo,hero.gem); pR.position.set( 0.4,1.18,0); pR.scale.set(1,.8,1); g.add(pR);
+  // shoulder pads (armor-tinted, scaled with bulk)
+  const padGeo=new THREE.SphereGeometry(0.2,10,8); const padCol=look.armor||hero.gem;
+  const pL=part(padGeo,padCol); pL.position.set(-0.4*bulk,1.18,0); pL.scale.set(1.1,.8,1.1); g.add(pL);
+  const pR=part(padGeo,padCol); pR.position.set( 0.4*bulk,1.18,0); pR.scale.set(1.1,.8,1.1); g.add(pR);
   // chest emblem
   const emb=new THREE.Mesh(new THREE.CircleGeometry(0.12,12), new THREE.MeshBasicMaterial({color:hero.gem}));
   emb.position.set(0,1.0,0.34); g.add(emb);
 
   // arms (groups so we can swing them)
   const armGeo=new THREE.CapsuleGeometry(0.1,0.34,3,8);
-  const armL=new THREE.Group(); armL.position.set(-0.45,1.2,0);
+  const armL=new THREE.Group(); armL.position.set(-0.45*bulk,1.2,0);
   const aLm=part(armGeo,hero.color); aLm.position.y=-0.2; armL.add(aLm); g.add(armL);
-  const armR=new THREE.Group(); armR.position.set(0.45,1.2,0);
+  const armR=new THREE.Group(); armR.position.set(0.45*bulk,1.2,0);
   const aRm=part(armGeo,hero.color); aRm.position.y=-0.2; armR.add(aRm); g.add(armR);
   // hands
   const handGeo=new THREE.SphereGeometry(0.1,8,6);
@@ -543,45 +662,84 @@ function buildModel(hero, team){
 
   // head
   const head=part(new THREE.SphereGeometry(0.36,14,12), skin); head.position.y=1.62; head.scale.set(1,1.02,1); g.add(head);
-  // hair/helm cap (gem tint)
-  const cap=part(new THREE.SphereGeometry(0.38,14,10), hero.gem); cap.position.y=1.7; cap.scale.set(1,0.7,1);
-  cap.material=toon(hero.gem); g.add(cap);
-  // eyes
-  const eyeGeo=new THREE.SphereGeometry(0.055,8,6);
-  const eyeMat=new THREE.MeshBasicMaterial({color:0x14182a});
+  // hair cap
+  const cap=part(new THREE.SphereGeometry(0.38,14,10), look.hair); cap.position.y=1.72; cap.scale.set(1,0.66,1); g.add(cap);
+  // eyes (glow color per race/character)
+  const eyeGeo=new THREE.SphereGeometry(0.06,8,6);
+  const eyeMat=new THREE.MeshBasicMaterial({color:look.eyes});
   const eL=new THREE.Mesh(eyeGeo,eyeMat); eL.position.set(-0.12,1.64,0.31); g.add(eL);
   const eR=new THREE.Mesh(eyeGeo,eyeMat); eR.position.set( 0.12,1.64,0.31); g.add(eR);
-  const glow=hero.ability==='berserk'?0x39ff14:hero.gem;
-  // weapon in right hand
-  const weapon=buildWeapon(hero.weapon, hero.gem); weapon.position.set(0,-0.42,0.05); armR.add(weapon);
+  // race / character features (tusks, ears, horns, hoods, …)
+  applyFeatures(g, look);
+  // weapon in right hand (signature variant by character)
+  const weapon=buildWeapon(hero.weapon, hero.gem, look.weaponStyle);
+  weapon.position.set(0,-0.42,0.05); armR.add(weapon);
 
   g.scale.setScalar(0.92);
-  g.userData = {legL:lL, legR:lR, armL, armR, head, body, bodyMat:body.material, hero, t:Math.random()*6};
+  g.userData = {legL:lL, legR:lR, armL, armR, head, body, bodyMat:body.material,
+    weapon, weaponKind:swingKind(hero.weapon), bodyBase:{x:bulk,y:1,z:bulk},
+    hero, t:Math.random()*6};
   return g;
 }
-function buildWeapon(type, accent){
+// which swing animation a weapon uses
+function swingKind(type){
+  if(type==='staff') return 'cast';
+  if(type==='bow')   return 'bow';
+  if(type==='sword'||type==='glaive') return 'slash';
+  return 'chop'; // axe, mace
+}
+function buildWeapon(type, accent, style){
   const w=new THREE.Group();
-  const wood=0x6b4a2a, steel=0xcfd8e6;
+  const wood=0x6b4a2a, steel=0xcfd8e6, gold=0xf4c542;
+  const glowMat=(c)=> new THREE.MeshBasicMaterial({color:c});
   if(type==='sword'){
-    const blade=part(new THREE.BoxGeometry(0.08,0.7,0.02), steel); blade.position.y=0.35; w.add(blade);
-    const guard=part(new THREE.BoxGeometry(0.26,0.06,0.06), accent); w.add(guard);
+    const bladeCol = style==='frostmourne' ? 0xbfe9ff : steel;
+    const blade=part(new THREE.BoxGeometry(0.09,style==='frostmourne'?0.95:0.7,0.025), bladeCol);
+    blade.position.y=style==='frostmourne'?0.5:0.35; w.add(blade);
+    if(style==='frostmourne'){ // runeblade glow edge
+      const edge=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.95,0.03), glowMat(0x8fe3ff)); edge.position.y=0.5; w.add(edge);
+    }
+    const guard=part(new THREE.BoxGeometry(0.3,0.06,0.07), accent); w.add(guard);
     const grip=part(new THREE.CylinderGeometry(0.04,0.04,0.2,6), wood); grip.position.y=-0.12; w.add(grip);
   }else if(type==='axe'){
-    const handle=part(new THREE.CylinderGeometry(0.04,0.04,0.7,6), wood); handle.position.y=0.2; w.add(handle);
-    const headm=part(new THREE.BoxGeometry(0.07,0.26,0.3), steel); headm.position.set(0,0.45,0.1); w.add(headm);
+    const big = style==='gorehowl';
+    const handle=part(new THREE.CylinderGeometry(0.045,0.045,big?0.85:0.7,6), wood); handle.position.y=big?0.28:0.2; w.add(handle);
+    const headm=part(new THREE.BoxGeometry(0.08,big?0.42:0.26,big?0.5:0.3), steel); headm.position.set(0,big?0.58:0.45,big?0.16:0.1); w.add(headm);
+    if(style==='beastaxe'){ const back=part(new THREE.BoxGeometry(0.08,0.26,0.3), steel); back.position.set(0,0.45,-0.1); w.add(back); }
+    if(big){ const spike=addCone(w,0.05,0.2,steel,0,0.84,0.16); } // gorehowl top spike
   }else if(type==='mace'){
-    const handle=part(new THREE.CylinderGeometry(0.045,0.045,0.6,6), wood); handle.position.y=0.18; w.add(handle);
-    const headm=part(new THREE.SphereGeometry(0.16,10,8), accent); headm.position.y=0.5; w.add(headm);
+    if(style==='doomhammer'||style==='lighthammer'){
+      const handle=part(new THREE.CylinderGeometry(0.05,0.05,0.62,6), wood); handle.position.y=0.18; w.add(handle);
+      const headCol = style==='lighthammer'?gold:0x44506a;
+      const headm=part(new THREE.BoxGeometry(0.34,0.28,0.3), headCol); headm.position.y=0.56; w.add(headm);
+      const gl = style==='lighthammer'?0xfff2b0:0x66e0ff;
+      const core=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.3,0.32), glowMat(gl)); core.position.y=0.56; w.add(core);
+    }else{
+      const handle=part(new THREE.CylinderGeometry(0.045,0.045,0.6,6), wood); handle.position.y=0.18; w.add(handle);
+      const headm=part(new THREE.SphereGeometry(0.16,10,8), accent); headm.position.y=0.5; w.add(headm);
+    }
   }else if(type==='staff'){
-    const handle=part(new THREE.CylinderGeometry(0.04,0.04,0.85,6), wood); handle.position.y=0.25; w.add(handle);
-    const orb=new THREE.Mesh(new THREE.SphereGeometry(0.13,12,10), new THREE.MeshBasicMaterial({color:accent}));
-    orb.position.y=0.7; w.add(orb);
+    const handle=part(new THREE.CylinderGeometry(0.04,0.04,0.9,6), wood); handle.position.y=0.28; w.add(handle);
+    if(style==='froststaff'){
+      const cr=new THREE.Mesh(new THREE.IcosahedronGeometry(0.16,0), glowMat(0xbfe9ff)); cr.position.y=0.78; w.add(cr);
+    }else if(style==='naturestaff'){
+      const orb=new THREE.Mesh(new THREE.SphereGeometry(0.13,12,10), glowMat(0x8be07a)); orb.position.y=0.76; w.add(orb);
+      for(const s of [-1,1]){ const leaf=part(new THREE.ConeGeometry(0.07,0.2,5), 0x3f9a4e); leaf.position.set(s*0.12,0.7,0); leaf.rotation.z=s*0.8; w.add(leaf); }
+    }else{
+      const orb=new THREE.Mesh(new THREE.SphereGeometry(0.13,12,10), glowMat(accent)); orb.position.y=0.74; w.add(orb);
+    }
   }else if(type==='bow'){
-    const arc=part(new THREE.TorusGeometry(0.32,0.035,6,12,Math.PI*1.2), wood); arc.rotation.z=Math.PI/2; arc.position.y=0.2; w.add(arc);
+    const bowCol = style==='darkbow'?0x3a2f55 : (style==='elunebow'?0xdfe8ff : wood);
+    const arc=part(new THREE.TorusGeometry(0.34,0.035,6,12,Math.PI*1.2), bowCol); arc.rotation.z=Math.PI/2; arc.position.y=0.2; w.add(arc);
+    const glowC = style==='darkbow'?0xb27bff : (style==='elunebow'?0xeaf2ff : null);
+    if(glowC){ const str=new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.006,0.62,4), glowMat(glowC)); str.position.y=0.2; w.add(str); }
   }else if(type==='glaive'){
-    const handle=part(new THREE.CylinderGeometry(0.035,0.035,0.5,6), 0x2b2f45); handle.position.y=0.12; w.add(handle);
-    const b1=part(new THREE.BoxGeometry(0.05,0.34,0.02), accent); b1.position.set(0.1,0.42,0); b1.rotation.z=0.5; w.add(b1);
-    const b2=part(new THREE.BoxGeometry(0.05,0.34,0.02), accent); b2.position.set(-0.1,0.42,0); b2.rotation.z=-0.5; w.add(b2);
+    const wgl = style==='warglaive';
+    const handle=part(new THREE.CylinderGeometry(0.04,0.04,0.55,6), 0x2b2f45); handle.position.y=0.12; w.add(handle);
+    const blCol = wgl?0x39ff14:accent;
+    const b1=part(new THREE.BoxGeometry(0.06,0.4,0.025), blCol); b1.position.set(0.12,0.46,0); b1.rotation.z=0.55; w.add(b1);
+    const b2=part(new THREE.BoxGeometry(0.06,0.4,0.025), blCol); b2.position.set(-0.12,0.46,0); b2.rotation.z=-0.55; w.add(b2);
+    if(wgl){ const cb=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.4,0.04), glowMat(0x9bff7a)); cb.position.set(0.12,0.46,0); cb.rotation.z=0.55; w.add(cb); }
   }
   w.rotation.x=0.25;
   return w;
@@ -770,7 +928,7 @@ function spawnUnit(hero, team, x, z, scaleMul, isMinion){
     hero, team, group:g, x, z, hp, maxHp:hp,
     atkT:Math.random()*0.4, abilT:ABILITIES[hero.ability].cd*0.5+Math.random(),
     state:'march', dead:false, slowT:0, rootT:0, shield:0, buffT:0, dmgMul:1, spdMul:1,
-    flash:0, lunge:0, spin:0, isMinion:!!isMinion,
+    flash:0, lunge:0, spin:0, castT:0, isMinion:!!isMinion,
   };
   u.hb=makeHealthBar(team);
   if(!isMinion) u.label=makeLabel(hero.name, team);
@@ -785,16 +943,55 @@ function deploy(squadMe, squadFoe){
       const spread=Math.min(2.7, 0.62*(n-1));
       const x = n===1?0 : (-1+ (i/(n-1))*2) * spread;
       spawnUnit(h, team, x, z, 1, false);
-      // Rexxar deploys with a bear companion immediately
-      if(h.id==='rexxar'){ const bear=makeBeast(team); bear.x=x+0.7; bear.group.position.x=bear.x; }
+      // Rexxar deploys with his bear Misha immediately
+      if(h.id==='rexxar'){ makeCompanion(team,'bear', x+0.7, z); }
     });
   };
   place(squadMe,0); place(squadFoe,1);
 }
-function makeBeast(team){
-  const beast={id:'misha',name:'Misha',cls:'Bear',color:0x6b4a2a,gem:0x3a2a1a,hp:120,dmg:14,atk:1.1,kind:'melee',rng:1.3,spd:2.2,cost:0,weapon:'none',ability:'lifesteal'};
-  const u=spawnUnit(beast, team, 0, team===0?6.0:-6.0, 0.85, true);
-  return u;
+function makeCompanion(team, type, x, z){
+  const defs={
+    bear:  {id:'misha', name:'Misha',  cls:'Bear',    hp:120, dmg:14, atk:1.1, spd:2.2},
+    treant:{id:'treant',name:'Treant', cls:'Ancient', hp:170, dmg:11, atk:0.9, spd:1.4},
+  };
+  const d=defs[type]||defs.bear;
+  const beast={id:d.id, name:d.name, cls:d.cls, color:0x6b4a2a, gem:0x3a2a1a,
+    hp:d.hp, dmg:d.dmg, atk:d.atk, kind:'melee', rng:1.3, spd:d.spd, cost:0,
+    weapon:'none', ability:'lifesteal', companion:type};
+  const px = x!=null?x:0, pz = z!=null?z:(team===0?6.0:-6.0);
+  return spawnUnit(beast, team, px, pz, type==='treant'?1.05:0.9, true);
+}
+// quadruped / ancient companion models (own userData so the anim loop is happy)
+function buildBeast(hero, team){
+  const g=new THREE.Group();
+  const base=team===0?0x3a7bd5:0xe0524d;
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.5,0.06,8,18), new THREE.MeshToonMaterial({color:base,gradientMap:GRAD}));
+  ring.rotation.x=-Math.PI/2; ring.position.y=0.04; g.add(ring);
+  let body, legL, legR, head, armL, armR;
+  if(hero.companion==='treant'){
+    const trunk=part(new THREE.CylinderGeometry(0.3,0.44,1.3,8), 0x6b4a2a); trunk.position.y=0.78; g.add(trunk);
+    body=trunk; body.material=body.material.clone();
+    head=part(new THREE.SphereGeometry(0.56,12,10), 0x2f8f5b); head.position.y=1.65; head.scale.set(1,0.9,1); g.add(head);
+    armL=new THREE.Group(); armL.position.set(-0.34,1.05,0);
+    const aLm=part(new THREE.CylinderGeometry(0.07,0.05,0.5,6),0x6b4a2a); aLm.position.y=-0.18; aLm.rotation.z=0.6; armL.add(aLm); g.add(armL);
+    armR=new THREE.Group(); armR.position.set(0.34,1.05,0);
+    const aRm=part(new THREE.CylinderGeometry(0.07,0.05,0.5,6),0x6b4a2a); aRm.position.y=-0.18; aRm.rotation.z=-0.6; armR.add(aRm); g.add(armR);
+    for(const s of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(0.06,6,5), new THREE.MeshBasicMaterial({color:0xffcf66})); e.position.set(s*0.16,1.5,0.42); g.add(e); }
+    legL=part(new THREE.CylinderGeometry(0.1,0.14,0.32,6),0x5a3f24); legL.position.set(-0.17,0.18,0); g.add(legL);
+    legR=part(new THREE.CylinderGeometry(0.1,0.14,0.32,6),0x5a3f24); legR.position.set( 0.17,0.18,0); g.add(legR);
+  }else{ // bear (Misha)
+    const torso=part(new THREE.CapsuleGeometry(0.34,0.5,4,10), 0x5a3f24); torso.rotation.z=Math.PI/2; torso.position.set(0,0.62,0); g.add(torso);
+    body=torso; body.material=body.material.clone();
+    head=part(new THREE.SphereGeometry(0.3,12,10), 0x5a3f24); head.position.set(0,0.8,0.52); g.add(head);
+    const snout=part(new THREE.SphereGeometry(0.14,8,6), 0x40301f); snout.position.set(0,0.72,0.76); g.add(snout);
+    for(const s of [-1,1]){ const ear=part(new THREE.SphereGeometry(0.1,8,6), 0x4a3522); ear.position.set(s*0.18,1.02,0.48); g.add(ear);
+      const e=new THREE.Mesh(new THREE.SphereGeometry(0.04,6,5), new THREE.MeshBasicMaterial({color:0xff8c42})); e.position.set(s*0.1,0.84,0.78); g.add(e); }
+    const mk=(x,z)=>{ const l=part(new THREE.CylinderGeometry(0.1,0.1,0.42,6),0x40301f); l.position.set(x,0.2,z); g.add(l); return l; };
+    legL=mk(-0.22,0.28); legR=mk(0.22,0.28); mk(-0.22,-0.28); mk(0.22,-0.28);
+  }
+  g.scale.setScalar(0.92);
+  g.userData={legL,legR,armL,armR,body,bodyMat:body.material,bodyBase:{x:1,y:1,z:1},head,hero,t:Math.random()*6};
+  return g;
 }
 
 /* ----------------------------- Battle start ------------------------------- */
@@ -865,8 +1062,16 @@ function dealDamage(attacker, target, amount, color){
     ringBurst(p, 0xffffff, 0.18, 0.75, 0.22); hitStop(0.05); }
   if(attacker && attacker.hero.ability==='lifesteal' && !attacker.dead){
     attacker.hp=Math.min(attacker.maxHp, attacker.hp+amount*0.35);
+    soulWisp(target.group.position, attacker.group.position, attacker.hero.id==='arthas'?0x8fe3ff:0xb27bff);
   }
   if(target.hp<=0){ killUnit(target); }
+}
+// a wisp that drains from victim to attacker (Frostmourne / lifesteal)
+function soulWisp(from, to, color){
+  const m=new THREE.Mesh(new THREE.SphereGeometry(0.1,8,6), new THREE.MeshBasicMaterial({color, transparent:true}));
+  const a=from.clone(); a.y+=0.9; const b=to.clone(); b.y+=0.9; m.position.copy(a);
+  let t=0; addVfx(m,(dt)=>{ t+=dt/0.35; m.position.lerpVectors(a,b,Math.min(1,t));
+    m.material.opacity=1-t*0.5; return t<1; });
 }
 function killUnit(u){
   u.dead=true; u.state='dead'; u.deathT=0;
@@ -885,6 +1090,8 @@ function triggerAbility(u){
   const enemies=livingEnemies(u.team);
   const allies=livingAllies(u.team);
   const p=u.group.position;
+  u.castT=0.45;                              // cast pose
+  castAura(u);                               // signature glow at the caster
   switch(key){
     case 'chain_lightning':{
       if(!enemies.length) return false;
@@ -942,9 +1149,9 @@ function triggerAbility(u){
       sfx(240,0.1); return true;
     }
     case 'summon':{
-      const comp=makeBeast(u.team);
-      comp.group.position.set(u.x+0.7, 0, u.z); comp.x=u.x+0.7; comp.z=u.z;
-      poof(comp.group.position, 0xbfe3ff); sfx(520,0.08); return true;
+      const type = u.hero.id==='malfurion' ? 'treant' : 'bear';
+      const comp=makeCompanion(u.team, type, u.x+0.7, u.z);
+      poof(comp.group.position, type==='treant'?0x8be07a:0xffce8a); sfx(520,0.08); return true;
     }
   }
   return false;
@@ -964,13 +1171,40 @@ function fireProjectile(owner, target, dmg, color){
   projectiles.push({mesh:m, owner, target, dmg, color, speed:11});
 }
 function basicAttackVisual(u, target){
+  u.lunge=0.22;                              // drives the swing/draw animation
   if(u.hero.kind==='ranged'){
     const col = u.hero.ability==='frost_blast'?0xbfe9ff : u.hero.gem;
     fireProjectile(u, target, u.hero.dmg*u.dmgMul, col);
   }else{
-    u.lunge=0.18;
+    slashArc(u, target);                     // weapon trail at the moment of impact
     dealDamage(u, target, u.hero.dmg*u.dmgMul, '#fff');
   }
+}
+// a quick crescent weapon-trail from attacker toward the target
+function slashArc(u, target){
+  const kind=u.group.userData.weaponKind||'chop';
+  const col = u.hero.weapon==='glaive'? (u.hero.id==='illidan'?0x9bff7a:u.hero.gem)
+            : u.hero.weapon==='sword' && u.hero.id==='arthas' ? 0x8fe3ff : 0xffffff;
+  const ang = Math.atan2(target.z-u.z, target.x-u.x);
+  const span = kind==='slash'?Math.PI*0.9:Math.PI*0.7;
+  const m=new THREE.Mesh(new THREE.RingGeometry(0.55,0.78,18,1,-span/2,span),
+    new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:0.9, side:THREE.DoubleSide}));
+  m.position.set(u.group.position.x, 1.1, u.group.position.z);
+  // orient the flat ring to sweep in the attack direction, tilted for a 3D feel
+  m.rotation.y = -ang; m.rotation.x = kind==='chop'? 1.2 : 0.5;
+  let t=0; addVfx(m,(dt)=>{ t+=dt; const k=t/0.16; m.scale.setScalar(1+k*0.6);
+    m.material.opacity=0.9*(1-k); return k<1; });
+}
+// signature aura that flashes at a caster when an ability fires
+function castAura(u){
+  const tints={ chain_lightning:0x9be7ff, frost_blast:0xbfe9ff, multishot:0xb27bff, berserk:0x39ff14,
+    heal:0xfff2a0, whirlwind:0xff7b4d, starfall:0xfff2a0, root:0x6bd06a, summon:0x8be07a };
+  const c=tints[u.hero.ability]||u.hero.gem;
+  const p=u.group.position.clone(); p.y=0.12; ringBurst(p,c,0.3,1.4,0.45);
+  const col=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,3.0,16,1,true),
+    new THREE.MeshBasicMaterial({color:c, transparent:true, opacity:0.5, side:THREE.DoubleSide}));
+  col.position.set(u.group.position.x,1.5,u.group.position.z);
+  let t=0; addVfx(col,(dt)=>{ t+=dt; col.material.opacity=0.5*(1-t/0.4); col.scale.x=col.scale.z=1+t; return t<0.4; });
 }
 
 /* ----------------------------- Battle update ------------------------------ */
@@ -985,6 +1219,7 @@ function updateBattle(dt){
     if(u.buffT>0){ u.buffT-=dt; if(u.buffT<=0){ u.dmgMul=1; u.spdMul=1; } }
     if(u.flash>0) u.flash-=dt;
     if(u.lunge>0) u.lunge-=dt;
+    if(u.castT>0) u.castT-=dt;
     if(u.spin>0) u.spin-=dt;
     u.atkT-=dt; u.abilT-=dt;
 
@@ -1114,17 +1349,35 @@ function tick(){
     g.position.y = bob;
     if(ud.legL){ const sw=Math.sin(ud.t*9)*(u.state==='march'?0.5:0.05);
       ud.legL.rotation.x=sw; ud.legR.rotation.x=-sw; }
-    // attack lunge
-    const lk = u.lunge>0 ? Math.sin((1-u.lunge/0.18)*Math.PI) : 0;
-    const lunge = lk*0.25;
-    if(ud.armR){ ud.armR.rotation.x = -lunge*3 - 0.1; }
-    if(ud.armL){ ud.armL.rotation.x = Math.sin(ud.t*9)*(u.state==='march'?0.4:0.1); }
+    // ---- weapon swing: progress 0..1 over the lunge window, shaped per weapon ----
+    const p = u.lunge>0 ? 1-(u.lunge/0.22) : -1;   // -1 = idle
+    const lk = u.lunge>0 ? Math.sin(Math.max(0,p)*Math.PI) : 0;
+    const kind = ud.weaponKind||'chop';
+    let armRx=-0.1, armRz=0, armLx=Math.sin(ud.t*9)*(u.state==='march'?0.4:0.1), wRoll=0;
+    if(u.lunge>0){
+      if(kind==='chop'){            // overhead: wind up high, smash down
+        armRx = -2.4 + p*3.2;
+      }else if(kind==='slash'){     // diagonal cross slash
+        armRx = -1.6 + p*2.4; armRz = -1.2 + p*2.4; wRoll = p*1.2;
+      }else if(kind==='cast'){      // raise staff, thrust forward
+        armRx = -1.9 + Math.sin(p*Math.PI)*0.5;
+      }else if(kind==='bow'){       // draw and release
+        armRx = -1.4; armLx = -1.4; wRoll = -p*0.3;
+      }
+    }
+    // ability cast pose: both arms raised, weapon up
+    if(u.castT>0){ const c=Math.sin((u.castT/0.45)*Math.PI); armRx=-2.2*c-0.1; armLx=-2.0*c+0.1; }
+    if(ud.armR){ ud.armR.rotation.set(armRx,0,armRz); }
+    if(ud.armL){ ud.armL.rotation.x = armLx; }
+    if(ud.weapon) ud.weapon.rotation.z = 0.0 + wRoll;
     // whirlwind spin
     if(u.spin>0) g.rotation.y += dt*30;
-    // squash & stretch: stretch tall on attack lunge, squash flat on getting hit
-    let bx=1,by=1,bz=1;
-    if(lk>0){ by+=0.14*lk; bx-=0.07*lk; bz-=0.07*lk; }
-    if(u.flash>0){ const f=u.flash/0.16; by-=0.20*f; bx+=0.17*f; bz+=0.17*f; }
+    // squash & stretch: stretch tall on attack, squash flat on getting hit
+    const bb=ud.bodyBase||{x:1,y:1,z:1};
+    let bx=bb.x,by=bb.y,bz=bb.z;
+    if(lk>0){ by+=0.14*lk; bx-=0.07*lk*bb.x; bz-=0.07*lk*bb.z; }
+    if(u.flash>0){ const f=u.flash/0.16; by-=0.20*f; bx+=0.17*f*bb.x; bz+=0.17*f*bb.z; }
+    if(u.castT>0){ const c=Math.sin((u.castT/0.45)*Math.PI); by+=0.1*c; }
     ud.body.scale.set(bx,by,bz);
     // hit flash: glow the body white briefly
     if(ud.bodyMat) ud.bodyMat.emissive.setScalar(u.flash>0 ? (u.flash/0.16)*0.85 : 0);
