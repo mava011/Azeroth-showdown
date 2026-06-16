@@ -290,7 +290,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.11';
+const BUILD = 'v0.12';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -681,6 +681,7 @@ function applyFeatures(g, look){
 
 /* ---------------------------- Hero models --------------------------------- */
 // returns a THREE.Group; userData holds animatable parts.
+const HERO_SCALE = 1.22;   // bigger, more readable chibi heroes
 function buildModel(hero, team){
   if(hero.companion) return buildBeast(hero, team);
   const g = new THREE.Group();
@@ -748,7 +749,7 @@ function buildModel(hero, team){
   const weapon=buildWeapon(hero.weapon, hero.gem, look.weaponStyle);
   weapon.position.set(0,-0.42,0.05); armR.add(weapon);
 
-  g.scale.setScalar(0.92);
+  g.scale.setScalar(HERO_SCALE);
   g.userData = {legL:lL, legR:lR, armL, armR, head, body, bodyMat:body.material,
     weapon, weaponKind:swingKind(hero.weapon), bodyBase:{x:bulk,y:1,z:bulk},
     hero, t:Math.random()*6};
@@ -1003,6 +1004,7 @@ function spawnUnit(hero, team, x, z, scaleMul, isMinion){
     state:'march', dead:false, slowT:0, rootT:0, shield:0, buffT:0, dmgMul:1, spdMul:1,
     flash:0, lunge:0, spin:0, castT:0, isMinion:!!isMinion,
   };
+  u.baseScale = g.scale.x;   // remember final scale (incl. minion multiplier) for death anim
   u.hb=makeHealthBar(team);
   if(!isMinion) u.label=makeLabel(hero.name, team);
   G.units.push(u);
@@ -1062,7 +1064,7 @@ function buildBeast(hero, team){
     const mk=(x,z)=>{ const l=part(new THREE.CylinderGeometry(0.1,0.1,0.42,6),0x40301f); l.position.set(x,0.2,z); g.add(l); return l; };
     legL=mk(-0.22,0.28); legR=mk(0.22,0.28); mk(-0.22,-0.28); mk(0.22,-0.28);
   }
-  g.scale.setScalar(0.92);
+  g.scale.setScalar(HERO_SCALE);
   g.userData={legL,legR,armL,armR,body,bodyMat:body.material,bodyBase:{x:1,y:1,z:1},head,hero,t:Math.random()*6};
   return g;
 }
@@ -1318,13 +1320,37 @@ function updateBattle(dt){
         const step = u.hero.spd*u.spdMul*slow*dt;
         const dx=tgt.x-u.x, dz=tgt.z-u.z; const len=Math.hypot(dx,dz)||1;
         u.x += dx/len*step; u.z += dz/len*step;
-        u.x=Math.max(X_MIN,Math.min(X_MAX,u.x));
         faceToward(u, tgt.x, tgt.z);
       }
     }
+  }
+  separateUnits();
+  // commit positions to the meshes (after separation has spread everyone out)
+  for(const u of G.units){ if(u.dead) continue;
+    u.x=Math.max(X_MIN,Math.min(X_MAX,u.x));
+    u.z=Math.max(-PLAY.z+0.6, Math.min(PLAY.z-0.6, u.z));
     u.group.position.x=u.x; u.group.position.z=u.z;
   }
   checkRoundEnd();
+}
+// Push overlapping units apart so they read as individuals instead of one blob.
+function separateUnits(){
+  const SEP=1.25;                                  // desired min spacing between centers
+  const units=G.units;
+  for(let iter=0; iter<3; iter++){
+    for(let i=0;i<units.length;i++){ const a=units[i]; if(a.dead) continue;
+      for(let j=i+1;j<units.length;j++){ const b=units[j]; if(b.dead) continue;
+        let dx=b.x-a.x, dz=b.z-a.z; let d=Math.hypot(dx,dz);
+        if(d>=SEP) continue;
+        if(d<1e-4){ const ang=Math.random()*6.283; dx=Math.cos(ang); dz=Math.sin(ang); d=0.01; }
+        const push=(SEP-d)*0.5, nx=dx/d, nz=dz/d;
+        // enemies push a little less on z so the two lines still meet to fight
+        const zfac = (a.team!==b.team)?0.4:1;
+        a.x-=nx*push;     a.z-=nz*push*zfac;
+        b.x+=nx*push;     b.z+=nz*push*zfac;
+      }
+    }
+  }
 }
 function faceToward(u, tx, tz){
   const ang=Math.atan2(tx-u.x, tz-u.z); u.group.rotation.y=ang;
@@ -1415,7 +1441,7 @@ function tick(){
       u.deathT=(u.deathT||0)+dt;
       g.rotation.x = Math.min(Math.PI/2, u.deathT*4);
       g.position.y = Math.max(-0.6, -u.deathT*0.6);
-      const s=Math.max(0.001, 1-u.deathT*0.8); g.scale.setScalar(0.92*s);
+      const s=Math.max(0.001, 1-u.deathT*0.8); g.scale.setScalar((u.baseScale||HERO_SCALE)*s);
       if(u.deathT>1.3 && g.parent){ battleGroup.remove(g); }
       continue;
     }
