@@ -51,13 +51,9 @@
   .title-sm{font-weight:900; font-size:16px; letter-spacing:.5px; margin:2px 0 8px;}
   .muted{color:var(--dim); font-size:13px; line-height:1.5;}
   .vertext{font-size:12px; letter-spacing:1.5px; opacity:.55; margin-top:4px;}
-  #verBadge{position:fixed; right:7px; bottom:6px; z-index:50; pointer-events:auto;
+  #verBadge{position:fixed; right:7px; bottom:6px; z-index:50; pointer-events:none;
     font:700 11px/1 system-ui,-apple-system,sans-serif; letter-spacing:.5px;
-    color:rgba(255,255,255,.5); text-shadow:0 1px 2px rgba(0,0,0,.6); padding:6px;}
-  #dbg{position:fixed; left:6px; top:46px; z-index:50; pointer-events:none; display:none;
-    font:600 10px/1.35 ui-monospace,Menlo,monospace; color:#9effa0; white-space:pre;
-    background:rgba(0,0,0,.55); padding:6px 8px; border-radius:8px; max-width:62vw;}
-  #dbg.on{display:block;}
+    color:rgba(255,255,255,.5); text-shadow:0 1px 2px rgba(0,0,0,.6);}
   /* hero card */
   .hgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
   .hcard{position:relative; border-radius:16px; padding:10px; background:linear-gradient(180deg,#202a4a,#161d33);
@@ -263,7 +259,6 @@
 
   <div id="toast" class="toast"></div>
   <div id="verBadge"></div>
-  <div id="dbg"></div>
   <div id="boot">LOADING…</div>
 </div>
 
@@ -288,12 +283,9 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.7';
-let DEBUG = false;
+const BUILD = 'v0.8';
 (function showBuild(){
-  const b=document.getElementById('verBadge'); if(b){ b.textContent=BUILD;
-    b.addEventListener('click', ()=>{ DEBUG=!DEBUG; document.getElementById('dbg').classList.toggle('on',DEBUG); });
-  }
+  const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
 })();
 
@@ -1162,28 +1154,7 @@ function tick(){
     if(!alive){ scene.remove(o); vfx.splice(i,1); }
   }
 
-  if(DEBUG) updateDebug();
   renderer.render(scene, camera);
-}
-let _dbgT=0;
-function updateDebug(){
-  _dbgT++; if(_dbgT%6!==0) return;            // ~10Hz
-  const el=document.getElementById('dbg'); if(!el) return;
-  const dr=new THREE.Vector2(); renderer.getSize(dr);
-  // project the PLAY box corners with the CURRENT render camera to see real on-screen bounds
-  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
-  for(const c of playCorners()){ const p=c.clone().project(camera);
-    if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x; if(p.y<minY)minY=p.y; if(p.y>maxY)maxY=p.y; }
-  const f=n=>n.toFixed(2);
-  el.textContent =
-    `${BUILD}  phase:${G.phase}\n`+
-    `win  ${innerWidth}x${innerHeight} dpr${(devicePixelRatio||1).toFixed(1)} a${(innerWidth/innerHeight).toFixed(3)}\n`+
-    `buf  ${dr.x|0}x${dr.y|0}  canvas ${canvas.clientWidth}x${canvas.clientHeight}\n`+
-    `cam  a${camera.aspect.toFixed(3)} fov${camera.fov|0}\n`+
-    `pos  ${f(camera.position.x)},${f(camera.position.y)},${f(camera.position.z)}\n`+
-    `tgt  ${f(CAM.target.x)},${f(CAM.target.y)},${f(CAM.target.z)}\n`+
-    `boardNDC x[${f(minX)},${f(maxX)}] y[${f(minY)},${f(maxY)}]\n`+
-    `center (${f((minX+maxX)/2)},${f((minY+maxY)/2)})`;
 }
 
 /* =========================================================================
