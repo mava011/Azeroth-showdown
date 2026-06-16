@@ -18,6 +18,12 @@
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
   #game{position:fixed; inset:0; overflow:hidden;}
   #scene{position:absolute; inset:0; display:block; width:100%; height:100%;}
+  /* cinematic framing: dark soft edges + faint warm/cool grade (sits above canvas, below UI) */
+  #vignette{position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(125% 95% at 50% 40%, rgba(0,0,0,0) 50%, rgba(6,8,20,0.30) 78%, rgba(4,6,16,0.62) 100%),
+      linear-gradient(180deg, rgba(255,210,150,0.06), rgba(10,16,48,0.12));
+    mix-blend-mode:normal;}
   /* ---------- Screens ---------- */
   .screen{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
     justify-content:flex-start; padding:env(safe-area-inset-top) 14px 18px; gap:14px; z-index:5;}
@@ -170,6 +176,7 @@
 <body>
 <div id="game">
   <canvas id="scene"></canvas>
+  <div id="vignette"></div>
 
   <!-- HUD (battle) -->
   <div id="hud" class="hidden">
@@ -283,7 +290,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.10';
+const BUILD = 'v0.11';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -352,21 +359,25 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;   // filmic grade for that Clash warmth
+renderer.toneMappingExposure = 1.12;
 
 const scene = new THREE.Scene();
 function skyTexture(){
   const c=document.createElement('canvas'); c.width=16; c.height=256;
   const ctx=c.getContext('2d'); const g=ctx.createLinearGradient(0,0,0,256);
-  g.addColorStop(0,'#1f3f7a'); g.addColorStop(0.45,'#3a6bb0'); g.addColorStop(0.78,'#6fa3d6'); g.addColorStop(1,'#bcd6ee');
+  // deeper top, warm hazy horizon (sun-washed)
+  g.addColorStop(0,'#1b356e'); g.addColorStop(0.42,'#3f74bd'); g.addColorStop(0.74,'#86b4dc'); g.addColorStop(0.93,'#dfe6d8'); g.addColorStop(1,'#f3e7c4');
   ctx.fillStyle=g; ctx.fillRect(0,0,16,256);
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
 }
 scene.background = skyTexture();
+scene.fog = new THREE.Fog(0x9fbcd8, 26, 70);          // subtle atmospheric depth at the far end
 
 const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 200);
 // Auto-fit the whole play area into view on any screen/orientation.
 const CAM = { base:new THREE.Vector3(), target:new THREE.Vector3(0,0.7,0), shake:0 };
-const PLAY = { hx:3.5, z:7.4, yTop:2.6, yBot:0 };
+const PLAY = { hx:3.7, z:7.7, yTop:2.9, yBot:0 };
 function playCorners(){
   const out=[];
   for(const sx of [-1,1]) for(const sz of [-1,1]) for(const sy of [PLAY.yBot,PLAY.yTop])
@@ -455,43 +466,105 @@ function part(geo, color, k){ const m=new THREE.Mesh(geo, toon(color)); m.castSh
 const ARENA_W = 8.6, ARENA_L = 15.4;
 const X_MIN=-3.2, X_MAX=3.2;
 const arena = new THREE.Group(); scene.add(arena);
-const TOWERS=[];
+const TOWERS=[]; const BRAZIERS=[];
+// mown-grass texture: base green + alternating stripes + speckle for a Clash-style field
+function grassTexture(){
+  const c=document.createElement('canvas'); c.width=128; c.height=256; const x=c.getContext('2d');
+  x.fillStyle='#4f9e5c'; x.fillRect(0,0,128,256);
+  for(let i=0;i<16;i++){ x.fillStyle=(i%2)?'rgba(255,255,255,0.05)':'rgba(0,46,12,0.07)'; x.fillRect(0,i*16,128,16); }
+  for(let i=0;i<1500;i++){ const px=Math.random()*128, py=Math.random()*256;
+    x.fillStyle=Math.random()<0.5?'rgba(46,96,46,0.22)':'rgba(150,210,140,0.16)'; x.fillRect(px,py,2,2); }
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
+  t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(2,3); return t;
+}
+// ---- props ----
+function buildPine(s){
+  const g=new THREE.Group();
+  const trunk=part(new THREE.CylinderGeometry(0.08,0.12,0.4,6), 0x5a3f24); trunk.position.y=0.2; g.add(trunk);
+  const c1=part(new THREE.ConeGeometry(0.42,0.6,7), 0x2f6f43); c1.position.y=0.62; g.add(c1);
+  const c2=part(new THREE.ConeGeometry(0.33,0.5,7), 0x357a4b); c2.position.y=0.95; g.add(c2);
+  const c3=part(new THREE.ConeGeometry(0.23,0.42,7), 0x3c834f); c3.position.y=1.26; g.add(c3);
+  g.scale.setScalar(s||1); return g;
+}
+function buildRock(s){
+  const g=new THREE.Group();
+  const r=part(new THREE.IcosahedronGeometry(0.3,0), 0x8c93a1); r.position.y=0.1; r.scale.set(1,0.7,1.1); g.add(r);
+  g.scale.setScalar(s||1); return g;
+}
+function buildBanner(team){
+  const g=new THREE.Group(); const col=team===0?0x3f7bd0:0xcf4b45;
+  const pole=part(new THREE.CylinderGeometry(0.04,0.04,1.7,6), 0x4a3a22); pole.position.y=0.85; g.add(pole);
+  const cloth=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.92),
+    new THREE.MeshToonMaterial({color:col, gradientMap:GRAD, side:THREE.DoubleSide}));
+  cloth.position.set(0,1.2,0); g.add(cloth);
+  const fin=part(new THREE.ConeGeometry(0.06,0.18,6), 0xf4c542); fin.position.y=1.74; g.add(fin);
+  return g;
+}
+function buildBrazier(team){
+  const g=new THREE.Group();
+  const post=part(new THREE.CylinderGeometry(0.07,0.09,0.66,6), 0x3a3a44); post.position.y=0.33; g.add(post);
+  const bowl=part(new THREE.CylinderGeometry(0.18,0.1,0.16,8), 0x2b2b34); bowl.position.y=0.72; g.add(bowl);
+  const flame=new THREE.Mesh(new THREE.ConeGeometry(0.15,0.36,7),
+    new THREE.MeshBasicMaterial({color:team===0?0x6fc4ff:0xff8a4d, toneMapped:false}));
+  flame.position.y=0.96; g.add(flame); g.userData={flame}; BRAZIERS.push(flame); return g;
+}
 function buildTower(x,z,team){
   const t=new THREE.Group();
-  const stone=0x8b909e, stone2=0x6f7480;
-  const body=part(new THREE.CylinderGeometry(0.5,0.66,1.7,8), stone); body.position.y=0.85; t.add(body);
-  const crown=part(new THREE.CylinderGeometry(0.66,0.66,0.28,8), stone2); crown.position.y=1.78; t.add(crown);
-  const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(0.32),
-    new THREE.MeshToonMaterial({color: team===0?0x4f9bff:0xff5a4d, gradientMap:GRAD}));
-  crystal.position.y=2.25; t.add(crystal);
+  const stone=0x9aa0ab, stone2=0x7b818d, trim=team===0?0x3f7bd0:0xcf4b45;
+  const base=part(new THREE.CylinderGeometry(0.8,0.94,0.42,8), stone2); base.position.y=0.21; t.add(base);
+  const body=part(new THREE.CylinderGeometry(0.6,0.74,1.5,8), stone); body.position.y=1.1; t.add(body);
+  const band=part(new THREE.CylinderGeometry(0.75,0.75,0.16,8), trim); band.position.y=1.86; t.add(band);
+  const top=part(new THREE.CylinderGeometry(0.78,0.72,0.26,8), stone2); top.position.y=2.05; t.add(top);
+  for(let i=0;i<8;i++){ const a=(i/8)*6.283; const m=part(new THREE.BoxGeometry(0.17,0.24,0.17), stone);
+    m.position.set(Math.cos(a)*0.68, 2.28, Math.sin(a)*0.68); t.add(m); }
+  // hanging faction banner
+  const cloth=new THREE.Mesh(new THREE.PlaneGeometry(0.42,0.66),
+    new THREE.MeshToonMaterial({color:trim, gradientMap:GRAD, side:THREE.DoubleSide}));
+  cloth.position.set(0,1.18,0.62); t.add(cloth);
+  // glowing runestone
+  const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(0.3),
+    new THREE.MeshBasicMaterial({color: team===0?0x6fb4ff:0xff7a5a, toneMapped:false}));
+  crystal.position.y=2.62; t.add(crystal);
   t.position.set(x,0,z); arena.add(t); TOWERS.push(crystal); return t;
+}
+function buildBridge(x){
+  const g=new THREE.Group();
+  const deck=part(new THREE.BoxGeometry(1.5,0.2,2.0), 0x9a8c72); deck.position.y=0.07; g.add(deck);
+  for(const s of [-1,1]){ const rail=part(new THREE.BoxGeometry(1.5,0.16,0.1), 0x7d7060); rail.position.set(0,0.2,s*0.9); g.add(rail); }
+  g.position.set(x,0,0); return g;
 }
 (function buildArena(){
   const board = new THREE.Mesh(new THREE.BoxGeometry(ARENA_W, 0.8, ARENA_L),
     new THREE.MeshToonMaterial({color:0x3f8a4e, gradientMap:GRAD}));
   board.position.y=-0.4; board.receiveShadow=true; arena.add(board);
-  // lighter top inlay
-  const grass = new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.5, ARENA_L-0.5),
-    new THREE.MeshToonMaterial({color:0x57a766, gradientMap:GRAD}));
+  // textured grass field
+  const grass = new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.4, ARENA_L-0.4),
+    new THREE.MeshToonMaterial({color:0xffffff, map:grassTexture(), gradientMap:GRAD}));
   grass.rotation.x=-Math.PI/2; grass.position.y=0.005; grass.receiveShadow=true; arena.add(grass);
-  // lane stripes
-  for(const lx of [-2.0,0,2.0]){
-    const stripe=new THREE.Mesh(new THREE.PlaneGeometry(0.08, ARENA_L-1),
-      new THREE.MeshBasicMaterial({color:0x6cc07e, transparent:true, opacity:0.35}));
-    stripe.rotation.x=-Math.PI/2; stripe.position.set(lx,0.01,0); arena.add(stripe);
-  }
-  // center river
-  const river = new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.5, 1.5),
+  // center river + stone banks
+  const river = new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.3, 1.5),
     new THREE.MeshToonMaterial({color:0x3aa0d6, gradientMap:GRAD}));
   river.rotation.x=-Math.PI/2; river.position.y=0.02; arena.add(river);
+  for(const s of [-1,1]){ const bank=part(new THREE.BoxGeometry(ARENA_W-0.3,0.16,0.18), 0x8c7d63);
+    bank.position.set(0,0.04,s*0.82); arena.add(bank); }
+  buildBridge(-2.0); buildBridge(2.0);            // lane bridges over the river
   // border rail
   const rail = new THREE.Mesh(new THREE.BoxGeometry(ARENA_W+0.4, 0.5, ARENA_L+0.4),
     new THREE.MeshToonMaterial({color:0x6b4a2a, gradientMap:GRAD}));
   rail.position.y=-0.5; arena.add(rail);
   outlined(board,1.005);
-  // end towers (player = blue, near; rival = red, far)
+  // end towers (player = blue near, rival = red far)
   buildTower(-2.7, 7.0, 0); buildTower(2.7, 7.0, 0);
   buildTower(-2.7,-7.0, 1); buildTower(2.7,-7.0, 1);
+  // scenery props in the green margins (clear of the unit lanes, |x|<=2.7)
+  const place=(obj,x,z,ry)=>{ obj.position.set(x,0,z); if(ry)obj.rotation.y=ry; arena.add(obj); };
+  place(buildBanner(0),0,7.7); place(buildBanner(1),0,-7.7);
+  for(const z of [7.2,-7.2]) for(const x of [-1.55,1.55]) place(buildBrazier(z>0?0:1), x, z);
+  // pines & rocks along the long edges
+  const edgeZ=[6.2,4.2,2.4,-2.4,-4.2,-6.2];
+  edgeZ.forEach((z,i)=>{ const s=0.85+((i*7)%5)*0.08;
+    place(buildPine(s), -3.55, z, i); place(i%2?buildRock(0.9):buildPine(s*0.9), 3.55, z, -i); });
+  place(buildRock(1.1),-3.0,7.4,0.4); place(buildRock(1.0),3.0,-7.4,1.2);
 })();
 
 /* ---------------------------- Hero looks ---------------------------------- */
@@ -748,11 +821,11 @@ function buildWeapon(type, accent, style){
 /* ---------------------------- Health bars / FX ---------------------------- */
 function makeHealthBar(team){
   const grp=new THREE.Group();
-  const frame=new THREE.Mesh(new THREE.PlaneGeometry(1.08,0.22), new THREE.MeshBasicMaterial({color:0x0a0f20}));
-  const bg=new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.15), new THREE.MeshBasicMaterial({color:0x2a3450}));
+  const frame=new THREE.Mesh(new THREE.PlaneGeometry(1.08,0.22), new THREE.MeshBasicMaterial({color:0x0a0f20, toneMapped:false}));
+  const bg=new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.15), new THREE.MeshBasicMaterial({color:0x2a3450, toneMapped:false}));
   bg.position.z=0.001;
   const fill=new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.15),
-    new THREE.MeshBasicMaterial({color: team===0?0x57d06a:0xff5a4d}));
+    new THREE.MeshBasicMaterial({color: team===0?0x57d06a:0xff5a4d, toneMapped:false}));
   fill.position.z=0.002; grp.add(frame); grp.add(bg); grp.add(fill);
   grp.userData={fill}; scene.add(grp); return grp;
 }
@@ -761,7 +834,7 @@ function makeLabel(text, team){
   const cx=cv.getContext('2d'); cx.font='bold 38px Arial'; cx.textAlign='center'; cx.textBaseline='middle';
   cx.lineWidth=7; cx.strokeStyle='rgba(0,0,0,.85)'; cx.strokeText(text,128,34);
   cx.fillStyle = team===0?'#bfe0ff':'#ffd0cc'; cx.fillText(text,128,34);
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv), depthTest:false, transparent:true}));
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv), depthTest:false, transparent:true, toneMapped:false}));
   sp.scale.set(1.5,0.375,1); scene.add(sp); return sp;
 }
 function sparks(pos, color, n){
@@ -782,7 +855,7 @@ function damageNumber(pos, amount, color){
   cx.lineWidth=7; cx.strokeStyle='#000'; cx.strokeText(amount,64,32);
   cx.fillStyle=color||'#ffffff'; cx.fillText(amount,64,32);
   const tex=new THREE.CanvasTexture(cv);
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false, transparent:true}));
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false, transparent:true, toneMapped:false}));
   sp.position.copy(pos); sp.position.y+=1.9; sp.scale.set(0.9,0.45,1);
   sp.userData={t:0, vy:1.6}; scene.add(sp); sprites.push(sp); return sp;
 }
@@ -1324,7 +1397,9 @@ function tick(){
   // commander cooldown
   if(G.cast && G.cast.cd>0){ G.cast.cd-=dt; if(G.cast.cd<0)G.cast.cd=0; updateCastBtn(); }
   // spinning tower crystals
-  for(const c of TOWERS){ c.rotation.y+=dt*1.2; c.position.y=2.2+Math.sin(clock.elapsedTime*2+c.id)*0.05; }
+  for(const c of TOWERS){ c.rotation.y+=dt*1.2; c.position.y=2.62+Math.sin(clock.elapsedTime*2+c.id)*0.05; }
+  for(const f of BRAZIERS){ const k=0.85+Math.sin(clock.elapsedTime*16+f.id)*0.12+Math.random()*0.06;
+    f.scale.set(1, k, 1); }
   // camera shake
   if(CAM.shake>0){
     CAM.shake=Math.max(0, CAM.shake-dt*3.2);
