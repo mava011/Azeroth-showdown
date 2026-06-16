@@ -290,7 +290,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.15';
+const BUILD = 'v0.16';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -431,18 +431,44 @@ function screenShake(a){ CAM.shake=Math.min(1.2, Math.max(CAM.shake,a)); }
 function hitStop(t){ G.hitStop=Math.max(G.hitStop||0, t); }
 
 // lights
-const hemi = new THREE.HemisphereLight(0xcfe0ff, 0x4a3b2a, 0.95);
+const hemi = new THREE.HemisphereLight(0xd6e6ff, 0x4f4030, 0.9);
 scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xfff2d6, 1.45);
-sun.position.set(7, 16, 9); sun.castShadow = true;
-sun.shadow.mapSize.set(2048,2048);
+const sun = new THREE.DirectionalLight(0xfff0cf, 1.7);     // golden-hour key light
+sun.position.set(8, 17, 8); sun.castShadow = true;
+sun.shadow.mapSize.set(4096,4096);                         // crisper shadows
 sun.shadow.camera.near=1; sun.shadow.camera.far=60;
-sun.shadow.camera.left=-12; sun.shadow.camera.right=12; sun.shadow.camera.top=12; sun.shadow.camera.bottom=-12;
-sun.shadow.bias=-0.0005; sun.shadow.normalBias=0.02;
+sun.shadow.camera.left=-11; sun.shadow.camera.right=11; sun.shadow.camera.top=14; sun.shadow.camera.bottom=-14;
+sun.shadow.bias=-0.0004; sun.shadow.normalBias=0.025;
 scene.add(sun);
-const fill = new THREE.DirectionalLight(0x9fc0ff, 0.45); fill.position.set(-7,9,-7); scene.add(fill);
-const rim = new THREE.DirectionalLight(0xffe2b0, 0.6); rim.position.set(0,7,-13); scene.add(rim); // warm back rim
-scene.add(new THREE.AmbientLight(0x3a5a82, 0.4));
+const fill = new THREE.DirectionalLight(0x9fc0ff, 0.4); fill.position.set(-7,9,-7); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xffe0a8, 0.7); rim.position.set(0,7,-13); scene.add(rim); // warm back rim
+scene.add(new THREE.AmbientLight(0x44607f, 0.38));
+// warm sun glow disc in the sky
+(function(){
+  const c=document.createElement('canvas'); c.width=128; c.height=128; const x=c.getContext('2d');
+  const g=x.createRadialGradient(64,64,4,64,64,64);
+  g.addColorStop(0,'rgba(255,247,214,0.95)'); g.addColorStop(0.3,'rgba(255,228,160,0.55)');
+  g.addColorStop(1,'rgba(255,220,150,0)');
+  x.fillStyle=g; x.fillRect(0,0,128,128);
+  const tex=new THREE.CanvasTexture(c); tex.colorSpace=THREE.SRGBColorSpace;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthWrite:false, depthTest:false, fog:false, blending:THREE.AdditiveBlending}));
+  s.position.set(10,17,-18); s.scale.set(22,22,1); s.renderOrder=-1; scene.add(s);
+})();
+// drifting dust motes for atmosphere
+const MOTES=[];
+(function(){
+  const c=document.createElement('canvas'); c.width=32; c.height=32; const x=c.getContext('2d');
+  const g=x.createRadialGradient(16,16,0,16,16,16); g.addColorStop(0,'rgba(255,250,230,0.9)'); g.addColorStop(1,'rgba(255,250,230,0)');
+  x.fillStyle=g; x.fillRect(0,0,32,32);
+  const tex=new THREE.CanvasTexture(c);
+  const mat=new THREE.SpriteMaterial({map:tex, transparent:true, depthWrite:false, fog:false, blending:THREE.AdditiveBlending, opacity:0.5});
+  for(let i=0;i<46;i++){ const m=new THREE.Sprite(mat.clone());
+    m.position.set((Math.random()-0.5)*9, 0.5+Math.random()*4.5, (Math.random()-0.5)*15);
+    const sc=0.05+Math.random()*0.09; m.scale.set(sc,sc,1);
+    m.userData={vy:0.1+Math.random()*0.15, vx:(Math.random()-0.5)*0.1, ph:Math.random()*6.28};
+    scene.add(m); MOTES.push(m);
+  }
+})();
 
 // toon gradient map (cel shading bands)
 function gradientMap(steps){
@@ -1518,6 +1544,9 @@ function tick(){
   for(const f of BRAZIERS){ const k=0.85+Math.sin(clock.elapsedTime*16+f.id)*0.12+Math.random()*0.06;
     f.scale.set(1, k, 1); }
   if(RIVER_TEX) RIVER_TEX.offset.y += dt*0.18;   // flowing water
+  for(const m of MOTES){ const u=m.userData; m.position.y+=u.vy*dt; m.position.x+=Math.sin(clock.elapsedTime*0.5+u.ph)*u.vx*dt;
+    if(m.position.y>5){ m.position.y=0.4; m.position.x=(Math.random()-0.5)*9; m.position.z=(Math.random()-0.5)*15; }
+    m.material.opacity=0.35+Math.sin(clock.elapsedTime*1.5+u.ph)*0.2; }
   // camera shake
   if(CAM.shake>0){
     CAM.shake=Math.max(0, CAM.shake-dt*3.2);
