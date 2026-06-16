@@ -24,6 +24,7 @@
       radial-gradient(125% 95% at 50% 40%, rgba(0,0,0,0) 50%, rgba(6,8,20,0.30) 78%, rgba(4,6,16,0.62) 100%),
       linear-gradient(180deg, rgba(255,210,150,0.06), rgba(10,16,48,0.12));
     mix-blend-mode:normal;}
+  #flash{position:absolute; inset:0; pointer-events:none; opacity:0; z-index:9; mix-blend-mode:screen;}
   /* ---------- Screens ---------- */
   .screen{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
     justify-content:flex-start; padding:env(safe-area-inset-top) 14px 18px; gap:14px; z-index:5;}
@@ -207,6 +208,7 @@
 <div id="game">
   <canvas id="scene"></canvas>
   <div id="vignette"></div>
+  <div id="flash"></div>
 
   <!-- HUD (battle) -->
   <div id="hud" class="hidden">
@@ -320,7 +322,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.18';
+const BUILD = 'v0.19';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1324,7 +1326,7 @@ function meteorImpact(tx,tz){
   glowPuff(new THREE.Vector3(tx,0.8,tz),0xffd070,2.4,0.4,{x:0,y:0,z:0});
   for(let i=0;i<18;i++){ const ang=Math.random()*6.283, sp=2+Math.random()*4; const pp=new THREE.Vector3(tx,0.3,tz);
     glowPuff(pp,Math.random()<0.5?0xff7a2a:0xffd070,0.2+Math.random()*0.2,0.5+Math.random()*0.3,{x:Math.cos(ang)*sp,y:3+Math.random()*3,z:Math.sin(ang)*sp}); }
-  sparks(pos,0xff9a3a,14); screenShake(1.2); hitStop(0.12); sfx(80,0.3,'sawtooth');
+  sparks(pos,0xff9a3a,14); screenShake(1.2); hitStop(0.12); flash('#5a3410',0.32); sfx(80,0.3,'sawtooth');
   livingEnemies(0).forEach(e=>{ if(dist(e,{x:tx,z:tz})<2.4) dealDamage(null,e,70,'#ffd089'); });
 }
 
@@ -1601,6 +1603,7 @@ function endRound(loser){
   $('#castBtn').classList.add('hidden');
   const won = loser==='foe';
   announce(won?'ROUND WON!':'ROUND LOST', won?'#ffe07a':'#ff9d97');
+  flash(won?'#2e6b3a':'#6b2424', 0.45);
   screenShake(won?0.5:0.7);
   sfx(won?780:200,0.18, won?'square':'sawtooth');
   setTimeout(()=>{
@@ -1631,6 +1634,11 @@ function renderPips(){
 function announce(text,color){
   const r=$('#roundtag'); r.textContent=text; r.style.color=color||'#fff';
   r.classList.remove('show'); void r.offsetWidth; r.classList.add('show');
+}
+function flash(color, amount){
+  const f=$('#flash'); if(!f) return;
+  f.style.transition='none'; f.style.background=color; f.style.opacity=String(amount==null?0.5:amount);
+  requestAnimationFrame(()=>{ f.style.transition='opacity .55s ease'; f.style.opacity='0'; });
 }
 
 /* =========================================================================
