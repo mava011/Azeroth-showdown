@@ -283,7 +283,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.4';
+const BUILD = 'v0.5';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -376,21 +376,44 @@ function playCorners(){
 function frameCamera(){
   const w=window.innerWidth, h=window.innerHeight, aspect=w/h;
   camera.aspect=aspect;
-  camera.fov = aspect<0.62 ? 52 : (aspect<1 ? 46 : 40);
+  camera.fov = aspect<0.62 ? 50 : (aspect<1 ? 44 : 38);
   const dir=new THREE.Vector3(0,0.72,0.78).normalize(); // above & toward the player's side (~43° tilt, Clash-style)
-  const center=CAM.target, corners=playCorners();
-  let D=16;
-  for(let it=0; it<60; it++){
-    camera.position.copy(center).addScaledVector(dir,D);
-    camera.lookAt(center);
+  const corners=playCorners();
+  const target=new THREE.Vector3(0,0.7,0);   // re-derived each call (don't drift CAM.target)
+  const right=new THREE.Vector3(), up=new THREE.Vector3();
+  let D=18;
+  // Iteratively PAN the look-target so the board's projected box is centred,
+  // and SCALE the distance so it fits with a comfortable margin. The old code
+  // only measured distance from NDC (0,0), so perspective shoved the near edge
+  // off-screen and crammed the board into one corner.
+  for(let it=0; it<120; it++){
+    camera.position.copy(target).addScaledVector(dir,D);
+    camera.lookAt(target);
     camera.updateMatrixWorld(true);
-    camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
     camera.updateProjectionMatrix();
-    let maxr=0;
-    for(const c of corners){ const p=c.clone().project(camera); maxr=Math.max(maxr,Math.abs(p.x),Math.abs(p.y)); }
-    if(maxr>0.95) D*=1.05; else if(maxr<0.84) D*=0.975; else break;
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    for(const c of corners){
+      const p=c.clone().project(camera);
+      if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x;
+      if(p.y<minY)minY=p.y; if(p.y>maxY)maxY=p.y;
+    }
+    const cx=(minX+maxX)/2, cy=(minY+maxY)/2;          // projected box centre (NDC)
+    const halfSpan=Math.max((maxX-minX)/2,(maxY-minY)/2);
+    // Pan: convert the NDC centre offset into a world shift along camera right/up.
+    if(Math.abs(cx)>0.004 || Math.abs(cy)>0.004){
+      right.setFromMatrixColumn(camera.matrixWorld,0);
+      up.setFromMatrixColumn(camera.matrixWorld,1);
+      const halfH=Math.tan(THREE.MathUtils.degToRad(camera.fov)/2)*D, halfW=halfH*aspect;
+      target.addScaledVector(right, cx*halfW).addScaledVector(up, cy*halfH);
+    }
+    // Scale: keep the larger half-span inside ~0.86 of the frame (≈14% margin).
+    const centred=Math.abs(cx)<0.01 && Math.abs(cy)<0.01;
+    if(halfSpan>0.9) D*=1.04;
+    else if(halfSpan<0.82) D*=0.975;
+    else if(centred) break;
   }
   CAM.base.copy(camera.position);
+  CAM.target.copy(target);
 }
 function screenShake(a){ CAM.shake=Math.min(1.2, Math.max(CAM.shake,a)); }
 
