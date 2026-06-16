@@ -290,7 +290,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.14';
+const BUILD = 'v0.15';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -477,6 +477,26 @@ function grassTexture(){
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
   t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(2,3); return t;
 }
+// flowing-water texture (scrolled in the render loop)
+function riverTexture(){
+  const c=document.createElement('canvas'); c.width=64; c.height=64; const x=c.getContext('2d');
+  x.fillStyle='#2f93c9'; x.fillRect(0,0,64,64);
+  for(let i=0;i<10;i++){ const y=Math.random()*64; x.strokeStyle='rgba(180,230,255,'+(0.1+Math.random()*0.18)+')';
+    x.lineWidth=1+Math.random()*2; x.beginPath();
+    for(let xx=0;xx<=64;xx+=8){ x.lineTo(xx, y+Math.sin(xx*0.3+i)*3); } x.stroke(); }
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
+  t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(3,1); return t;
+}
+// trodden dirt-path texture for the lanes
+function pathTexture(){
+  const c=document.createElement('canvas'); c.width=64; c.height=128; const x=c.getContext('2d');
+  x.fillStyle='#9c7b4e'; x.fillRect(0,0,64,128);
+  for(let i=0;i<400;i++){ const px=Math.random()*64, py=Math.random()*128;
+    x.fillStyle=Math.random()<0.5?'rgba(120,92,56,0.4)':'rgba(180,150,110,0.3)'; x.fillRect(px,py,2,2); }
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
+  t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(1,5); return t;
+}
+let RIVER_TEX=null;   // referenced by the render loop to scroll the water
 // ---- props ----
 function buildPine(s){
   const g=new THREE.Group();
@@ -541,17 +561,38 @@ function buildBridge(x){
   const grass = new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.4, ARENA_L-0.4),
     new THREE.MeshToonMaterial({color:0xffffff, map:grassTexture(), gradientMap:GRAD}));
   grass.rotation.x=-Math.PI/2; grass.position.y=0.005; grass.receiveShadow=true; arena.add(grass);
-  // center river + stone banks
+  // worn dirt lane paths down each side
+  const pathTex=pathTexture();
+  for(const lx of [-2.0,2.0]){
+    const path=new THREE.Mesh(new THREE.PlaneGeometry(1.5, ARENA_L-1.0),
+      new THREE.MeshToonMaterial({color:0xffffff, map:pathTex, gradientMap:GRAD, transparent:true, opacity:0.92}));
+    path.rotation.x=-Math.PI/2; path.position.set(lx,0.011,0); path.receiveShadow=true; arena.add(path);
+  }
+  // team deployment pads near each end
+  for(const s of [-1,1]){ const pad=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-1.0,2.4),
+      new THREE.MeshBasicMaterial({color:s>0?0x3a7bd5:0xe0524d, transparent:true, opacity:0.12, depthWrite:false}));
+    pad.rotation.x=-Math.PI/2; pad.position.set(0,0.012,s*5.6); arena.add(pad); }
+  // center river (flowing) + stone banks + foam
+  RIVER_TEX=riverTexture();
   const river = new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.3, 1.5),
-    new THREE.MeshToonMaterial({color:0x3aa0d6, gradientMap:GRAD}));
+    new THREE.MeshToonMaterial({color:0x8fd0ee, map:RIVER_TEX, gradientMap:GRAD}));
   river.rotation.x=-Math.PI/2; river.position.y=0.02; arena.add(river);
   for(const s of [-1,1]){ const bank=part(new THREE.BoxGeometry(ARENA_W-0.3,0.16,0.18), 0x8c7d63);
-    bank.position.set(0,0.04,s*0.82); arena.add(bank); }
+    bank.position.set(0,0.04,s*0.82); arena.add(bank);
+    const foam=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.3,0.12),
+      new THREE.MeshBasicMaterial({color:0xeaf7ff, transparent:true, opacity:0.5, depthWrite:false}));
+    foam.rotation.x=-Math.PI/2; foam.position.set(0,0.025,s*0.7); arena.add(foam); }
   buildBridge(-2.0); buildBridge(2.0);            // lane bridges over the river
   // border rail
   const rail = new THREE.Mesh(new THREE.BoxGeometry(ARENA_W+0.4, 0.5, ARENA_L+0.4),
     new THREE.MeshToonMaterial({color:0x6b4a2a, gradientMap:GRAD}));
   rail.position.y=-0.5; arena.add(rail);
+  // stone tile border framing the field
+  const bw=0.36, bcol=0xb6a079;
+  for(const s of [-1,1]){
+    const long=part(new THREE.BoxGeometry(bw,0.13,ARENA_L-0.4), bcol); long.position.set(s*(ARENA_W/2-0.2-bw/2),0.0,0); arena.add(long);
+    const short=part(new THREE.BoxGeometry(ARENA_W-0.4,0.13,bw), bcol); short.position.set(0,0.0,s*(ARENA_L/2-0.2-bw/2)); arena.add(short);
+  }
   outlined(board,1.005);
   // end towers (player = blue near, rival = red far)
   buildTower(-2.7, 7.0, 0); buildTower(2.7, 7.0, 0);
@@ -1476,6 +1517,7 @@ function tick(){
   for(const c of TOWERS){ c.rotation.y+=dt*1.2; c.position.y=2.62+Math.sin(clock.elapsedTime*2+c.id)*0.05; }
   for(const f of BRAZIERS){ const k=0.85+Math.sin(clock.elapsedTime*16+f.id)*0.12+Math.random()*0.06;
     f.scale.set(1, k, 1); }
+  if(RIVER_TEX) RIVER_TEX.offset.y += dt*0.18;   // flowing water
   // camera shake
   if(CAM.shake>0){
     CAM.shake=Math.max(0, CAM.shake-dt*3.2);
