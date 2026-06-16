@@ -290,7 +290,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.12';
+const BUILD = 'v0.13';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -372,7 +372,7 @@ function skyTexture(){
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
 }
 scene.background = skyTexture();
-scene.fog = new THREE.Fog(0x9fbcd8, 26, 70);          // subtle atmospheric depth at the far end
+scene.fog = new THREE.Fog(0x9fbcd8, 40, 92);          // gentle haze on the far background only
 
 const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 200);
 // Auto-fit the whole play area into view on any screen/orientation.
@@ -820,23 +820,47 @@ function buildWeapon(type, accent, style){
 }
 
 /* ---------------------------- Health bars / FX ---------------------------- */
+// UI material that always draws on top (no depth occlusion, no fog/tonemap shifts)
+function uiMat(color, extra){
+  return new THREE.MeshBasicMaterial(Object.assign(
+    {color, toneMapped:false, fog:false, depthTest:false, depthWrite:false, transparent:true}, extra||{}));
+}
 function makeHealthBar(team){
   const grp=new THREE.Group();
-  const frame=new THREE.Mesh(new THREE.PlaneGeometry(1.08,0.22), new THREE.MeshBasicMaterial({color:0x0a0f20, toneMapped:false}));
-  const bg=new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.15), new THREE.MeshBasicMaterial({color:0x2a3450, toneMapped:false}));
-  bg.position.z=0.001;
-  const fill=new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.15),
-    new THREE.MeshBasicMaterial({color: team===0?0x57d06a:0xff5a4d, toneMapped:false}));
-  fill.position.z=0.002; grp.add(frame); grp.add(bg); grp.add(fill);
-  grp.userData={fill}; scene.add(grp); return grp;
+  const W=0.92, H=0.12;
+  const frame=new THREE.Mesh(new THREE.PlaneGeometry(W+0.09,H+0.09), uiMat(0x0a0f1e));
+  const bg=new THREE.Mesh(new THREE.PlaneGeometry(W,H), uiMat(0x39405a)); bg.position.z=0.001;
+  const fill=new THREE.Mesh(new THREE.PlaneGeometry(W,H), uiMat(team===0?0x5fd873:0xff6a5e)); fill.position.z=0.002;
+  const shine=new THREE.Mesh(new THREE.PlaneGeometry(W,H*0.34), uiMat(0xffffff,{opacity:0.18}));
+  shine.position.set(0,H*0.28,0.003);
+  grp.add(frame); grp.add(bg); grp.add(fill); grp.add(shine);
+  grp.userData={fill, w:W}; grp.renderOrder=20; scene.add(grp); return grp;
 }
+// soft contact shadow that grounds each unit on the field
+const SHADOW_TEX = (function(){
+  const c=document.createElement('canvas'); c.width=64; c.height=64; const x=c.getContext('2d');
+  const g=x.createRadialGradient(32,32,2,32,32,30);
+  g.addColorStop(0,'rgba(0,0,0,0.55)'); g.addColorStop(0.55,'rgba(0,0,0,0.30)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  x.fillStyle=g; x.fillRect(0,0,64,64);
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
+})();
+function makeShadow(r){
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
+    new THREE.MeshBasicMaterial({map:SHADOW_TEX, transparent:true, depthWrite:false, fog:false, toneMapped:false, opacity:0.8}));
+  m.rotation.x=-Math.PI/2; m.scale.set(r,r,r); m.userData={r}; battleGroup.add(m); return m;
+}
+function rrect(cx,x,y,w,h,r){ cx.beginPath(); cx.moveTo(x+r,y);
+  cx.arcTo(x+w,y,x+w,y+h,r); cx.arcTo(x+w,y+h,x,y+h,r);
+  cx.arcTo(x,y+h,x,y,r); cx.arcTo(x,y,x+w,y,r); cx.closePath(); }
 function makeLabel(text, team){
   const cv=document.createElement('canvas'); cv.width=256; cv.height=64;
-  const cx=cv.getContext('2d'); cx.font='bold 38px Arial'; cx.textAlign='center'; cx.textBaseline='middle';
-  cx.lineWidth=7; cx.strokeStyle='rgba(0,0,0,.85)'; cx.strokeText(text,128,34);
-  cx.fillStyle = team===0?'#bfe0ff':'#ffd0cc'; cx.fillText(text,128,34);
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv), depthTest:false, transparent:true, toneMapped:false}));
-  sp.scale.set(1.5,0.375,1); scene.add(sp); return sp;
+  const cx=cv.getContext('2d'); cx.font='bold 32px Arial'; cx.textAlign='center'; cx.textBaseline='middle';
+  const tw=Math.min(232, cx.measureText(text).width+36), x0=128-tw/2, h=36, y0=32-h/2;
+  cx.fillStyle='rgba(10,14,28,0.80)'; rrect(cx,x0,y0,tw,h,h/2); cx.fill();
+  cx.lineWidth=3; cx.strokeStyle= team===0?'rgba(120,182,255,0.95)':'rgba(255,150,140,0.95)'; cx.stroke();
+  cx.fillStyle = team===0?'#e3f0ff':'#ffe6e0'; cx.fillText(text,128,33);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv), depthTest:false, transparent:true, toneMapped:false, fog:false}));
+  sp.renderOrder=21; sp.scale.set(1.6,0.4,1); scene.add(sp); return sp;
 }
 function sparks(pos, color, n){
   for(let i=0;i<(n||5);i++){
@@ -856,7 +880,7 @@ function damageNumber(pos, amount, color){
   cx.lineWidth=7; cx.strokeStyle='#000'; cx.strokeText(amount,64,32);
   cx.fillStyle=color||'#ffffff'; cx.fillText(amount,64,32);
   const tex=new THREE.CanvasTexture(cv);
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false, transparent:true, toneMapped:false}));
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false, transparent:true, toneMapped:false, fog:false}));
   sp.position.copy(pos); sp.position.y+=1.9; sp.scale.set(0.9,0.45,1);
   sp.userData={t:0, vy:1.6}; scene.add(sp); sprites.push(sp); return sp;
 }
@@ -1005,6 +1029,7 @@ function spawnUnit(hero, team, x, z, scaleMul, isMinion){
     flash:0, lunge:0, spin:0, castT:0, isMinion:!!isMinion,
   };
   u.baseScale = g.scale.x;   // remember final scale (incl. minion multiplier) for death anim
+  u.shadow=makeShadow(1.15*g.scale.x);
   u.hb=makeHealthBar(team);
   if(!isMinion) u.label=makeLabel(hero.name, team);
   G.units.push(u);
@@ -1442,6 +1467,8 @@ function tick(){
       g.rotation.x = Math.min(Math.PI/2, u.deathT*4);
       g.position.y = Math.max(-0.6, -u.deathT*0.6);
       const s=Math.max(0.001, 1-u.deathT*0.8); g.scale.setScalar((u.baseScale||HERO_SCALE)*s);
+      if(u.shadow){ const r=u.shadow.userData.r*s; u.shadow.scale.set(r,r,r); u.shadow.material.opacity=0.8*s;
+        if(u.deathT>1.3 && u.shadow.parent) battleGroup.remove(u.shadow); }
       if(u.deathT>1.3 && g.parent){ battleGroup.remove(g); }
       continue;
     }
@@ -1482,16 +1509,18 @@ function tick(){
     ud.body.scale.set(bx,by,bz);
     // hit flash: glow the body white briefly
     if(ud.bodyMat) ud.bodyMat.emissive.setScalar(u.flash>0 ? (u.flash/0.16)*0.85 : 0);
-    // health bar
+    // contact shadow on the ground
+    if(u.shadow){ u.shadow.position.set(g.position.x, 0.03, g.position.z); }
+    // health bar (raised above the bigger heads, always drawn on top)
     if(u.hb){
-      u.hb.position.set(g.position.x, 2.15+bob, g.position.z);
+      u.hb.position.set(g.position.x, 2.66+bob, g.position.z);
       u.hb.quaternion.copy(camera.quaternion);
-      const r=Math.max(0,u.hp/u.maxHp);
+      const r=Math.max(0,u.hp/u.maxHp), w=u.hb.userData.w;
       u.hb.userData.fill.scale.x=r;
-      u.hb.userData.fill.position.x=-0.5*(1-r);
+      u.hb.userData.fill.position.x=-0.5*w*(1-r);
     }
     if(u.label){
-      u.label.position.set(g.position.x, 2.46+bob, g.position.z);
+      u.label.position.set(g.position.x, 3.0+bob, g.position.z);
       u.label.quaternion.copy(camera.quaternion);
     }
   }
