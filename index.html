@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.21';
+const BUILD = 'v0.22';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -708,18 +708,18 @@ function buildBridge(x){
 
 /* ---------------------------- Hero looks ---------------------------------- */
 // Race-accurate appearance per hero id. feat = facial/body features to attach.
-const DEFAULT_LOOK = {skin:0xe8b98f, eyes:0x14182a, feat:[], bulk:1, robe:false, hair:0x3a2a1a};
+const DEFAULT_LOOK = {skin:0xe8b98f, eyes:0x14182a, feat:[], bulk:1, robe:false, hair:0x3a2a1a, glow:false};
 const HERO_LOOK = {
-  thrall:   {skin:0x6fae74, eyes:0x66e0ff, feat:['tusks','topknot','fur'],        bulk:1.14, robe:false, hair:0x1d140c, weaponStyle:'doomhammer'},
-  jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, feat:['ponytail'],                      bulk:0.94, robe:true,  hair:0xf3eccf, weaponStyle:'froststaff', robeCol:0x6fa8ff},
-  arthas:   {skin:0xccd6e2, eyes:0x9fe3ff, feat:['crown','beard'],                 bulk:1.10, robe:false, hair:0xeae6c8, weaponStyle:'frostmourne', armor:0x3a4255},
-  sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, feat:['hood','elfears'],               bulk:0.95, robe:false, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a},
-  illidan:  {skin:0x7d52b6, eyes:0x39ff14, feat:['horns','blindfold','wings'],     bulk:1.08, robe:false, hair:0x1c1030, weaponStyle:'warglaive'},
-  uther:    {skin:0xe8b98f, eyes:0xfff2b0, feat:['beard','fur'],                   bulk:1.13, robe:false, hair:0xf0e6c0, weaponStyle:'lighthammer', armor:0xe8c46b},
-  grommash: {skin:0x6aa05a, eyes:0xffd089, feat:['tusks','topknot','warpaint'],    bulk:1.20, robe:false, hair:0x140d06, weaponStyle:'gorehowl'},
-  malfurion:{skin:0x9f86c9, eyes:0xffcf66, feat:['antlers','elfears','beard'],     bulk:1.0,  robe:true,  hair:0x2f6f4b, weaponStyle:'naturestaff', robeCol:0x2f8f5b},
-  tyrande:  {skin:0xb49ad8, eyes:0xdfe8ff, feat:['elfears','crescent'],            bulk:0.95, robe:true,  hair:0x6f86c9, weaponStyle:'elunebow', robeCol:0x9b6fd6},
-  rexxar:   {skin:0x7e8a52, eyes:0xff8c42, feat:['mask','fur','tusks'],            bulk:1.16, robe:false, hair:0x14100a, weaponStyle:'beastaxe'},
+  thrall:   {skin:0x6fae74, eyes:0x66e0ff, glow:true,  feat:['tusks','topknot','fur'],     bulk:1.14, hair:0x1d140c, weaponStyle:'doomhammer', bodyCol:0x3a5d44, armor:0x9c7a3e, trim:0xc9a45a, capeCol:0x5a3a22, legCol:0x2c2a20},
+  jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, glow:false, feat:['ponytail'],                  bulk:0.94, hair:0xf3eccf, robe:true,  weaponStyle:'froststaff', robeCol:0x6fa8ff, bodyCol:0x5f93e0, armor:0xbfe3ff, trim:0xeaf4ff, capeCol:0x3a63b0},
+  arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[],                            bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x2b313d, armor:0x49566a, trim:0x9fb2cc, capeCol:0x121419, legCol:0x232830},
+  sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, glow:true,  feat:['hood','elfears'],            bulk:0.95, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a, bodyCol:0x2a2f4a, armor:0x46406a, trim:0x8a6fc0, capeCol:0x191d30, legCol:0x20243a},
+  illidan:  {skin:0x7d52b6, eyes:0x39ff14, glow:true,  feat:['horns','blindfold','wings'], bulk:1.08, hair:0x1c1030, weaponStyle:'warglaive', bodyCol:0x3f2a63, armor:0x6b3fa0, trim:0x9d6fd6, capeCol:0x1c1030, legCol:0x281a40},
+  uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'],       bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
+  grommash: {skin:0x6aa05a, eyes:0x3a2a14, glow:false, feat:['tusks','topknot','warpaint'],bulk:1.20, hair:0x140d06, weaponStyle:'gorehowl', bodyCol:0x5a3320, armor:0x7a4a30, trim:0xb98a4a, capeCol:0x6a2018, legCol:0x2e2014},
+  malfurion:{skin:0x9f86c9, eyes:0xffcf66, glow:true,  feat:['antlers','elfears','beard'], bulk:1.0,  hair:0x2f6f4b, robe:true,  weaponStyle:'naturestaff', robeCol:0x2f8f5b, bodyCol:0x2f8f5b, armor:0x6b4a2a, trim:0x8be07a, capeCol:0x245a3a, legCol:0x244a30},
+  tyrande:  {skin:0xb49ad8, eyes:0xdfe8ff, glow:true,  feat:['elfears','crescent'],        bulk:0.95, hair:0x6f86c9, robe:true,  weaponStyle:'elunebow', robeCol:0x9b6fd6, bodyCol:0x8a5fc0, armor:0xc9d4ff, trim:0xeaf2ff, capeCol:0x5a3f8a, legCol:0x5a3f8a},
+  rexxar:   {skin:0x7e8a52, eyes:0x3a2a14, glow:false, feat:['mask','fur','tusks'],         bulk:1.16, hair:0x14100a, weaponStyle:'beastaxe', bodyCol:0x5a4a2a, armor:0x7e6a3a, trim:0xa98a4a, capeCol:0x4a3520, legCol:0x2e2414},
 };
 function lookFor(hero){ return Object.assign({}, DEFAULT_LOOK, HERO_LOOK[hero.id]||{}); }
 
@@ -825,28 +825,55 @@ function applyFeatures(g, look){
 const HERO_SCALE = 1.22;   // bigger, more readable chibi heroes
 // eyes (white + glowing iris), brows, nose, mouth — gives each face character
 function addFace(g, look){
-  const whiteMat=new THREE.MeshBasicMaterial({color:0xf1f1f4, toneMapped:false});
-  const iris=new THREE.MeshBasicMaterial({color:look.eyes, toneMapped:false});
+  const whiteMat=new THREE.MeshBasicMaterial({color:0xeef0f4, toneMapped:false});
+  // glowing irises only for undead/elf/demon/arcane; normal dark eyes otherwise
+  const iris = look.glow ? new THREE.MeshBasicMaterial({color:look.eyes, toneMapped:false})
+                         : new THREE.MeshToonMaterial({color:look.eyes, gradientMap:GRAD});
   for(const s of [-1,1]){
-    const w=new THREE.Mesh(new THREE.SphereGeometry(0.078,10,8), whiteMat);
-    w.position.set(s*0.145,1.69,0.34); w.scale.set(1,1.15,0.55); g.add(w);
-    const p=new THREE.Mesh(new THREE.SphereGeometry(0.042,8,6), iris);
-    p.position.set(s*0.155,1.69,0.40); g.add(p);
-    const brow=part(new THREE.BoxGeometry(0.14,0.04,0.05), look.hair);
-    brow.position.set(s*0.145,1.81,0.36); brow.rotation.z=s*0.16; g.add(brow);
+    const w=new THREE.Mesh(new THREE.SphereGeometry(0.06,10,8), whiteMat);
+    w.position.set(s*0.135,1.72,0.345); w.scale.set(1,1.15,0.45); g.add(w);
+    const p=new THREE.Mesh(new THREE.SphereGeometry(0.032,8,6), iris);
+    p.position.set(s*0.145,1.72,0.38); g.add(p);
+    const brow=part(new THREE.BoxGeometry(0.13,0.035,0.05), look.hair);
+    brow.position.set(s*0.135,1.83,0.36); brow.rotation.z=s*0.16; g.add(brow);
   }
-  const nose=part(new THREE.ConeGeometry(0.05,0.13,7), look.skin);
-  nose.position.set(0,1.61,0.43); nose.rotation.x=Math.PI/2; g.add(nose);
-  const mouth=new THREE.Mesh(new THREE.BoxGeometry(0.13,0.022,0.02),
-    new THREE.MeshBasicMaterial({color:0x6a2f2f, toneMapped:false}));
-  mouth.position.set(0,1.51,0.41); g.add(mouth);
+  // small soft nose (no more beak)
+  const nose=part(new THREE.SphereGeometry(0.05,8,7), look.skin);
+  nose.position.set(0,1.66,0.42); nose.scale.set(0.85,0.7,0.95); g.add(nose);
+  const mouth=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.022,0.02),
+    new THREE.MeshBasicMaterial({color:0x5a2b2b, toneMapped:false}));
+  mouth.position.set(0,1.58,0.4); g.add(mouth);
+}
+// helmet builder (covers head; used in place of hair+face)
+function addHelm(g, style, look){
+  if(style==='lichking'){
+    const dk=0x2a2e38, st=0x434a5a;
+    const dome=part(new THREE.SphereGeometry(0.43,16,14), dk); dome.position.y=1.76; dome.scale.set(1.05,1.02,1.05); g.add(dome);
+    const face=part(new THREE.BoxGeometry(0.44,0.46,0.26), st); face.position.set(0,1.68,0.22); g.add(face);
+    const ridge=part(new THREE.BoxGeometry(0.07,0.46,0.3), dk); ridge.position.set(0,1.7,0.27); g.add(ridge);
+    for(const s of [-1,1]){
+      const e=new THREE.Mesh(new THREE.BoxGeometry(0.13,0.045,0.04), new THREE.MeshBasicMaterial({color:look.eyes, toneMapped:false}));
+      e.position.set(s*0.12,1.72,0.36); g.add(e);
+      const cheek=part(new THREE.BoxGeometry(0.1,0.3,0.24), dk); cheek.position.set(s*0.26,1.62,0.14); g.add(cheek);
+    }
+    // Helm of Domination crown spikes, back-swept
+    addCone(g,0.06,0.55,dk, 0,2.02,-0.3,[-0.5,0,0]);
+    addCone(g,0.055,0.46,dk, -0.2,1.99,-0.26,[-0.5,0,0.22]);
+    addCone(g,0.055,0.46,dk, 0.2,1.99,-0.26,[-0.5,0,-0.22]);
+    addCone(g,0.05,0.36,dk, -0.37,1.92,-0.14,[-0.4,0,0.45]);
+    addCone(g,0.05,0.36,dk, 0.37,1.92,-0.14,[-0.4,0,-0.45]);
+  }
 }
 function buildModel(hero, team){
   if(hero.companion) return buildBeast(hero, team);
   const g = new THREE.Group();
   const look = lookFor(hero);
-  const skin = look.skin, dark = 0x24293c, bulk = look.bulk;
-  const armorC = look.armor || hero.gem, trimC = mix(armorC,0xffffff,0.28);
+  const skin = look.skin, dark = 0x20242f, bulk = look.bulk;
+  const bodyCol = look.bodyCol || hero.color;
+  const legCol  = look.legCol  || mix(bodyCol,0x000000,0.3);
+  const armorC  = look.armor   || hero.gem;
+  const trimC   = look.trim    || mix(armorC,0xffffff,0.28);
+  const capeCol = look.capeCol || (team===0 ? mix(hero.gem,0x3a7bd5,0.4) : mix(hero.gem,0xe0524d,0.4));
   const base = team===0 ? 0x3a7bd5 : 0xe0524d;
 
   // glowing team base ring
@@ -854,59 +881,63 @@ function buildModel(hero, team){
     new THREE.MeshBasicMaterial({color:base, toneMapped:false, transparent:true, opacity:0.92}));
   ring.rotation.x=-Math.PI/2; ring.position.y=0.03; g.add(ring);
 
-  // ---- legs (thigh + boot + armor cuff), as pivot groups so they can swing ----
+  // ---- legs (thigh + knee + boot), pivot groups so they can swing ----
   function leg(side){
-    const grp=new THREE.Group(); grp.position.set(side*0.17,0.6,0);
-    const thigh=part(new THREE.CapsuleGeometry(0.15,0.24,5,12), hero.color); thigh.position.y=-0.16; grp.add(thigh);
-    const boot=part(new THREE.CapsuleGeometry(0.17,0.12,5,12), dark); boot.position.y=-0.40; grp.add(boot);
-    const toe=part(new THREE.SphereGeometry(0.16,10,8), dark); toe.position.set(0,-0.47,0.1); toe.scale.set(1,0.7,1.35); grp.add(toe);
-    const cuff=part(new THREE.TorusGeometry(0.16,0.04,8,14), armorC); cuff.rotation.x=Math.PI/2; cuff.position.y=-0.27; grp.add(cuff);
+    const grp=new THREE.Group(); grp.position.set(side*0.18,0.66,0);
+    const thigh=part(new THREE.CapsuleGeometry(0.15,0.3,5,12), legCol); thigh.position.y=-0.2; grp.add(thigh);
+    const knee=part(new THREE.TorusGeometry(0.15,0.045,8,14), armorC); knee.rotation.x=Math.PI/2; knee.position.y=-0.34; grp.add(knee);
+    const boot=part(new THREE.CapsuleGeometry(0.17,0.14,5,12), dark); boot.position.y=-0.5; grp.add(boot);
+    const toe=part(new THREE.SphereGeometry(0.17,10,8), dark); toe.position.set(0,-0.57,0.12); toe.scale.set(1,0.7,1.4); grp.add(toe);
     g.add(grp); return grp;
   }
   const lL=leg(-1), lR=leg(1);
 
-  // cape
-  const capeCol = team===0 ? mix(hero.gem,0x3a7bd5,0.4) : mix(hero.gem,0xe0524d,0.4);
-  const cape=new THREE.Mesh(new THREE.PlaneGeometry(0.66,0.98),
+  // curved, draping cape (per-hero color)
+  const cape=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.5,1.06,16,1,true, Math.PI*1.22, Math.PI*0.56),
     new THREE.MeshToonMaterial({color:capeCol, gradientMap:GRAD, side:THREE.DoubleSide}));
-  cape.position.set(0,1.0,-0.34); cape.rotation.x=0.16; cape.castShadow=true; g.add(cape);
+  cape.position.set(0,1.04,-0.06); cape.rotation.x=0.05; cape.castShadow=true; g.add(cape);
 
-  // ---- torso ----
-  const body=part(new THREE.CapsuleGeometry(0.35,0.5,5,16), hero.color); body.position.y=1.0; g.add(body);
+  // ---- torso: slim core + broad chest plate -> V-taper ----
+  const body=part(new THREE.CapsuleGeometry(0.3,0.52,5,16), bodyCol); body.position.y=1.05; g.add(body);
   body.material=body.material.clone();
   if(look.robe){
-    const robe=part(new THREE.CylinderGeometry(0.3,0.66,1.06,16), look.robeCol||hero.color); robe.position.y=0.52; g.add(robe);
+    const robe=part(new THREE.CylinderGeometry(0.28,0.66,1.1,16), look.robeCol||bodyCol); robe.position.y=0.56; g.add(robe);
   }
-  // chestplate + emblem
-  const chest=part(new THREE.SphereGeometry(0.33,16,14), armorC); chest.position.set(0,1.14,0.05); chest.scale.set(1.02,0.84,0.8); g.add(chest);
-  const emb=new THREE.Mesh(new THREE.CircleGeometry(0.1,16), new THREE.MeshBasicMaterial({color:hero.gem, toneMapped:false}));
-  emb.position.set(0,1.13,0.42); g.add(emb);
-  // belt + buckle
-  const belt=part(new THREE.CylinderGeometry(0.37,0.37,0.13,16), dark); belt.position.y=0.74; g.add(belt);
-  const buckle=part(new THREE.BoxGeometry(0.14,0.1,0.06), trimC); buckle.position.set(0,0.74,0.36); g.add(buckle);
+  const chest=part(new THREE.SphereGeometry(0.34,16,14), armorC); chest.position.set(0,1.2,0.04); chest.scale.set(1.36,0.66,0.92); g.add(chest);
+  const abdo=part(new THREE.SphereGeometry(0.27,14,12), armorC); abdo.position.set(0,0.96,0.05); abdo.scale.set(1.0,0.72,0.85); g.add(abdo);
+  const collar=part(new THREE.TorusGeometry(0.2,0.05,8,16), trimC); collar.rotation.x=Math.PI/2; collar.position.y=1.42; g.add(collar);
+  const emb=new THREE.Mesh(new THREE.CircleGeometry(0.09,16), new THREE.MeshBasicMaterial({color:hero.gem, toneMapped:false}));
+  emb.position.set(0,1.18,0.5); g.add(emb);
+  // narrow belt + buckle
+  const belt=part(new THREE.CylinderGeometry(0.31,0.31,0.13,16), dark); belt.position.y=0.78; g.add(belt);
+  const buckle=part(new THREE.BoxGeometry(0.14,0.1,0.06), trimC); buckle.position.set(0,0.78,0.32); g.add(buckle);
 
   // ---- pauldrons (rounded pad + bright trim ring) ----
   function pauldron(side){
-    const pad=part(new THREE.SphereGeometry(0.22,14,12), armorC); pad.position.set(side*0.46*bulk,1.3,0); pad.scale.set(1.18,0.86,1.18); g.add(pad);
-    const trim=part(new THREE.TorusGeometry(0.2,0.045,8,16), trimC); trim.position.set(side*0.46*bulk,1.24,0); trim.rotation.x=Math.PI/2.3; g.add(trim);
+    const pad=part(new THREE.SphereGeometry(0.22,14,12), armorC); pad.position.set(side*0.48*bulk,1.34,0); pad.scale.set(1.2,0.82,1.2); g.add(pad);
+    const trim=part(new THREE.TorusGeometry(0.2,0.045,8,16), trimC); trim.position.set(side*0.48*bulk,1.28,0); trim.rotation.x=Math.PI/2.3; g.add(trim);
   }
   pauldron(-1); pauldron(1);
 
   // ---- arms (upper arm + cuff + gauntlet hand), pivot groups ----
   function arm(side){
-    const grp=new THREE.Group(); grp.position.set(side*0.47*bulk,1.28,0);
-    const up=part(new THREE.CapsuleGeometry(0.11,0.32,5,12), hero.color); up.position.y=-0.2; grp.add(up);
-    const cuff=part(new THREE.TorusGeometry(0.12,0.04,8,14), armorC); cuff.rotation.x=Math.PI/2; cuff.position.y=-0.36; grp.add(cuff);
-    const hand=part(new THREE.SphereGeometry(0.13,10,10), dark); hand.position.y=-0.45; grp.add(hand);
+    const grp=new THREE.Group(); grp.position.set(side*0.49*bulk,1.32,0);
+    const up=part(new THREE.CapsuleGeometry(0.11,0.34,5,12), bodyCol); up.position.y=-0.22; grp.add(up);
+    const cuff=part(new THREE.TorusGeometry(0.12,0.04,8,14), armorC); cuff.rotation.x=Math.PI/2; cuff.position.y=-0.4; grp.add(cuff);
+    const hand=part(new THREE.SphereGeometry(0.14,10,10), dark); hand.position.y=-0.5; grp.add(hand);
     g.add(grp); return grp;
   }
   const armL=arm(-1), armR=arm(1);
 
-  // ---- neck + head + face ----
-  const neck=part(new THREE.CylinderGeometry(0.13,0.15,0.16,10), skin); neck.position.y=1.46; g.add(neck);
-  const head=part(new THREE.SphereGeometry(0.4,18,16), skin); head.position.y=1.66; head.scale.set(1,1.04,0.98); g.add(head);
-  const cap=part(new THREE.SphereGeometry(0.42,16,12), look.hair); cap.position.y=1.77; cap.scale.set(1.02,0.64,1.02); g.add(cap);
-  addFace(g, look);
+  // ---- neck + head + (helm OR hair+face) ----
+  const neck=part(new THREE.CylinderGeometry(0.12,0.15,0.16,10), skin); neck.position.y=1.48; g.add(neck);
+  const head=part(new THREE.SphereGeometry(0.4,18,16), skin); head.position.y=1.68; head.scale.set(1,1.05,0.98); g.add(head);
+  if(look.helm){
+    addHelm(g, look.helm, look);
+  }else{
+    const cap=part(new THREE.SphereGeometry(0.42,16,12), look.hair); cap.position.y=1.8; cap.scale.set(1.02,0.62,1.02); g.add(cap);
+    addFace(g, look);
+  }
   // race / character features (tusks, ears, horns, hoods, …)
   applyFeatures(g, look);
   // weapon in right hand (signature variant by character)
@@ -915,7 +946,7 @@ function buildModel(hero, team){
 
   g.scale.setScalar(HERO_SCALE);
   g.userData = {legL:lL, legR:lR, armL, armR, head, body, bodyMat:body.material,
-    weapon, weaponKind:swingKind(hero.weapon), bodyBase:{x:1.04*bulk,y:1,z:0.92*bulk},
+    weapon, weaponKind:swingKind(hero.weapon), bodyBase:{x:bulk*0.98,y:1,z:bulk*0.98},
     hero, t:Math.random()*6};
   return g;
 }
@@ -931,14 +962,22 @@ function buildWeapon(type, accent, style){
   const wood=0x6b4a2a, steel=0xcfd8e6, gold=0xf4c542;
   const glowMat=(c)=> new THREE.MeshBasicMaterial({color:c});
   if(type==='sword'){
-    const bladeCol = style==='frostmourne' ? 0xbfe9ff : steel;
-    const blade=part(new THREE.BoxGeometry(0.09,style==='frostmourne'?0.95:0.7,0.025), bladeCol);
-    blade.position.y=style==='frostmourne'?0.5:0.35; w.add(blade);
-    if(style==='frostmourne'){ // runeblade glow edge
-      const edge=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.95,0.03), glowMat(0x8fe3ff)); edge.position.y=0.5; w.add(edge);
+    if(style==='frostmourne'){
+      // jagged runeblade with cold blue glow + runes
+      const blade=part(new THREE.BoxGeometry(0.13,1.0,0.03), 0x39485a); blade.position.y=0.56; w.add(blade);
+      const tip=part(new THREE.ConeGeometry(0.075,0.22,4), 0x39485a); tip.position.y=1.12; w.add(tip);
+      const glow=new THREE.Mesh(new THREE.BoxGeometry(0.17,1.04,0.05),
+        new THREE.MeshBasicMaterial({color:0x6fd0ff, transparent:true, opacity:0.45, toneMapped:false, blending:THREE.AdditiveBlending, depthWrite:false}));
+      glow.position.y=0.56; w.add(glow);
+      const runes=new THREE.Mesh(new THREE.BoxGeometry(0.035,0.9,0.06), glowMat(0x9fe3ff)); runes.position.y=0.56; w.add(runes);
+      const guard=part(new THREE.BoxGeometry(0.34,0.07,0.09), 0x2a2e38); guard.position.y=0.06; w.add(guard);
+      for(const s of [-1,1]) addCone(w,0.04,0.18,0x2a2e38, s*0.19,0.12,0,[0,0,s*1.25]); // hooked quillons
+      const grip=part(new THREE.CylinderGeometry(0.04,0.04,0.24,6), 0x171a22); grip.position.y=-0.1; w.add(grip);
+    }else{
+      const blade=part(new THREE.BoxGeometry(0.09,0.7,0.025), steel); blade.position.y=0.35; w.add(blade);
+      const guard=part(new THREE.BoxGeometry(0.3,0.06,0.07), accent); w.add(guard);
+      const grip=part(new THREE.CylinderGeometry(0.04,0.04,0.2,6), wood); grip.position.y=-0.12; w.add(grip);
     }
-    const guard=part(new THREE.BoxGeometry(0.3,0.06,0.07), accent); w.add(guard);
-    const grip=part(new THREE.CylinderGeometry(0.04,0.04,0.2,6), wood); grip.position.y=-0.12; w.add(grip);
   }else if(type==='axe'){
     const big = style==='gorehowl';
     const handle=part(new THREE.CylinderGeometry(0.045,0.045,big?0.85:0.7,6), wood); handle.position.y=big?0.28:0.2; w.add(handle);
