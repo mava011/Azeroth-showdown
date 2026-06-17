@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.26';
+const BUILD = 'v0.27';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -580,7 +580,8 @@ function metal(color, rough){
   return metalCache[key];
 }
 // armor piece: reflective metal, thinner outline (0 = no outline)
-function metalPart(geo, color, k){ const m=new THREE.Mesh(geo, metal(color)); m.castShadow=true; if(k!==0) outlined(m, k||1.03); return m; }
+// metal armor: NO cartoon outline by default (reads as real reflective steel). Pass k>0 to force one.
+function metalPart(geo, color, k){ const m=new THREE.Mesh(geo, metal(color)); m.castShadow=true; if(k) outlined(m, k); return m; }
 
 /* ---------------------------- Arena board --------------------------------- */
 const ARENA_W = 8.6, ARENA_L = 15.4;
@@ -883,7 +884,7 @@ function addHelm(g, style, look){
       const cheek=metalPart(new THREE.BoxGeometry(0.08,0.3,0.22), dk); cheek.position.set(s*0.25,1.58,0.18); g.add(cheek);
     }
     // tall Helm-of-Domination crown: center tallest, sweeping up & out
-    function spike(r,h,x,y,z,rot){ const c=new THREE.Mesh(new THREE.ConeGeometry(r,h,6), metal(dk)); c.castShadow=true; c.position.set(x,y,z); c.rotation.set(rot[0],rot[1],rot[2]); outlined(c,1.03); g.add(c); }
+    function spike(r,h,x,y,z,rot){ const c=new THREE.Mesh(new THREE.ConeGeometry(r,h,6), metal(dk)); c.castShadow=true; c.position.set(x,y,z); c.rotation.set(rot[0],rot[1],rot[2]); g.add(c); }
     spike(0.065,0.62, 0,2.08,-0.08,[-0.3,0,0]);
     spike(0.06,0.52, -0.21,2.02,-0.07,[-0.28,0,0.32]);
     spike(0.06,0.52, 0.21,2.02,-0.07,[-0.28,0,-0.32]);
@@ -897,7 +898,7 @@ function addHeroExtras(g, hero, look){
   if(hero.id==='arthas'){
     const dk=0x2c313d;
     // jagged metal spikes rising off each pauldron
-    const spk=(r,h,x,y,z,rot)=>{ const c=new THREE.Mesh(new THREE.ConeGeometry(r,h,6), metal(dk)); c.castShadow=true; c.position.set(x,y,z); c.rotation.set(rot[0],rot[1],rot[2]); outlined(c,1.03); g.add(c); };
+    const spk=(r,h,x,y,z,rot)=>{ const c=new THREE.Mesh(new THREE.ConeGeometry(r,h,6), metal(dk)); c.castShadow=true; c.position.set(x,y,z); c.rotation.set(rot[0],rot[1],rot[2]); g.add(c); };
     for(const s of [-1,1]){
       spk(0.055,0.36, s*0.5*bulk,1.52,0.02,[-0.18,0,s*0.32]);
       spk(0.042,0.26, s*0.6*bulk,1.44,0.0,[-0.08,0,s*0.6]);
@@ -908,6 +909,21 @@ function addHeroExtras(g, hero, look){
     for(const s of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(0.02,6,5), new THREE.MeshBasicMaterial({color:0x6fd0ff,toneMapped:false})); e.position.set(s*0.03,0.8,0.39); g.add(e); }
     // fur collar at the neck
     const fur=part(new THREE.TorusGeometry(0.25,0.1,8,16), 0x3a3f4a); fur.rotation.x=Math.PI/2; fur.position.y=1.42; g.add(fur);
+    // bone helper (skull)
+    const bone=0xd6d0c2, socket=0x070b14;
+    function skullAt(x,y,z,r){
+      const s=part(new THREE.SphereGeometry(r,10,9), bone); s.position.set(x,y,z); s.scale.set(1,1.12,0.82); g.add(s);
+      const j=part(new THREE.BoxGeometry(r*1.3,r*0.5,r*0.7), bone); j.position.set(x,y-r*0.95,z+r*0.1); g.add(j);
+      for(const sx of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(r*0.34,6,5), new THREE.MeshBasicMaterial({color:socket})); e.position.set(x+sx*r*0.4,y+r*0.1,z+r*0.7); g.add(e); }
+    }
+    // forehead skull on the helm + big skull on the left pauldron
+    skullAt(0,1.86,0.34,0.07);
+    skullAt(-0.52*bulk,1.34,0.16,0.12);
+    // tattered fur-trimmed loincloth hanging from the belt
+    const loin=new THREE.Mesh(new THREE.PlaneGeometry(0.36,0.52),
+      new THREE.MeshToonMaterial({color:0x161922, gradientMap:GRAD, side:THREE.DoubleSide}));
+    loin.position.set(0,0.46,0.33); loin.rotation.x=-0.08; g.add(loin);
+    const furw=part(new THREE.TorusGeometry(0.3,0.07,8,18,Math.PI), 0x4a4f5a); furw.rotation.x=Math.PI/2; furw.rotation.z=Math.PI; furw.position.set(0,0.72,0.06); g.add(furw);
   }
 }
 function buildModel(hero, team){
@@ -939,10 +955,10 @@ function buildModel(hero, team){
   }
   const lL=leg(-1), lR=leg(1);
 
-  // curved, draping cape (per-hero color)
-  const cape=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.5,1.06,16,1,true, Math.PI*1.22, Math.PI*0.56),
+  // curved, draping cape centred on the BACK (arc centre at theta=PI = -Z)
+  const cape=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.56,1.14,18,1,true, Math.PI*0.66, Math.PI*0.68),
     new THREE.MeshToonMaterial({color:capeCol, gradientMap:GRAD, side:THREE.DoubleSide}));
-  cape.position.set(0,1.04,-0.06); cape.rotation.x=0.05; cape.castShadow=true; g.add(cape);
+  cape.position.set(0,1.06,0.02); cape.rotation.x=0.06; cape.castShadow=true; g.add(cape);
 
   // ---- torso: slim core + broad chest plate -> V-taper ----
   const body=bMat(new THREE.CapsuleGeometry(0.3,0.52,5,16), bodyCol); body.position.y=1.05; g.add(body);
