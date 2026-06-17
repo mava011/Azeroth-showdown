@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.45';
+const BUILD = 'v0.46';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -877,7 +877,7 @@ function addHelm(g, style, look){
   if(style==='lichking'){
     const dk=0x2c313d, st=0x4a5266, lt=0x6a7488, glow=look.eyes;
     // fitted crown (flatter than a bald sphere)
-    const dome=metalPart(new THREE.SphereGeometry(0.37,16,12), dk); dome.position.y=1.77; dome.scale.set(1.0,0.92,1.02); H.add(dome);
+    const dome=metalPart(new THREE.SphereGeometry(0.37,7,6), dk); dome.position.y=1.77; dome.scale.set(1.0,0.94,1.02); dome.rotation.y=Math.PI/7; H.add(dome);
     // brow band jutting forward (menacing)
     const browB=metalPart(new THREE.BoxGeometry(0.5,0.12,0.18), lt); browB.position.set(0,1.76,0.27); browB.rotation.x=-0.2; H.add(browB);
     // angular faceplate + nose ridge
