@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.24';
+const BUILD = 'v0.25';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -734,10 +734,10 @@ const DEFAULT_LOOK = {skin:0xe8b98f, eyes:0x14182a, feat:[], bulk:1, robe:false,
 const HERO_LOOK = {
   thrall:   {skin:0x6fae74, eyes:0x66e0ff, glow:true,  feat:['tusks','topknot','fur'],     bulk:1.14, hair:0x1d140c, weaponStyle:'doomhammer', bodyCol:0x3a5d44, armor:0x9c7a3e, trim:0xc9a45a, capeCol:0x5a3a22, legCol:0x2c2a20},
   jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, glow:false, feat:['ponytail'],                  bulk:0.94, hair:0xf3eccf, robe:true,  weaponStyle:'froststaff', robeCol:0x6fa8ff, bodyCol:0x5f93e0, armor:0xbfe3ff, trim:0xeaf4ff, capeCol:0x3a63b0},
-  arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[],                            bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x2b313d, armor:0x49566a, trim:0x9fb2cc, capeCol:0x121419, legCol:0x232830},
+  arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true,             bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x2b313d, armor:0x49566a, trim:0x9fb2cc, capeCol:0x121419, legCol:0x232830},
   sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, glow:true,  feat:['hood','elfears'],            bulk:0.95, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a, bodyCol:0x2a2f4a, armor:0x46406a, trim:0x8a6fc0, capeCol:0x191d30, legCol:0x20243a},
   illidan:  {skin:0x7d52b6, eyes:0x39ff14, glow:true,  feat:['horns','blindfold','wings'], bulk:1.08, hair:0x1c1030, weaponStyle:'warglaive', bodyCol:0x3f2a63, armor:0x6b3fa0, trim:0x9d6fd6, capeCol:0x1c1030, legCol:0x281a40},
-  uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'],       bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
+  uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'], metalBody:true, bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
   grommash: {skin:0x6aa05a, eyes:0x3a2a14, glow:false, feat:['tusks','topknot','warpaint'],bulk:1.20, hair:0x140d06, weaponStyle:'gorehowl', bodyCol:0x5a3320, armor:0x7a4a30, trim:0xb98a4a, capeCol:0x6a2018, legCol:0x2e2014},
   malfurion:{skin:0x9f86c9, eyes:0xffcf66, glow:true,  feat:['antlers','elfears','beard'], bulk:1.0,  hair:0x2f6f4b, robe:true,  weaponStyle:'naturestaff', robeCol:0x2f8f5b, bodyCol:0x2f8f5b, armor:0x6b4a2a, trim:0x8be07a, capeCol:0x245a3a, legCol:0x244a30},
   tyrande:  {skin:0xb49ad8, eyes:0xdfe8ff, glow:true,  feat:['elfears','crescent'],        bulk:0.95, hair:0x6f86c9, robe:true,  weaponStyle:'elunebow', robeCol:0x9b6fd6, bodyCol:0x8a5fc0, armor:0xc9d4ff, trim:0xeaf2ff, capeCol:0x5a3f8a, legCol:0x5a3f8a},
@@ -921,6 +921,7 @@ function buildModel(hero, team){
   const trimC   = look.trim    || mix(armorC,0xffffff,0.28);
   const capeCol = look.capeCol || (team===0 ? mix(hero.gem,0x3a7bd5,0.4) : mix(hero.gem,0xe0524d,0.4));
   const base = team===0 ? 0x3a7bd5 : 0xe0524d;
+  const bMat = look.metalBody ? metalPart : part;   // plate heroes get metallic torso/limbs
 
   // glowing team base ring
   const ring=new THREE.Mesh(new THREE.TorusGeometry(0.5,0.06,10,24),
@@ -930,7 +931,7 @@ function buildModel(hero, team){
   // ---- legs (thigh + knee + boot), pivot groups so they can swing ----
   function leg(side){
     const grp=new THREE.Group(); grp.position.set(side*0.18,0.66,0);
-    const thigh=part(new THREE.CapsuleGeometry(0.15,0.3,5,12), legCol); thigh.position.y=-0.2; grp.add(thigh);
+    const thigh=bMat(new THREE.CapsuleGeometry(0.15,0.3,5,12), legCol); thigh.position.y=-0.2; grp.add(thigh);
     const knee=metalPart(new THREE.TorusGeometry(0.15,0.045,8,14), armorC); knee.rotation.x=Math.PI/2; knee.position.y=-0.34; grp.add(knee);
     const boot=metalPart(new THREE.CapsuleGeometry(0.17,0.14,5,12), dark); boot.position.y=-0.5; grp.add(boot);
     const toe=metalPart(new THREE.SphereGeometry(0.17,10,8), dark); toe.position.set(0,-0.57,0.12); toe.scale.set(1,0.7,1.4); grp.add(toe);
@@ -944,7 +945,7 @@ function buildModel(hero, team){
   cape.position.set(0,1.04,-0.06); cape.rotation.x=0.05; cape.castShadow=true; g.add(cape);
 
   // ---- torso: slim core + broad chest plate -> V-taper ----
-  const body=part(new THREE.CapsuleGeometry(0.3,0.52,5,16), bodyCol); body.position.y=1.05; g.add(body);
+  const body=bMat(new THREE.CapsuleGeometry(0.3,0.52,5,16), bodyCol); body.position.y=1.05; g.add(body);
   body.material=body.material.clone();
   if(look.robe){
     const robe=part(new THREE.CylinderGeometry(0.28,0.66,1.1,16), look.robeCol||bodyCol); robe.position.y=0.56; g.add(robe);
@@ -968,7 +969,7 @@ function buildModel(hero, team){
   // ---- arms (upper arm + cuff + gauntlet hand), pivot groups ----
   function arm(side){
     const grp=new THREE.Group(); grp.position.set(side*0.49*bulk,1.32,0);
-    const up=part(new THREE.CapsuleGeometry(0.11,0.34,5,12), bodyCol); up.position.y=-0.22; grp.add(up);
+    const up=bMat(new THREE.CapsuleGeometry(0.11,0.34,5,12), bodyCol); up.position.y=-0.22; grp.add(up);
     const cuff=metalPart(new THREE.TorusGeometry(0.12,0.04,8,14), armorC); cuff.rotation.x=Math.PI/2; cuff.position.y=-0.4; grp.add(cuff);
     const hand=metalPart(new THREE.SphereGeometry(0.14,10,10), dark); hand.position.y=-0.5; grp.add(hand);
     g.add(grp); return grp;
@@ -990,7 +991,10 @@ function buildModel(hero, team){
   addHeroExtras(g, hero, look);
   // weapon in right hand (signature variant by character)
   const weapon=buildWeapon(hero.weapon, hero.gem, look.weaponStyle);
-  weapon.position.set(0,-0.48,0.05); armR.add(weapon);
+  // rest the weapon angled forward & slightly out so the blade clears the shoulder/pauldron
+  const k=swingKind(hero.weapon);
+  const restTilt = (k==='chop'||k==='slash') ? 0.62 : (k==='cast' ? 0.18 : 0.1);
+  weapon.position.set(0.05,-0.5,0.12); weapon.rotation.set(restTilt,0,0); armR.add(weapon);
 
   g.scale.setScalar(HERO_SCALE);
   g.userData = {legL:lL, legR:lR, armL, armR, head, body, bodyMat:body.material,
