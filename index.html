@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.48';
+const BUILD = 'v0.49';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -574,16 +574,16 @@ const ENV = (function(){
 })();
 scene.environment = ENV;
 const metalCache={};
-function metal(color, rough, mtl){
-  const m = mtl==null?0.7:mtl;
-  const key=color+'_'+(rough||45)+'_'+m;
+function metal(color, rough, mtl, flat){
+  const m = mtl==null?0.7:mtl, f = flat!==false;   // flat-shaded by default so facets read as HARD edges on every device
+  const key=color+'_'+(rough||45)+'_'+m+'_'+f;
   // brushed steel; pass a low metalness for matte under-armour that won't mirror the env into stripes
-  if(!metalCache[key]) metalCache[key]=new THREE.MeshStandardMaterial({color, metalness:m, roughness:(rough||45)/100, envMap:ENV, envMapIntensity:1.1});
+  if(!metalCache[key]) metalCache[key]=new THREE.MeshStandardMaterial({color, metalness:m, roughness:(rough||45)/100, envMap:ENV, envMapIntensity:1.1, flatShading:f});
   return metalCache[key];
 }
 // armor piece: reflective metal, thinner outline (0 = no outline)
-// metal armor: NO cartoon outline by default (reads as real reflective steel). Pass k>0 to force one, mtl for matte.
-function metalPart(geo, color, k, mtl){ const m=new THREE.Mesh(geo, metal(color, null, mtl)); m.castShadow=true; if(k) outlined(m, k); return m; }
+// metal armor: NO cartoon outline by default (reads as real reflective steel). Pass k>0 to force one, mtl for matte, flat=false for smooth.
+function metalPart(geo, color, k, mtl, flat){ const m=new THREE.Mesh(geo, metal(color, null, mtl, flat)); m.castShadow=true; if(k) outlined(m, k); return m; }
 
 /* ---------------------------- Arena board --------------------------------- */
 const ARENA_W = 8.6, ARENA_L = 15.4;
@@ -989,7 +989,7 @@ function buildTorso(profile, color, depth){
   const smooth=new THREE.SplineCurve(pts).getPoints(36);   // resample to a smooth profile (no facet bands)
   const geo=new THREE.LatheGeometry(smooth, 30);
   geo.scale(1,1,depth&&depth!==1?depth:1); geo.computeVertexNormals();   // flatten -> oval chest
-  const m=new THREE.Mesh(geo, metal(color, 62, 0.3)); m.castShadow=true; return m;   // matte cuirass (no mirror stripes)
+  const m=new THREE.Mesh(geo, metal(color, 62, 0.3, false)); m.castShadow=true; return m;   // matte SMOOTH cuirass (organic, not faceted)
 }
 // sharp angular spaulder via ExtrudeGeometry: a beveled hard-edged shoulder plate
 // (flat outer face, pointed lower edge) — not a rounded cylinder.
@@ -1065,23 +1065,26 @@ function buildModel(hero, team){
     const buckle=metalPart(new THREE.BoxGeometry(0.14,0.1,0.06), trimC); buckle.position.set(0,0.78,look.torsoProfile?0.2:0.32); g.add(buckle);
   }
 
-  // ---- pauldrons: SHARP angular spaulder plates with spikes, seated on the shoulder ----
+  // ---- pauldrons: layered angular plate lames (flat-shaded = crisp hard edges on device) + spikes ----
   const ps=look.pauldronScale||1;
   function pauldron(side){
     const px=side*0.46*bulk;
     // yoke connector (no gap to torso)
-    const yoke=metalPart(new THREE.SphereGeometry(0.15*ps,8,7), mix(armorC,0x000000,0.2));
-    yoke.position.set(px*0.78,1.42,0); yoke.scale.set(1,0.85,0.9); g.add(yoke);
-    // faceted angular shoulder cap (low-poly = hard facets, not a smooth bubble)
-    const cap=metalPart(new THREE.SphereGeometry(0.26*ps,5,4), armorC);
-    cap.position.set(px,1.42,0); cap.scale.set(1.18,0.82,1.0); cap.rotation.y=Math.PI/5; g.add(cap);
-    // angular lower rim plate over the upper arm
-    const rim=metalPart(new THREE.CylinderGeometry(0.22*ps,0.15*ps,0.16*ps,5), mix(armorC,0x000000,0.22));
-    rim.position.set(px+side*0.03,1.22,0); rim.rotation.set(0,Math.PI/5,-side*0.22); g.add(rim);
-    // 3 spikes rising off the top edge
-    for(let i=0;i<3;i++){ const off=(-0.12+i*0.12)*ps;
-      const spike=metalPart(new THREE.ConeGeometry(0.045*ps,0.32*ps,4), mix(armorC,0x000000,0.1));
-      spike.position.set(px+side*0.04, 1.56, off); spike.rotation.set(-0.35,0,-side*0.32); g.add(spike); }
+    const yoke=metalPart(new THREE.CylinderGeometry(0.16*ps,0.12*ps,0.16*ps,6), mix(armorC,0x000000,0.12));
+    yoke.position.set(px*0.82,1.44,0); yoke.rotation.z=-side*0.5; g.add(yoke);
+    // 3 stacked hexagonal plate lames draping down the outer shoulder
+    for(let i=0;i<3;i++){
+      const r=(0.28-i*0.05)*ps;
+      const lame=metalPart(new THREE.CylinderGeometry(r, r*0.8, 0.11*ps, 6), mix(armorC,0x000000,i*0.14));
+      lame.position.set(px+side*i*0.05, 1.5-i*0.15*ps, 0);
+      lame.rotation.set(0, Math.PI/6, -side*0.5);
+      lame.scale.set(1.0,1,0.8);
+      g.add(lame);
+    }
+    // spikes rising off the top plate
+    for(let i=0;i<3;i++){ const off=(-0.1+i*0.1)*ps;
+      const spike=metalPart(new THREE.ConeGeometry(0.05*ps,0.34*ps,4), mix(armorC,0x000000,0.1));
+      spike.position.set(px-side*0.02, 1.6, off); spike.rotation.set(-0.3,0,-side*0.4); g.add(spike); }
   }
   pauldron(-1); pauldron(1);
 
