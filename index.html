@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.32';
+const BUILD = 'v0.33';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -736,7 +736,7 @@ const DEFAULT_LOOK = {skin:0xe8b98f, eyes:0x14182a, feat:[], bulk:1, robe:false,
 const HERO_LOOK = {
   thrall:   {skin:0x6fae74, eyes:0x66e0ff, glow:true,  feat:['tusks','topknot','fur'],     bulk:1.14, hair:0x1d140c, weaponStyle:'doomhammer', bodyCol:0x3a5d44, armor:0x9c7a3e, trim:0xc9a45a, capeCol:0x5a3a22, legCol:0x2c2a20},
   jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, glow:false, feat:['ponytail'],                  bulk:0.94, hair:0xf3eccf, robe:true,  weaponStyle:'froststaff', robeCol:0x6fa8ff, bodyCol:0x5f93e0, armor:0xbfe3ff, trim:0xeaf4ff, capeCol:0x3a63b0},
-  arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, capeTatter:0.9, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x333b4a, armor:0x5a6678, trim:0xaebbd0, capeCol:0x141824, legCol:0x2a3140},
+  arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, capeTatter:0.9, torsoProfile:[[0.04,-0.46],[0.27,-0.4],[0.33,-0.26],[0.38,-0.08],[0.41,0.1],[0.4,0.24],[0.34,0.36],[0.22,0.44],[0.1,0.48],[0.04,0.5]], bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x333b4a, armor:0x5a6678, trim:0xaebbd0, capeCol:0x141824, legCol:0x2a3140},
   sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, glow:true,  feat:['hood','elfears'],            bulk:0.95, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a, bodyCol:0x2a2f4a, armor:0x46406a, trim:0x8a6fc0, capeCol:0x191d30, legCol:0x20243a},
   illidan:  {skin:0x7d52b6, eyes:0x39ff14, glow:true,  feat:['horns','blindfold','wings'], bulk:1.08, hair:0x1c1030, weaponStyle:'warglaive', bodyCol:0x3f2a63, armor:0x6b3fa0, trim:0x9d6fd6, capeCol:0x1c1030, legCol:0x281a40},
   uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'], metalBody:true, bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
@@ -925,13 +925,13 @@ function addHeroExtras(g, hero, look){
       new THREE.MeshToonMaterial({color:0x161922, gradientMap:GRAD, side:THREE.DoubleSide}));
     loin.position.set(0,0.46,0.33); loin.rotation.x=-0.08; g.add(loin);
     const furw=part(new THREE.TorusGeometry(0.3,0.07,8,18,Math.PI), 0x4a4f5a); furw.rotation.x=Math.PI/2; furw.rotation.z=Math.PI; furw.position.set(0,0.72,0.06); g.add(furw);
-    // single angular breastplate (one plate, not two pecs) + V-neck + sternum
-    const steel=0x6e7c92, lt=0xaebbd0;
-    const cp=metalPart(new THREE.CylinderGeometry(0.33,0.27,0.42,8), steel); cp.rotation.x=Math.PI/2; cp.position.set(0,1.18,0.24); cp.scale.set(1.06,1,0.34); g.add(cp);
-    for(const s of [-1,1]){ const v=metalPart(new THREE.BoxGeometry(0.045,0.3,0.05), lt); v.position.set(s*0.11,1.26,0.4); v.rotation.z=s*0.42; g.add(v); }
-    const stern=metalPart(new THREE.BoxGeometry(0.05,0.3,0.06), lt); stern.position.set(0,1.1,0.41); g.add(stern);
-    // segmented ab / fauld plates
-    for(let i=0;i<3;i++){ const ab=metalPart(new THREE.BoxGeometry(0.36-i*0.04,0.09,0.12), steel); ab.position.set(0,0.98-i*0.11,0.33); ab.rotation.x=-0.12; g.add(ab); }
+    // surface trim on the sculpted cuirass: V-neck rails + sternum + engraved plate seams
+    const lt=0xaebbd0;
+    for(const s of [-1,1]){ const v=metalPart(new THREE.BoxGeometry(0.045,0.32,0.05), lt); v.position.set(s*0.12,1.28,0.39); v.rotation.z=s*0.42; g.add(v); }
+    const stern=metalPart(new THREE.BoxGeometry(0.05,0.34,0.06), lt); stern.position.set(0,1.12,0.4); g.add(stern);
+    // engraved horizontal plate seams wrapping the cuirass
+    for(let i=0;i<3;i++){ const seam=metalPart(new THREE.TorusGeometry(0.36-i*0.035,0.016,6,26), lt);
+      seam.rotation.x=Math.PI/2; seam.position.y=1.0-i*0.13; seam.scale.set(1,0.88,1); g.add(seam); }
     // (cape tatter is now built into the one-piece cape geometry)
   }
 }
@@ -959,6 +959,13 @@ function buildCape(color, tatter){
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
   g.setIndex(idx); g.computeVertexNormals();
   const m=new THREE.Mesh(g, new THREE.MeshToonMaterial({color, gradientMap:GRAD, side:THREE.DoubleSide}));
+  m.castShadow=true; return m;
+}
+// sculpted torso via LatheGeometry: revolve a 2D side-profile into one smooth
+// tapered cuirass (chest -> waist) instead of stacking a capsule + spheres.
+function buildTorso(profile, color){
+  const pts=profile.map(p=>new THREE.Vector2(p[0],p[1]));
+  const m=new THREE.Mesh(new THREE.LatheGeometry(pts, 26), metal(color));
   m.castShadow=true; return m;
 }
 function buildModel(hero, team){
@@ -993,14 +1000,22 @@ function buildModel(hero, team){
   // custom one-piece curved cape with a tattered hem built into the geometry
   const cape=buildCape(capeCol, look.capeTatter||0); cape.position.set(0,1.52,0.0); g.add(cape);
 
-  // ---- torso: slim core + broad chest plate -> V-taper ----
-  const body=bMat(new THREE.CapsuleGeometry(0.3,0.52,5,16), bodyCol); body.position.y=1.05; g.add(body);
+  // ---- torso ----
+  let body;
+  if(look.torsoProfile){
+    // sculpted one-piece cuirass (revolved profile centred at y=1.06)
+    body=buildTorso(look.torsoProfile, bodyCol); body.position.y=1.06; g.add(body);
+  }else{
+    body=bMat(new THREE.CapsuleGeometry(0.3,0.52,5,16), bodyCol); body.position.y=1.05; g.add(body);
+  }
   body.material=body.material.clone();
   if(look.robe){
     const robe=part(new THREE.CylinderGeometry(0.28,0.66,1.1,16), look.robeCol||bodyCol); robe.position.y=0.56; g.add(robe);
   }
-  const chest=metalPart(new THREE.SphereGeometry(0.34,16,14), armorC); chest.position.set(0,1.2,0.04); chest.scale.set(1.36,0.66,0.92); g.add(chest);
-  const abdo=metalPart(new THREE.SphereGeometry(0.27,14,12), armorC); abdo.position.set(0,0.96,0.05); abdo.scale.set(1.0,0.72,0.85); g.add(abdo);
+  if(!look.torsoProfile){   // broad chest + abdomen plates (lathe torsos already have the form)
+    const chest=metalPart(new THREE.SphereGeometry(0.34,16,14), armorC); chest.position.set(0,1.2,0.04); chest.scale.set(1.36,0.66,0.92); g.add(chest);
+    const abdo=metalPart(new THREE.SphereGeometry(0.27,14,12), armorC); abdo.position.set(0,0.96,0.05); abdo.scale.set(1.0,0.72,0.85); g.add(abdo);
+  }
   const collar=metalPart(new THREE.TorusGeometry(0.2,0.05,8,16), trimC); collar.rotation.x=Math.PI/2; collar.position.y=1.42; g.add(collar);
   if(!look.noEmblem){   // some heroes (plate knights) have an ornate chest instead of a gem
     const emb=new THREE.Mesh(new THREE.CircleGeometry(0.08,16), new THREE.MeshBasicMaterial({color:hero.gem, toneMapped:false}));
