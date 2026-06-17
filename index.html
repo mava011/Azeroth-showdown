@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.50';
+const BUILD = 'v0.51';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -739,7 +739,7 @@ const HERO_LOOK = {
   jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, glow:false, feat:['ponytail'],                  bulk:0.94, hair:0xf3eccf, robe:true,  weaponStyle:'froststaff', robeCol:0x6fa8ff, bodyCol:0x5f93e0, armor:0xbfe3ff, trim:0xeaf4ff, capeCol:0x3a63b0},
   arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, capeTatter:0.9, torsoProfile:[[0.04,-0.46],[0.23,-0.4],[0.29,-0.26],[0.34,-0.08],[0.36,0.1],[0.35,0.24],[0.3,0.36],[0.2,0.44],[0.1,0.48],[0.04,0.5]], torsoDepth:0.6, pauldronScale:1.4, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x1e2630, armor:0x7e90ac, trim:0xaebed8, capeCol:0x10141d, legCol:0x1b232e},
   sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, glow:true,  feat:['hood','elfears'],            bulk:0.95, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a, bodyCol:0x2a2f4a, armor:0x46406a, trim:0x8a6fc0, capeCol:0x191d30, legCol:0x20243a},
-  illidan:  {skin:0x9a6fd0, eyes:0x46ff1e, glow:true,  feat:['horns','blindfold','wings','longhair'], bulk:1.04, gscale:[0.94,1.16,0.94], noEmblem:true, noPauldron:true, hornScale:1.8, wingScale:1.6, hair:0x1a1030, weaponStyle:'warglaive', bodyCol:0x8462b4, armor:0x6b4a96, trim:0xb388e0, capeCol:0x1a1030, legCol:0x3a2a5a},
+  illidan:  {skin:0xb084e2, eyes:0x6dff34, glow:true,  feat:['horns','blindfold','wings','longhair'], bulk:1.02, gscale:[0.92,1.22,0.92], noEmblem:true, noPauldron:true, noCape:true, hornScale:1.9, wingScale:1.5, hair:0x140c24, weaponStyle:'warglaive', bodyCol:0xa074cc, armor:0x7a52a8, trim:0xc79ff0, legCol:0x4a3470},
   uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'], metalBody:true, bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
   grommash: {skin:0x6aa05a, eyes:0x3a2a14, glow:false, feat:['tusks','topknot','warpaint'],bulk:1.20, hair:0x140d06, weaponStyle:'gorehowl', bodyCol:0x5a3320, armor:0x7a4a30, trim:0xb98a4a, capeCol:0x6a2018, legCol:0x2e2014},
   malfurion:{skin:0x9f86c9, eyes:0xffcf66, glow:true,  feat:['antlers','elfears','beard'], bulk:1.0,  hair:0x2f6f4b, robe:true,  weaponStyle:'naturestaff', robeCol:0x2f8f5b, bodyCol:0x2f8f5b, armor:0x6b4a2a, trim:0x8be07a, capeCol:0x245a3a, legCol:0x244a30},
@@ -789,23 +789,42 @@ function addHood(g,col){
   m.position.set(0,1.78,-0.05); m.rotation.x=-0.12; g.add(m);
 }
 function addBlindfold(g,glow){
-  const band=part(new THREE.BoxGeometry(0.7,0.18,0.46), 0x191220); band.position.set(0,1.7,0.16); g.add(band);
-  const line=new THREE.Mesh(new THREE.BoxGeometry(0.72,0.04,0.02),
-    new THREE.MeshBasicMaterial({color:glow, toneMapped:false}));
-  line.position.set(0,1.7,0.42); g.add(line);
+  // dark cloth wrap around the eyes (wraps the head), with two thin fel slits leaking light + trailing tails
+  const band=part(new THREE.CylinderGeometry(0.41,0.41,0.16,12), 0x140e1c); band.rotation.x=Math.PI/2; band.position.set(0,1.7,0); band.scale.set(1,1,0.95); g.add(band);
+  const knot=part(new THREE.BoxGeometry(0.08,0.1,0.1), 0x140e1c); knot.position.set(0,1.66,-0.4); g.add(knot);
+  for(const s of [-1,1]){ const tail=part(new THREE.ConeGeometry(0.04,0.4,4), 0x140e1c); tail.position.set(s*0.05,1.5,-0.42); tail.rotation.set(0.3,0,s*0.2); g.add(tail);
+    const slit=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.03,0.02), new THREE.MeshBasicMaterial({color:glow, toneMapped:false}));
+    slit.position.set(s*0.13,1.69,0.4); slit.rotation.z=-s*0.25; g.add(slit); }
 }
 function addWings(g, look){
   const ws=(look&&look.wingScale)||1;
-  const mem=new THREE.MeshToonMaterial({color:0x3a2456, gradientMap:GRAD, side:THREE.DoubleSide});
-  const bone=0x241636;
+  // leathery membrane (visible mid-tone so it reads from any angle), dark bone ribs + claw tips
+  const mem=new THREE.MeshToonMaterial({color:0x52406e, gradientMap:GRAD, side:THREE.DoubleSide});
+  const boneC=0x241a30, clawC=0xd8ccdc;
+  // ---- bat-wing silhouette in local XY (x = outward, y = up); scalloped trailing edge ----
+  const shape=new THREE.Shape();
+  shape.moveTo(0.08,-0.30);                 // root, low on the back
+  shape.quadraticCurveTo(0.55,0.55, 1.75,1.78);   // long curved leading-edge arm up to the wrist
+  // four fingers fanning down-out, scalloped membrane between them
+  shape.lineTo(1.88,0.78); shape.quadraticCurveTo(1.50,0.66, 1.52,0.10);
+  shape.quadraticCurveTo(1.12,0.16, 1.08,-0.40);
+  shape.quadraticCurveTo(0.70,-0.22, 0.62,-0.76);
+  shape.quadraticCurveTo(0.36,-0.46, 0.08,-0.30);
+  const memGeo=new THREE.ShapeGeometry(shape, 12);
+  // fingertip claw positions (apex of each finger) for menacing tips
+  const tips=[[1.88,0.78],[1.52,0.10],[1.08,-0.40],[0.62,-0.76]];
   for(const s of [-1,1]){
-    // membrane (a tapered quad) + a top arm-bone + finger struts
-    const w=new THREE.Mesh(new THREE.PlaneGeometry(0.95*ws,1.2*ws), mem);
-    w.position.set(s*0.55*ws,1.25,-0.34); w.rotation.set(0.08, s*0.8, s*0.1); w.castShadow=true; g.add(w);
-    const armb=part(new THREE.CylinderGeometry(0.03,0.05,1.0*ws,5), bone);
-    armb.position.set(s*0.55*ws,1.55,-0.34); armb.rotation.set(0,s*0.8,s*0.7); g.add(armb);
-    for(let i=0;i<3;i++){ const fin=part(new THREE.CylinderGeometry(0.018,0.03,0.6*ws,4), bone);
-      fin.position.set(s*(0.7+i*0.18)*ws,1.4-i*0.15,-0.36); fin.rotation.set(0,s*0.8,s*(0.9+i*0.15)); g.add(fin); }
+    const W=new THREE.Group(); W.position.set(s*0.26,1.46,-0.24);
+    W.rotation.set(-0.12, s*-0.78, 0); W.scale.set(s*ws, ws, ws); g.add(W);
+    const m=new THREE.Mesh(memGeo, mem); m.castShadow=true; m.position.z=0.001; W.add(m);
+    // thick leading-edge arm bone tracing the top curve (root -> elbow -> wrist)
+    const seg=(x1,y1,x2,y2,r)=>{ const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy);
+      const b=part(new THREE.CylinderGeometry(r*0.7,r,len,5), boneC);
+      b.position.set((x1+x2)/2,(y1+y2)/2,0.03); b.rotation.z=Math.atan2(dy,dx)-Math.PI/2; W.add(b); };
+    seg(0.08,-0.30, 0.62,0.50, 0.05); seg(0.62,0.50, 1.75,1.78, 0.045);
+    // claws at each fingertip
+    for(const [tx,ty] of tips){ const cl=part(new THREE.ConeGeometry(0.05,0.16,5), clawC);
+      cl.position.set(tx,ty,0.02); cl.rotation.z=Math.atan2(ty+0.2,tx)-Math.PI/2-0.3; W.add(cl); }
   }
 }
 function addWarpaint(g){
@@ -936,6 +955,10 @@ function addHeroExtras(g, hero, look){
     const felMat=new THREE.MeshBasicMaterial({color:fel, toneMapped:false});
     for(const s of [-1,1]){ const t=new THREE.Mesh(new THREE.BoxGeometry(0.025,0.4,0.03), felMat); t.position.set(s*0.16,1.05,0.34); t.rotation.z=s*0.2; g.add(t); }
     const tc=new THREE.Mesh(new THREE.CircleGeometry(0.05,12), felMat); tc.position.set(0,1.18,0.36); g.add(tc);
+    // hanging loincloth in front + side tassets so the hips aren't a plain slab
+    const loin=part(new THREE.BoxGeometry(0.26,0.5,0.06), leather); loin.position.set(0,0.5,0.26); loin.rotation.x=0.08; g.add(loin);
+    const loinTip=part(new THREE.ConeGeometry(0.13,0.22,4), leather); loinTip.position.set(0,0.24,0.255); loinTip.rotation.set(Math.PI,Math.PI/4,0); g.add(loinTip);
+    for(const s of [-1,1]){ const tass=part(new THREE.BoxGeometry(0.2,0.42,0.08), leather); tass.position.set(s*0.27,0.5,0.12); tass.rotation.z=s*-0.06; g.add(tass); }
     return;
   }
   if(hero.id==='arthas'){
@@ -1064,8 +1087,8 @@ function buildModel(hero, team){
   }
   const lL=leg(-1), lR=leg(1);
 
-  // custom one-piece curved cape with a tattered hem built into the geometry
-  const cape=buildCape(capeCol, look.capeTatter||0); cape.position.set(0,1.52,0.0); g.add(cape);
+  // custom one-piece curved cape with a tattered hem built into the geometry (winged heroes skip it)
+  if(!look.noCape){ const cape=buildCape(capeCol, look.capeTatter||0); cape.position.set(0,1.52,0.0); g.add(cape); }
 
   // ---- torso ----
   let body;
