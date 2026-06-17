@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.31';
+const BUILD = 'v0.32';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -736,7 +736,7 @@ const DEFAULT_LOOK = {skin:0xe8b98f, eyes:0x14182a, feat:[], bulk:1, robe:false,
 const HERO_LOOK = {
   thrall:   {skin:0x6fae74, eyes:0x66e0ff, glow:true,  feat:['tusks','topknot','fur'],     bulk:1.14, hair:0x1d140c, weaponStyle:'doomhammer', bodyCol:0x3a5d44, armor:0x9c7a3e, trim:0xc9a45a, capeCol:0x5a3a22, legCol:0x2c2a20},
   jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, glow:false, feat:['ponytail'],                  bulk:0.94, hair:0xf3eccf, robe:true,  weaponStyle:'froststaff', robeCol:0x6fa8ff, bodyCol:0x5f93e0, armor:0xbfe3ff, trim:0xeaf4ff, capeCol:0x3a63b0},
-  arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x333b4a, armor:0x5a6678, trim:0xaebbd0, capeCol:0x141824, legCol:0x2a3140},
+  arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, capeTatter:0.9, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x333b4a, armor:0x5a6678, trim:0xaebbd0, capeCol:0x141824, legCol:0x2a3140},
   sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, glow:true,  feat:['hood','elfears'],            bulk:0.95, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a, bodyCol:0x2a2f4a, armor:0x46406a, trim:0x8a6fc0, capeCol:0x191d30, legCol:0x20243a},
   illidan:  {skin:0x7d52b6, eyes:0x39ff14, glow:true,  feat:['horns','blindfold','wings'], bulk:1.08, hair:0x1c1030, weaponStyle:'warglaive', bodyCol:0x3f2a63, armor:0x6b3fa0, trim:0x9d6fd6, capeCol:0x1c1030, legCol:0x281a40},
   uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'], metalBody:true, bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
@@ -904,10 +904,10 @@ function addHeroExtras(g, hero, look){
       spk(0.055,0.36, s*0.5*bulk,1.52,0.02,[-0.18,0,s*0.32]);
       spk(0.042,0.26, s*0.6*bulk,1.44,0.0,[-0.08,0,s*0.6]);
     }
-    // skull belt buckle with glowing eyes
-    const skull=part(new THREE.SphereGeometry(0.085,10,9), 0xd8d2c4); skull.position.set(0,0.78,0.33); skull.scale.set(1,1.1,0.8); g.add(skull);
-    const jaw=part(new THREE.BoxGeometry(0.11,0.04,0.05), 0xcfc8b8); jaw.position.set(0,0.72,0.35); g.add(jaw);
-    for(const s of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(0.02,6,5), new THREE.MeshBasicMaterial({color:0x6fd0ff,toneMapped:false})); e.position.set(s*0.03,0.8,0.39); g.add(e); }
+    // skull belt buckle with glowing eyes — proud of the belt so the ab plates don't hide it
+    const skull=part(new THREE.SphereGeometry(0.095,10,9), 0xd8d2c4); skull.position.set(0,0.7,0.46); skull.scale.set(1,1.1,0.8); g.add(skull);
+    const jaw=part(new THREE.BoxGeometry(0.12,0.045,0.05), 0xcfc8b8); jaw.position.set(0,0.63,0.48); g.add(jaw);
+    for(const s of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(0.022,6,5), new THREE.MeshBasicMaterial({color:0x6fd0ff,toneMapped:false})); e.position.set(s*0.034,0.72,0.53); g.add(e); }
     // fur collar at the neck
     const fur=part(new THREE.TorusGeometry(0.25,0.1,8,16), 0x3a3f4a); fur.rotation.x=Math.PI/2; fur.position.y=1.42; g.add(fur);
     // bone helper (skull)
@@ -917,9 +917,9 @@ function addHeroExtras(g, hero, look){
       const j=part(new THREE.BoxGeometry(r*1.3,r*0.5,r*0.7), bone); j.position.set(x,y-r*0.95,z+r*0.1); g.add(j);
       for(const sx of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(r*0.34,6,5), new THREE.MeshBasicMaterial({color:socket})); e.position.set(x+sx*r*0.4,y+r*0.1,z+r*0.7); g.add(e); }
     }
-    // forehead skull on the helm + big skull on the OUTER FACE of the left pauldron
+    // forehead skull on the helm + skull set into the FRONT of the left pauldron
     skullAt(0,1.86,0.34,0.07);
-    skullAt(-0.58*bulk,1.4,0.18,0.115);
+    skullAt(-0.46*bulk,1.34,0.26,0.12);
     // tattered fur-trimmed loincloth hanging from the belt
     const loin=new THREE.Mesh(new THREE.PlaneGeometry(0.36,0.52),
       new THREE.MeshToonMaterial({color:0x161922, gradientMap:GRAD, side:THREE.DoubleSide}));
@@ -932,12 +932,34 @@ function addHeroExtras(g, hero, look){
     const stern=metalPart(new THREE.BoxGeometry(0.05,0.3,0.06), lt); stern.position.set(0,1.1,0.41); g.add(stern);
     // segmented ab / fauld plates
     for(let i=0;i<3;i++){ const ab=metalPart(new THREE.BoxGeometry(0.36-i*0.04,0.09,0.12), steel); ab.position.set(0,0.98-i*0.11,0.33); ab.rotation.x=-0.12; g.add(ab); }
-    // tattered cape hem — flaps start AT the bottom of the cape and continue its arc
-    const hemMat=new THREE.MeshToonMaterial({color:look.capeCol||0x141824, gradientMap:GRAD, side:THREE.DoubleSide});
-    for(let i=0;i<7;i++){ const x=-0.36+i*0.12, len=0.46-Math.abs(i-3)*0.05+(i%2?0.1:0);
-      const flap=new THREE.Mesh(new THREE.PlaneGeometry(0.135,len), hemMat);
-      flap.position.set(x, 0.5-len*0.5, -0.42+Math.abs(x)*0.12); flap.rotation.x=0.1; g.add(flap); }
+    // (cape tatter is now built into the one-piece cape geometry)
   }
+}
+// custom curved cape mesh (BufferGeometry): wraps the back as one continuous
+// surface, widening toward a ragged/tattered bottom edge — not stacked planes.
+function buildCape(color, tatter){
+  tatter = tatter||0;
+  const segU=14, segV=7, arc=Math.PI*0.8, topR=0.34, botR=0.6, len=1.5;
+  const pos=[], idx=[];
+  for(let j=0;j<=segV;j++){
+    const r=topR+(botR-topR)*(j/segV);
+    for(let i=0;i<=segU;i++){
+      const ang=Math.PI - arc/2 + (i/segU)*arc;     // centred on the back (-Z)
+      let yLen;
+      if(j<segV) yLen = len*0.8*(j/(segV-1));        // even rows down to 80%
+      else yLen = len*(0.8 + 0.2*(1 - tatter*(i%2?0.95:0.35)*Math.random())); // ragged hem
+      pos.push(Math.sin(ang)*r, -yLen, Math.cos(ang)*r);
+    }
+  }
+  for(let j=0;j<segV;j++) for(let i=0;i<segU;i++){
+    const a=j*(segU+1)+i, b=a+1, c=a+(segU+1), d=c+1;
+    idx.push(a,c,b, b,c,d);
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+  g.setIndex(idx); g.computeVertexNormals();
+  const m=new THREE.Mesh(g, new THREE.MeshToonMaterial({color, gradientMap:GRAD, side:THREE.DoubleSide}));
+  m.castShadow=true; return m;
 }
 function buildModel(hero, team){
   if(hero.companion) return buildBeast(hero, team);
@@ -968,10 +990,8 @@ function buildModel(hero, team){
   }
   const lL=leg(-1), lR=leg(1);
 
-  // curved, draping cape centred on the BACK (arc centre at theta=PI = -Z)
-  const cape=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.56,1.14,18,1,true, Math.PI*0.66, Math.PI*0.68),
-    new THREE.MeshToonMaterial({color:capeCol, gradientMap:GRAD, side:THREE.DoubleSide}));
-  cape.position.set(0,1.06,0.02); cape.rotation.x=0.06; cape.castShadow=true; g.add(cape);
+  // custom one-piece curved cape with a tattered hem built into the geometry
+  const cape=buildCape(capeCol, look.capeTatter||0); cape.position.set(0,1.52,0.0); g.add(cape);
 
   // ---- torso: slim core + broad chest plate -> V-taper ----
   const body=bMat(new THREE.CapsuleGeometry(0.3,0.52,5,16), bodyCol); body.position.y=1.05; g.add(body);
@@ -1051,20 +1071,21 @@ function buildWeapon(type, accent, style){
   const glowMat=(c)=> new THREE.MeshBasicMaterial({color:c});
   if(type==='sword'){
     if(style==='frostmourne'){
-      // jagged runeblade with strong cold-blue glow + runes
-      const blade=metalPart(new THREE.BoxGeometry(0.15,1.08,0.035), 0x6a82a0); blade.position.y=0.6; w.add(blade);
-      const tip=metalPart(new THREE.ConeGeometry(0.085,0.28,4), 0x6a82a0); tip.position.y=1.24; w.add(tip);
-      // wide soft outer glow + a tight bright inner glow
-      const glow=new THREE.Mesh(new THREE.BoxGeometry(0.28,1.16,0.06),
-        new THREE.MeshBasicMaterial({color:0x7fdcff, transparent:true, opacity:0.5, toneMapped:false, blending:THREE.AdditiveBlending, depthWrite:false}));
-      glow.position.y=0.62; w.add(glow);
-      const glow2=new THREE.Mesh(new THREE.BoxGeometry(0.17,1.12,0.05),
-        new THREE.MeshBasicMaterial({color:0xbfeeff, transparent:true, opacity:0.6, toneMapped:false, blending:THREE.AdditiveBlending, depthWrite:false}));
-      glow2.position.y=0.62; w.add(glow2);
-      const runes=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.96,0.07), glowMat(0xcdf1ff)); runes.position.y=0.6; w.add(runes);
-      const guard=part(new THREE.BoxGeometry(0.34,0.07,0.09), 0x2a2e38); guard.position.y=0.06; w.add(guard);
-      for(const s of [-1,1]) addCone(w,0.04,0.18,0x2a2e38, s*0.19,0.12,0,[0,0,s*1.25]); // hooked quillons
-      const grip=part(new THREE.CylinderGeometry(0.04,0.04,0.24,6), 0x171a22); grip.position.y=-0.1; w.add(grip);
+      // metal runeblade — dark steel body with a fuller, glow confined to the rune channel & edges
+      const blade=metalPart(new THREE.BoxGeometry(0.17,1.08,0.05), 0x4a5a70, 0); blade.position.y=0.6; w.add(blade);
+      const bevelL=metalPart(new THREE.BoxGeometry(0.06,1.08,0.055), 0x6f87a4, 0); bevelL.position.set(0.055,0.6,0); w.add(bevelL);
+      const bevelR=metalPart(new THREE.BoxGeometry(0.06,1.08,0.055), 0x6f87a4, 0); bevelR.position.set(-0.055,0.6,0); w.add(bevelR);
+      const tip=metalPart(new THREE.ConeGeometry(0.095,0.3,4), 0x5a6c84, 0); tip.position.y=1.25; w.add(tip);
+      // thin glowing rune channel down the fuller (no fat beam → not a saber)
+      const runes=new THREE.Mesh(new THREE.BoxGeometry(0.035,0.92,0.066), glowMat(0x9fe3ff)); runes.position.y=0.58; w.add(runes);
+      const aura=new THREE.Mesh(new THREE.BoxGeometry(0.12,1.06,0.04),
+        new THREE.MeshBasicMaterial({color:0x6fd0ff, transparent:true, opacity:0.28, toneMapped:false, blending:THREE.AdditiveBlending, depthWrite:false}));
+      aura.position.y=0.6; w.add(aura);
+      // skull-and-hook cross-guard
+      const guard=metalPart(new THREE.BoxGeometry(0.36,0.08,0.1), 0x2a2e38, 0); guard.position.y=0.06; w.add(guard);
+      const gskull=part(new THREE.SphereGeometry(0.07,9,8), 0xcfc8b8); gskull.position.set(0,0.06,0.09); gskull.scale.set(1,1.05,0.7); w.add(gskull);
+      for(const s of [-1,1]) addCone(w,0.045,0.2,0x2a2e38, s*0.2,0.12,0,[0,0,s*1.3]); // hooked quillons
+      const grip=part(new THREE.CylinderGeometry(0.04,0.045,0.26,6), 0x171a22); grip.position.y=-0.11; w.add(grip);
     }else{
       const blade=part(new THREE.BoxGeometry(0.09,0.7,0.025), steel); blade.position.y=0.35; w.add(blade);
       const guard=part(new THREE.BoxGeometry(0.3,0.06,0.07), accent); w.add(guard);
