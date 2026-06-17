@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.49';
+const BUILD = 'v0.50';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -739,7 +739,7 @@ const HERO_LOOK = {
   jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, glow:false, feat:['ponytail'],                  bulk:0.94, hair:0xf3eccf, robe:true,  weaponStyle:'froststaff', robeCol:0x6fa8ff, bodyCol:0x5f93e0, armor:0xbfe3ff, trim:0xeaf4ff, capeCol:0x3a63b0},
   arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, capeTatter:0.9, torsoProfile:[[0.04,-0.46],[0.23,-0.4],[0.29,-0.26],[0.34,-0.08],[0.36,0.1],[0.35,0.24],[0.3,0.36],[0.2,0.44],[0.1,0.48],[0.04,0.5]], torsoDepth:0.6, pauldronScale:1.4, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x1e2630, armor:0x7e90ac, trim:0xaebed8, capeCol:0x10141d, legCol:0x1b232e},
   sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, glow:true,  feat:['hood','elfears'],            bulk:0.95, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a, bodyCol:0x2a2f4a, armor:0x46406a, trim:0x8a6fc0, capeCol:0x191d30, legCol:0x20243a},
-  illidan:  {skin:0x7d52b6, eyes:0x39ff14, glow:true,  feat:['horns','blindfold','wings'], bulk:1.08, hair:0x1c1030, weaponStyle:'warglaive', bodyCol:0x3f2a63, armor:0x6b3fa0, trim:0x9d6fd6, capeCol:0x1c1030, legCol:0x281a40},
+  illidan:  {skin:0x9a6fd0, eyes:0x46ff1e, glow:true,  feat:['horns','blindfold','wings','longhair'], bulk:1.04, gscale:[0.94,1.16,0.94], noEmblem:true, noPauldron:true, hornScale:1.8, wingScale:1.6, hair:0x1a1030, weaponStyle:'warglaive', bodyCol:0x8462b4, armor:0x6b4a96, trim:0xb388e0, capeCol:0x1a1030, legCol:0x3a2a5a},
   uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'], metalBody:true, bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
   grommash: {skin:0x6aa05a, eyes:0x3a2a14, glow:false, feat:['tusks','topknot','warpaint'],bulk:1.20, hair:0x140d06, weaponStyle:'gorehowl', bodyCol:0x5a3320, armor:0x7a4a30, trim:0xb98a4a, capeCol:0x6a2018, legCol:0x2e2014},
   malfurion:{skin:0x9f86c9, eyes:0xffcf66, glow:true,  feat:['antlers','elfears','beard'], bulk:1.0,  hair:0x2f6f4b, robe:true,  weaponStyle:'naturestaff', robeCol:0x2f8f5b, bodyCol:0x2f8f5b, armor:0x6b4a2a, trim:0x8be07a, capeCol:0x245a3a, legCol:0x244a30},
@@ -762,10 +762,19 @@ function addElfEars(g,skin){
   addCone(g,0.07,0.42,skin, 0.34,1.68,-0.02,[0,0,-1.15]);
   addCone(g,0.07,0.42,skin,-0.34,1.68,-0.02,[0,0, 1.15]);
 }
-function addHorns(g){
-  const c=0x241f2b;
-  addCone(g,0.08,0.55,c, 0.17,1.86,0.02,[ -0.35,0,-0.55]);
-  addCone(g,0.08,0.55,c,-0.17,1.86,0.02,[ -0.35,0, 0.55]);
+function addHorns(g, look){
+  const c=0x2a2230, hs=(look&&look.hornScale)||1;
+  for(const s of [-1,1]){
+    // 3 segments per horn, curving up and sweeping back
+    addCone(g,0.07*hs,0.34*hs,c, s*0.18,1.86,0.04,[-0.3,0, s*0.5]);
+    addCone(g,0.055*hs,0.32*hs,c, s*0.27,2.04,-0.02,[-0.55,0, s*0.7]);
+    addCone(g,0.038*hs,0.26*hs,c, s*0.32,2.22,-0.16,[-0.85,0, s*0.82]);
+  }
+}
+function addLongHair(g, hair){
+  // black hair flowing back over the shoulders
+  const back=part(new THREE.SphereGeometry(0.4,8,7), hair); back.position.set(0,1.6,-0.18); back.scale.set(1.0,1.15,0.7); g.add(back);
+  for(const s of [-1,1]){ const lock=part(new THREE.ConeGeometry(0.1,0.7,5), hair); lock.position.set(s*0.24,1.35,-0.22); lock.rotation.set(0.2,0,s*0.12); g.add(lock); }
 }
 function addAntlers(g){
   const c=0x7a5a32;
@@ -785,11 +794,18 @@ function addBlindfold(g,glow){
     new THREE.MeshBasicMaterial({color:glow, toneMapped:false}));
   line.position.set(0,1.7,0.42); g.add(line);
 }
-function addWings(g){
-  const mem=new THREE.MeshToonMaterial({color:0x2a1840, gradientMap:GRAD, side:THREE.DoubleSide});
+function addWings(g, look){
+  const ws=(look&&look.wingScale)||1;
+  const mem=new THREE.MeshToonMaterial({color:0x3a2456, gradientMap:GRAD, side:THREE.DoubleSide});
+  const bone=0x241636;
   for(const s of [-1,1]){
-    const w=new THREE.Mesh(new THREE.PlaneGeometry(0.85,1.05), mem);
-    w.position.set(s*0.5,1.2,-0.34); w.rotation.set(0.1, s*0.7, 0); w.castShadow=true; g.add(w);
+    // membrane (a tapered quad) + a top arm-bone + finger struts
+    const w=new THREE.Mesh(new THREE.PlaneGeometry(0.95*ws,1.2*ws), mem);
+    w.position.set(s*0.55*ws,1.25,-0.34); w.rotation.set(0.08, s*0.8, s*0.1); w.castShadow=true; g.add(w);
+    const armb=part(new THREE.CylinderGeometry(0.03,0.05,1.0*ws,5), bone);
+    armb.position.set(s*0.55*ws,1.55,-0.34); armb.rotation.set(0,s*0.8,s*0.7); g.add(armb);
+    for(let i=0;i<3;i++){ const fin=part(new THREE.CylinderGeometry(0.018,0.03,0.6*ws,4), bone);
+      fin.position.set(s*(0.7+i*0.18)*ws,1.4-i*0.15,-0.36); fin.rotation.set(0,s*0.8,s*(0.9+i*0.15)); g.add(fin); }
   }
 }
 function addWarpaint(g){
@@ -829,11 +845,12 @@ function applyFeatures(g, look){
   for(const f of look.feat){
     if(f==='tusks') addTusks(g,look.skin);
     else if(f==='elfears') addElfEars(g,look.skin);
-    else if(f==='horns') addHorns(g);
+    else if(f==='horns') addHorns(g,look);
     else if(f==='antlers') addAntlers(g);
     else if(f==='hood') addHood(g,look.cloak);
     else if(f==='blindfold') addBlindfold(g,look.eyes);
-    else if(f==='wings') addWings(g);
+    else if(f==='wings') addWings(g,look);
+    else if(f==='longhair') addLongHair(g,look.hair);
     else if(f==='warpaint') addWarpaint(g);
     else if(f==='topknot') addTopknot(g,look.hair);
     else if(f==='ponytail') addPonytail(g,look.hair);
@@ -907,6 +924,20 @@ function addHelm(g, style, look){
 // bespoke signature detail per hero (distinctive pieces beyond the shared skeleton)
 function addHeroExtras(g, hero, look){
   const bulk=look.bulk;
+  if(hero.id==='illidan'){
+    const leather=0x2a1c30, fel=0x46ff1e;
+    // crossed leather harness straps over the bare chest
+    for(const s of [-1,1]){ const strap=part(new THREE.BoxGeometry(0.07,0.62,0.06), leather);
+      strap.position.set(0,1.05,0.32); strap.rotation.z=s*0.5; g.add(strap); }
+    // shoulder pauldron straps + a belt
+    for(const s of [-1,1]){ const sh=part(new THREE.TorusGeometry(0.13,0.04,6,12), leather); sh.rotation.set(0.4,0,s*0.4); sh.position.set(s*0.34,1.3,0.05); g.add(sh); }
+    const belt=part(new THREE.CylinderGeometry(0.3,0.3,0.12,12), leather); belt.position.y=0.78; belt.scale.set(1,1,0.85); g.add(belt);
+    // glowing fel tattoos (lines down the chest/arms)
+    const felMat=new THREE.MeshBasicMaterial({color:fel, toneMapped:false});
+    for(const s of [-1,1]){ const t=new THREE.Mesh(new THREE.BoxGeometry(0.025,0.4,0.03), felMat); t.position.set(s*0.16,1.05,0.34); t.rotation.z=s*0.2; g.add(t); }
+    const tc=new THREE.Mesh(new THREE.CircleGeometry(0.05,12), felMat); tc.position.set(0,1.18,0.36); g.add(tc);
+    return;
+  }
   if(hero.id==='arthas'){
     const dk=0x2c313d;
     // jagged metal spikes rising off each pauldron
@@ -1086,7 +1117,7 @@ function buildModel(hero, team){
       const spike=metalPart(new THREE.ConeGeometry(0.05*ps,0.34*ps,4), mix(armorC,0x000000,0.1));
       spike.position.set(px-side*0.02, 1.6, off); spike.rotation.set(-0.3,0,-side*0.4); g.add(spike); }
   }
-  pauldron(-1); pauldron(1);
+  if(!look.noPauldron){ pauldron(-1); pauldron(1); }
 
   // ---- arms (upper arm + elbow cop + armored forearm + gauntlet fist) ----
   function arm(side){
