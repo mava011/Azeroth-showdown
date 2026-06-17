@@ -202,6 +202,26 @@
   @keyframes screenIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
   .btn{letter-spacing:.4px;}
   .btn:hover{filter:brightness(1.05);}
+
+  /* 3D hero preview */
+  #preview{position:absolute; inset:0; z-index:12;
+    background:radial-gradient(120% 80% at 50% 18%, #1b2b4d 0%, #0c1226 60%, #080c1a 100%);}
+  #preview.hidden{display:none;}
+  #pvCanvas{position:absolute; inset:0; width:100%; height:100%; touch-action:none; display:block;}
+  #pvTop{position:absolute; top:max(12px,env(safe-area-inset-top)); left:0; right:0; z-index:2;
+    display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 12px;}
+  #pvTop .btn{width:auto;}
+  #pvName{flex:1; text-align:center; font-weight:900; font-size:17px; letter-spacing:.3px;
+    text-shadow:0 2px 8px rgba(0,0,0,.7); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  #pvInfo{position:absolute; left:0; right:0; bottom:88px; z-index:2; text-align:center;
+    color:#cfe0ff; font-size:13px; line-height:1.7; text-shadow:0 1px 4px rgba(0,0,0,.8); pointer-events:none;}
+  #pvInfo .pill{display:inline-block; background:rgba(16,22,42,.7); border:1px solid #33406b;
+    border-radius:11px; padding:3px 9px; margin:2px; font-weight:700;}
+  #pvActions{position:absolute; left:0; right:0; bottom:max(16px,env(safe-area-inset-bottom)); z-index:2;
+    display:flex; gap:8px; justify-content:center; flex-wrap:wrap; padding:0 10px;}
+  #pvActions .btn{width:auto; min-width:96px;}
+  #pvHint{position:absolute; top:54px; left:0; right:0; text-align:center; color:var(--dim);
+    font-size:11px; z-index:2; pointer-events:none; opacity:.8;}
 </style>
 </head>
 <body>
@@ -296,6 +316,23 @@
   <!-- Editor -->
   <div id="editor" class="hidden"><div class="sheet" id="editorSheet"></div></div>
 
+  <!-- 3D hero preview / turntable -->
+  <div id="preview" class="hidden">
+    <canvas id="pvCanvas"></canvas>
+    <div id="pvTop">
+      <button class="btn small secondary" id="pvBack">‹ Back</button>
+      <div id="pvName"></div>
+      <button class="btn small" id="pvEdit">✎ Edit</button>
+    </div>
+    <div id="pvHint">drag to rotate</div>
+    <div id="pvInfo"></div>
+    <div id="pvActions">
+      <button class="btn small secondary" id="pvAttack">⚔ Attack</button>
+      <button class="btn small secondary" id="pvCast">✦ Ability</button>
+      <button class="btn small secondary" id="pvSpin">⏸ Spin</button>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
   <div id="verBadge"></div>
   <div id="boot">LOADING…</div>
@@ -322,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.20';
+const BUILD = 'v0.21';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1792,6 +1829,93 @@ window.addEventListener('pointerdown', unlockAudio, {once:true});
 /* =========================================================================
    ROSTER UI + EDITOR
    ========================================================================= */
+/* ----------------------- 3D hero preview (turntable) ---------------------- */
+let PV=null;
+function initPreview(){
+  const canvas=$('#pvCanvas');
+  const r=new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+  r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  r.shadowMap.enabled=true; r.shadowMap.type=THREE.PCFSoftShadowMap;
+  r.outputColorSpace=THREE.SRGBColorSpace; r.toneMapping=THREE.ACESFilmicToneMapping; r.toneMappingExposure=1.12;
+  const sc=new THREE.Scene(); sc.background=new THREE.Color(0x0c1226);
+  const cam=new THREE.PerspectiveCamera(34,1,0.1,100);
+  sc.add(new THREE.HemisphereLight(0xd6e6ff,0x40342a,0.95));
+  const key=new THREE.DirectionalLight(0xfff0cf,1.7); key.position.set(4,8,6); key.castShadow=true;
+  key.shadow.mapSize.set(1024,1024); key.shadow.camera.near=1; key.shadow.camera.far=30;
+  key.shadow.camera.left=-4; key.shadow.camera.right=4; key.shadow.camera.top=6; key.shadow.camera.bottom=-2;
+  key.shadow.bias=-0.0004; key.shadow.normalBias=0.025; sc.add(key);
+  const fill=new THREE.DirectionalLight(0x9fc0ff,0.45); fill.position.set(-5,4,-3); sc.add(fill);
+  const rim=new THREE.DirectionalLight(0xffe0a8,0.8); rim.position.set(0,5,-8); sc.add(rim);
+  // turntable platform
+  const disc=new THREE.Mesh(new THREE.CylinderGeometry(1.7,1.85,0.22,44),
+    new THREE.MeshToonMaterial({color:0x283356, gradientMap:GRAD})); disc.position.y=-0.11; disc.receiveShadow=true; sc.add(disc);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.66,0.05,10,52),
+    new THREE.MeshBasicMaterial({color:0x4f8be0, toneMapped:false})); ring.rotation.x=-Math.PI/2; ring.position.y=0.02; sc.add(ring);
+  const turn=new THREE.Group(); sc.add(turn);
+  PV={r,sc,cam,turn,model:null,hero:null,idx:-1,spin:true,rot:0.5,t:0,clock:new THREE.Clock(),
+      anim:{atk:0,cast:0}, drag:false, px:0, manualRot:0, running:false};
+  canvas.addEventListener('pointerdown',e=>{ PV.drag=true; PV.px=e.clientX; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove',e=>{ if(PV.drag){ PV.manualRot+=(e.clientX-PV.px)*0.012; PV.px=e.clientX; } });
+  canvas.addEventListener('pointerup',e=>{ PV.drag=false; });
+  canvas.addEventListener('pointercancel',()=>{ PV.drag=false; });
+}
+function pvResize(){
+  if(!PV) return; const c=$('#pvCanvas');
+  const w=c.clientWidth||window.innerWidth, h=c.clientHeight||window.innerHeight;
+  PV.r.setSize(w,h,false); PV.cam.aspect=w/h;
+  PV.cam.position.set(0,1.55,6.0); PV.cam.lookAt(0,1.05,0);
+  // pull back a touch on narrow/portrait screens so the full hero fits
+  if(PV.cam.aspect<0.75) PV.cam.position.z=6.8;
+  PV.cam.updateProjectionMatrix();
+}
+function showPreview(idx){
+  if(!PV) initPreview();
+  const hero=roster[idx]; PV.hero=hero; PV.idx=idx;
+  if(PV.model){ PV.turn.remove(PV.model); }
+  const m=buildModel(hero,0); m.position.y=0; PV.turn.add(m); PV.model=m;
+  PV.manualRot=0; PV.rot=0.5;
+  $('#pvName').textContent=hero.name+' · '+hero.cls;
+  $('#pvInfo').innerHTML=
+    '<span class="pill">❤ '+hero.hp+'</span><span class="pill">⚔ '+hero.dmg+'</span>'+
+    '<span class="pill">'+(hero.kind==='ranged'?'🏹 ranged':'🗡 melee')+'</span>'+
+    '<span class="pill">'+hero.weapon+'</span><span class="pill">✦ '+ABILITIES[hero.ability].name+'</span>';
+  hideAllScreens(); $('#preview').classList.remove('hidden');
+  pvResize();
+  if(!PV.running){ PV.running=true; PV.clock.getDelta(); pvTick(); }
+}
+function closePreview(){ $('#preview').classList.add('hidden'); PV&&(PV.running=false); }
+function pvTick(){
+  if(!PV || $('#preview').classList.contains('hidden')){ if(PV)PV.running=false; return; }
+  requestAnimationFrame(pvTick);
+  const dt=Math.min(0.05, PV.clock.getDelta()); PV.t+=dt;
+  if(PV.spin && !PV.drag) PV.rot+=dt*0.55;
+  PV.turn.rotation.y=PV.rot+PV.manualRot;
+  pvAnimate(dt);
+  PV.r.render(PV.sc,PV.cam);
+}
+function pvAnimate(dt){
+  const m=PV.model; if(!m) return; const ud=m.userData; ud.t=(ud.t||0)+dt;
+  if(PV.anim.atk>0) PV.anim.atk-=dt; if(PV.anim.cast>0) PV.anim.cast-=dt;
+  const breathe=Math.sin(ud.t*2.2); m.position.y=breathe*0.02;
+  const kind=ud.weaponKind||'chop';
+  const p=PV.anim.atk>0 ? 1-(PV.anim.atk/0.5) : -1;
+  const lk=PV.anim.atk>0 ? Math.sin(Math.max(0,p)*Math.PI):0;
+  let armRx=-0.12, armRz=0, armLx=breathe*0.06, wRoll=0;
+  if(PV.anim.atk>0){
+    if(kind==='chop') armRx=-2.4+p*3.2;
+    else if(kind==='slash'){ armRx=-1.6+p*2.4; armRz=-1.2+p*2.4; wRoll=p*1.2; }
+    else if(kind==='cast') armRx=-1.9+Math.sin(p*Math.PI)*0.5;
+    else { armRx=-1.4; armLx=-1.4; wRoll=-p*0.3; }
+  }
+  if(PV.anim.cast>0){ const c=Math.sin((PV.anim.cast/0.6)*Math.PI); armRx=-2.2*c-0.12; armLx=-2.0*c+0.1; }
+  if(ud.armR) ud.armR.rotation.set(armRx,0,armRz);
+  if(ud.armL) ud.armL.rotation.x=armLx;
+  if(ud.weapon) ud.weapon.rotation.z=wRoll;
+  if(ud.legL){ const sw=breathe*0.04; ud.legL.rotation.x=sw; ud.legR.rotation.x=-sw; }
+  const bb=ud.bodyBase||{x:1,y:1,z:1};
+  let by=bb.y*(1+breathe*0.012); if(lk>0) by+=0.12*lk;
+  if(ud.body) ud.body.scale.set(bb.x,by,bb.z);
+}
 function renderRoster(){
   const grid=$('#rosterGrid'); grid.innerHTML='';
   roster.forEach((h,idx)=>{
@@ -1806,7 +1930,7 @@ function renderRoster(){
       '<div class="stats"><span>❤<b>'+h.hp+'</b></span><span>⚔<b>'+h.dmg+'</b></span><span>'+
         (h.kind==='ranged'?'🏹':'🗡')+'</span></div>'+
       '<div class="abil">✦ '+ABILITIES[h.ability].name+'</div>';
-    c.onclick=()=>openEditor(idx);
+    c.onclick=()=>showPreview(idx);
     grid.appendChild(c);
   });
 }
@@ -1889,6 +2013,12 @@ $('#btnBackH').onclick  =()=>{ hideAllScreens(); show('title'); };
 $('#btnBackHow').onclick=()=>{ hideAllScreens(); show('title'); };
 $('#btnNew').onclick    =()=>openEditor(-1);
 $('#btnReset').onclick  =()=>{ if(confirm('Reset all heroes to the original roster?')){ resetRoster(); renderRoster(); toast('Roster reset'); } };
+// hero preview controls
+$('#pvBack').onclick    =()=>{ closePreview(); hideAllScreens(); show('heroes'); renderRoster(); };
+$('#pvEdit').onclick    =()=>{ const i=PV?PV.idx:-1; closePreview(); hideAllScreens(); show('heroes'); openEditor(i); };
+$('#pvAttack').onclick  =()=>{ if(PV){ PV.anim.atk=0.5; sfx(PV.hero&&PV.hero.team===1?300:330,0.04); } };
+$('#pvCast').onclick    =()=>{ if(PV){ PV.anim.cast=0.6; sfx(660,0.06); } };
+$('#pvSpin').onclick    =()=>{ if(PV){ PV.spin=!PV.spin; $('#pvSpin').textContent=PV.spin?'⏸ Spin':'▶ Spin'; } };
 $('#btnReroll').onclick =()=>{ if(G.rerolls>0){ G.rerolls--; G.offers=[randHero(),randHero(),randHero()]; sfx(500,0.05); renderDraft(); } };
 $('#btnFight').onclick  =()=>{ if(G.squad.length) startBattle(); };
 $('#btnAgain').onclick  =()=>{ startMatch(); };
@@ -1902,6 +2032,7 @@ function resize(){
   const w=window.innerWidth, h=window.innerHeight;
   renderer.setSize(w,h,false);
   frameCamera();
+  if(PV) pvResize();
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', ()=>setTimeout(resize,200));
