@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.58';
+const BUILD = 'v0.59';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -812,7 +812,8 @@ function addWings(g, look){
   const mem=new THREE.MeshToonMaterial({color:0x614a86, gradientMap:GRAD, side:THREE.DoubleSide});
   const memBack=new THREE.MeshToonMaterial({color:0x3c2c56, gradientMap:GRAD, side:THREE.DoubleSide});
   const boneC=0x352841, clawC=0xa99db8;
-  const veinMat=new THREE.MeshBasicMaterial({color:0x285417, toneMapped:false});
+  const veinMat=new THREE.MeshBasicMaterial({color:0x2f6b1c, toneMapped:false});
+  const veinHalo=new THREE.MeshBasicMaterial({color:0x46ff1e, transparent:true, opacity:0.16, blending:THREE.AdditiveBlending, depthWrite:false, toneMapped:false});
   // ---- draped demon wing in local XY (x = outward, y = up). The leading-edge arm juts UP-OUT to
   //      an elbow above the shoulder; the membrane then drapes DOWN with claw-tipped fingers. ----
   const E=[0.62,0.5];                          // elbow apex (just above the shoulder)
@@ -841,8 +842,11 @@ function addWings(g, look){
     // thin finger spars fanning from the elbow toward each claw, a fel vein on each, claws at the tips
     for(const [tx,ty] of tips){ seg(E[0],E[1], tx,ty, 0.022);
       const vx=tx-E[0], vy=ty-E[1], vlen=Math.hypot(vx,vy);
+      const vrot=Math.atan2(vy,vx)-Math.PI/2;
       const vein=new THREE.Mesh(new THREE.BoxGeometry(0.013,vlen*0.88,0.01), veinMat);
-      vein.position.set((E[0]+tx)/2,(E[1]+ty)/2,0.06); vein.rotation.z=Math.atan2(vy,vx)-Math.PI/2; W.add(vein);
+      vein.position.set((E[0]+tx)/2,(E[1]+ty)/2,0.06); vein.rotation.z=vrot; W.add(vein);
+      const vhalo=new THREE.Mesh(new THREE.PlaneGeometry(0.06,vlen*0.9), veinHalo);
+      vhalo.position.set((E[0]+tx)/2,(E[1]+ty)/2,0.055); vhalo.rotation.z=vrot; W.add(vhalo);
       const cl=part(new THREE.ConeGeometry(0.042,0.14,5), clawC);
       cl.position.set(tx,ty,0.02); cl.rotation.z=Math.atan2(ty-E[1],tx-E[0])-Math.PI/2; W.add(cl); }
   }
@@ -980,10 +984,18 @@ function addHeroExtras(g, hero, look){
     // single diagonal baldric (weapon strap) — asymmetric, never reads as a bra
     const bald=part(new THREE.BoxGeometry(0.08,0.8,0.05), leather); bald.position.set(0,1.05,0.22); bald.rotation.z=0.44; g.add(bald);
     const buckle=part(new THREE.BoxGeometry(0.13,0.1,0.05), 0x6b5436); buckle.position.set(0,0.78,0.21); g.add(buckle);
-    // glowing fel tattoos following the abs/shoulders (the iconic Illidan markings)
+    // glowing fel tattoos (iconic Illidan markings): bright thin core + soft additive bloom
+    // halo so the runes read as EMITTING fel light, not flat painted bars
     const felMat=new THREE.MeshBasicMaterial({color:fel, toneMapped:false});
-    for(const s of [-1,1]){ const t=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.4,0.03), felMat); t.position.set(s*0.06,0.96,0.23); g.add(t);
-      const sh=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.24,0.03), felMat); sh.position.set(s*0.2,1.16,0.16); sh.rotation.z=s*0.5; g.add(sh); }
+    const haloMat=new THREE.MeshBasicMaterial({color:fel, transparent:true, opacity:0.2, blending:THREE.AdditiveBlending, depthWrite:false, toneMapped:false});
+    const felLine=(w,h,x,y,z,rz)=>{ const core=new THREE.Mesh(new THREE.BoxGeometry(w,h,0.018), felMat); core.position.set(x,y,z); if(rz)core.rotation.z=rz; g.add(core);
+      const halo=new THREE.Mesh(new THREE.PlaneGeometry(Math.max(w*6,0.07), h*1.15), haloMat); halo.position.set(x,y,z-0.004); if(rz)halo.rotation.z=rz; g.add(halo); };
+    felLine(0.018,0.44, 0,0.95,0.21,0);                 // central abdominal line
+    for(const s of [-1,1]){
+      felLine(0.016,0.3,  s*0.12,1.15,0.18, s*0.5);    // upper-chest fan sweeping off the sternum
+      felLine(0.016,0.24, s*0.11,0.9, 0.19, s*-0.34);  // lower-ab fan
+      felLine(0.014,0.2,  s*0.22,1.16,0.12, s*0.5);    // shoulder accent
+    }
     // hanging loincloth in front + side tassets so the hips aren't a plain slab
     const loin=part(new THREE.BoxGeometry(0.26,0.5,0.06), leather); loin.position.set(0,0.5,0.26); loin.rotation.x=0.08; g.add(loin);
     const loinTip=part(new THREE.ConeGeometry(0.13,0.22,4), leather); loinTip.position.set(0,0.24,0.255); loinTip.rotation.set(Math.PI,Math.PI/4,0); g.add(loinTip);
