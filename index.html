@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.60';
+const BUILD = 'v0.61';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -739,7 +739,7 @@ const HERO_LOOK = {
   jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, glow:false, feat:['ponytail'],                  bulk:0.94, hair:0xf3eccf, robe:true,  weaponStyle:'froststaff', robeCol:0x6fa8ff, bodyCol:0x5f93e0, armor:0xbfe3ff, trim:0xeaf4ff, capeCol:0x3a63b0},
   arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, capeTatter:0.9, torsoProfile:[[0.04,-0.46],[0.23,-0.4],[0.29,-0.26],[0.34,-0.08],[0.36,0.1],[0.35,0.24],[0.3,0.36],[0.2,0.44],[0.1,0.48],[0.04,0.5]], torsoDepth:0.6, pauldronScale:1.4, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x1e2630, armor:0x7e90ac, trim:0xaebed8, capeCol:0x10141d, legCol:0x1b232e},
   sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, glow:true,  feat:['hood','elfears'],            bulk:0.95, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a, bodyCol:0x2a2f4a, armor:0x46406a, trim:0x8a6fc0, capeCol:0x191d30, legCol:0x20243a},
-  illidan:  {skin:0xb084e2, eyes:0x7dff44, glow:true,  feat:['horns','blindfold','wings','longhair'], bulk:1.03, gscale:[0.94,1.22,0.92], noEmblem:true, noPauldron:true, noCape:true, bareChest:true, bareArms:true, dualWield:true, torsoProfile:[[0.04,-0.5],[0.2,-0.46],[0.24,-0.34],[0.26,-0.18],[0.30,0.0],[0.35,0.18],[0.35,0.3],[0.29,0.4],[0.16,0.48],[0.05,0.52]], torsoDepth:0.66, hornScale:2.2, wingScale:1.15, hair:0x140c24, weaponStyle:'warglaive', bodyCol:0xab7ad4, armor:0x5a3f86, trim:0xc79ff0, legCol:0x4a3470},
+  illidan:  {skin:0xb084e2, eyes:0x7dff44, glow:true,  feat:['horns','blindfold','wings','longhair'], bulk:1.03, gscale:[0.94,1.22,0.92], noEmblem:true, noPauldron:true, noCape:true, bareChest:true, bareArms:true, dualWield:true, torsoProfile:[[0.04,-0.5],[0.2,-0.46],[0.24,-0.34],[0.27,-0.18],[0.31,0.0],[0.37,0.16],[0.40,0.28],[0.37,0.36],[0.26,0.44],[0.13,0.5],[0.05,0.54]], torsoDepth:0.66, hornScale:2.2, hornCol:0x5a5048, wingScale:1.15, hair:0x342d42, weaponStyle:'warglaive', bodyCol:0xab7ad4, armor:0x5a3f86, trim:0xc79ff0, legCol:0x4a3470},
   uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'], metalBody:true, bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
   grommash: {skin:0x6aa05a, eyes:0x3a2a14, glow:false, feat:['tusks','topknot','warpaint'],bulk:1.20, hair:0x140d06, weaponStyle:'gorehowl', bodyCol:0x5a3320, armor:0x7a4a30, trim:0xb98a4a, capeCol:0x6a2018, legCol:0x2e2014},
   malfurion:{skin:0x9f86c9, eyes:0xffcf66, glow:true,  feat:['antlers','elfears','beard'], bulk:1.0,  hair:0x2f6f4b, robe:true,  weaponStyle:'naturestaff', robeCol:0x2f8f5b, bodyCol:0x2f8f5b, armor:0x6b4a2a, trim:0x8be07a, capeCol:0x245a3a, legCol:0x244a30},
@@ -763,13 +763,13 @@ function addElfEars(g,skin){
   addCone(g,0.07,0.42,skin,-0.34,1.68,-0.02,[0,0, 1.15]);
 }
 function addHorns(g, look){
-  // large dark horns curving up from the brow then sweeping back over the head — Illidan's silhouette
-  const c=0x322738, hs=(look&&look.hornScale)||1;
+  // large horns curving up from the brow then sweeping back past the head — Illidan's signature silhouette
+  const c=(look&&look.hornCol)||0x554c44, hs=(look&&look.hornScale)||1;
   for(const s of [-1,1]){
-    addCone(g,0.085*hs,0.36*hs,c, s*0.2,1.84,0.06,[-0.15,0, s*0.42]);  // base rising up-out from brow
-    addCone(g,0.07*hs,0.40*hs,c,  s*0.33,2.06,0.0,[-0.5,0, s*0.62]);   // mid, leaning back
-    addCone(g,0.05*hs,0.40*hs,c,  s*0.42,2.26,-0.22,[-0.95,0, s*0.72]);// upper, sweeping back
-    addCone(g,0.03*hs,0.3*hs,c,   s*0.44,2.34,-0.5,[-1.35,0, s*0.74]); // tip, pointing back
+    addCone(g,0.09*hs,0.4*hs,c,  s*0.2,1.84,0.06,[-0.12,0, s*0.42]);  // base rising up-out from brow
+    addCone(g,0.072*hs,0.46*hs,c, s*0.35,2.08,-0.02,[-0.5,0, s*0.64]); // mid, leaning back
+    addCone(g,0.052*hs,0.52*hs,c, s*0.46,2.3,-0.26,[-1.0,0, s*0.74]);  // upper, sweeping back hard
+    addCone(g,0.032*hs,0.42*hs,c, s*0.5,2.42,-0.62,[-1.5,0, s*0.76]);  // tip, raked back past the head
   }
 }
 function addLongHair(g, hair){
@@ -808,12 +808,12 @@ function addBlindfold(g,glow){
 }
 function addWings(g, look){
   const ws=(look&&look.wingScale)||1;
-  // leathery membrane (visible mid-tone so it reads from any angle), dark bone ribs + claw tips
-  const mem=new THREE.MeshToonMaterial({color:0x614a86, gradientMap:GRAD, side:THREE.DoubleSide});
-  const memBack=new THREE.MeshToonMaterial({color:0x3c2c56, gradientMap:GRAD, side:THREE.DoubleSide});
-  const boneC=0x352841, clawC=0xa99db8;
-  const veinMat=new THREE.MeshBasicMaterial({color:0x2f6b1c, toneMapped:false});
-  const veinHalo=new THREE.MeshBasicMaterial({color:0x46ff1e, transparent:true, opacity:0.16, blending:THREE.AdditiveBlending, depthWrite:false, toneMapped:false});
+  // leathery membrane (lifted mid-tone so it reads against the dark scene), bone ribs + claw tips
+  const mem=new THREE.MeshToonMaterial({color:0x7d62a4, gradientMap:GRAD, side:THREE.DoubleSide});
+  const memBack=new THREE.MeshToonMaterial({color:0x57426f, gradientMap:GRAD, side:THREE.DoubleSide});
+  const boneC=0x4a3d5a, clawC=0xb8aec6;
+  const veinMat=new THREE.MeshBasicMaterial({color:0x2a5e1a, toneMapped:false});
+  const veinHalo=new THREE.MeshBasicMaterial({color:0x46ff1e, transparent:true, opacity:0.1, blending:THREE.AdditiveBlending, depthWrite:false, toneMapped:false});
   // ---- draped demon wing in local XY (x = outward, y = up). The leading-edge arm juts UP-OUT to
   //      an elbow above the shoulder; the membrane then drapes DOWN with claw-tipped fingers. ----
   const E=[0.62,0.5];                          // elbow apex (just above the shoulder)
@@ -830,7 +830,7 @@ function addWings(g, look){
   for(const s of [-1,1]){
     // rooted at the shoulder blade; tilt so the wing splays out and slightly back for depth
     const W=new THREE.Group(); W.position.set(s*0.26,1.56,-0.16);
-    W.rotation.set(0.05, s*0.42, s*0.05); W.scale.set(s*ws, ws, ws); g.add(W);
+    W.rotation.set(0.05, s*0.28, s*0.05); W.scale.set(s*ws, ws, ws); g.add(W);
     const m=new THREE.Mesh(memGeo, mem); m.castShadow=true; W.add(m);
     // darker under-layer offset back -> gives the membrane visible thickness/volume
     const mb=new THREE.Mesh(memGeo, memBack); mb.position.z=-0.05; W.add(mb);
@@ -968,12 +968,18 @@ function addHelm(g, style, look){
 function addHeroExtras(g, hero, look){
   const bulk=look.bulk;
   if(hero.id==='illidan'){
-    const leather=0x2a1c30, fel=0x46ff1e, skinD=mix(look.skin,0x000000,0.42), skinH=mix(look.skin,0xffffff,0.12);
-    // --- muscular bare chest: domed pecs + engraved grooves on the bare torso (NO bra straps) ---
-    // pecs as broad, FLAT angular slabs (low profile, wide) — reads as a male chest, never round cups
-    // (seated on the narrower lathe torso; z values pulled in to match its oval surface)
-    for(const s of [-1,1]){ const pec=part(new THREE.BoxGeometry(0.25,0.16,0.06), look.bodyCol);
-      pec.position.set(s*0.13,1.22,0.18); pec.rotation.z=s*-0.05; g.add(pec); }
+    const leather=0x3a2840, fel=0x46ff1e, skinD=mix(look.skin,0x000000,0.42), skinH=mix(look.skin,0xffffff,0.12);
+    // --- trapezius + deltoid bridge: span neck->shoulder so the arms never look detached, and
+    //     give the upper body real muscle in the SILHOUETTE (not flat decals) ---
+    for(const s of [-1,1]){
+      const trap=part(new THREE.SphereGeometry(0.17,12,10), look.bodyCol); trap.position.set(s*0.2,1.36,0); trap.scale.set(1.5,0.95,1.1); g.add(trap);
+    }
+    const upBack=part(new THREE.SphereGeometry(0.26,12,10), look.bodyCol); upBack.position.set(0,1.28,-0.14); upBack.scale.set(1.25,1.15,0.7); g.add(upBack);
+    // --- muscular bare chest: ONE broad pectoral mass (wide, flat-fronted, with a hard lower shelf)
+    //     split down the middle by the sternum groove -> reads as male pecs, never two round breasts ---
+    const chestM=part(new THREE.SphereGeometry(0.27,14,11), look.bodyCol); chestM.position.set(0,1.2,0.12); chestM.scale.set(1.35,0.66,0.52); g.add(chestM);
+    // squared-off lower shelf for each pec (the muscle overhang)
+    for(const s of [-1,1]){ const shelf=part(new THREE.BoxGeometry(0.24,0.07,0.14), look.bodyCol); shelf.position.set(s*0.14,1.11,0.16); shelf.rotation.z=s*0.08; g.add(shelf); }
     // engraved muscle lines (thin dark strips just proud of the surface)
     const groove=(w,h,x,y,z,rz)=>{ const m=part(new THREE.BoxGeometry(w,h,0.02), skinD); m.position.set(x,y,z); if(rz)m.rotation.z=rz; g.add(m); };
     groove(0.022,0.2, 0,1.19,0.24,0);            // sternum between the pecs
@@ -981,9 +987,9 @@ function addHeroExtras(g, hero, look){
     // abdominals as engraved lines (central seam + three rungs) — defined, not robotic blocks
     groove(0.02,0.32, 0,0.92,0.2,0);
     for(let r=0;r<3;r++) groove(0.17,0.02, 0,1.0-r*0.12,0.2,0);
-    // single diagonal baldric (weapon strap) — asymmetric, never reads as a bra
-    const bald=part(new THREE.BoxGeometry(0.08,0.8,0.05), leather); bald.position.set(0,1.05,0.22); bald.rotation.z=0.44; g.add(bald);
-    const buckle=part(new THREE.BoxGeometry(0.13,0.1,0.05), 0x6b5436); buckle.position.set(0,0.78,0.21); g.add(buckle);
+    // thin glaive-harness strap over one shoulder (subtle, lets the fel tattoos own the chest)
+    const bald=part(new THREE.BoxGeometry(0.055,0.82,0.04), leather); bald.position.set(0,1.06,0.2); bald.rotation.z=0.34; g.add(bald);
+    const buckle=part(new THREE.BoxGeometry(0.12,0.09,0.05), 0x7a6240); buckle.position.set(0,0.78,0.2); g.add(buckle);
     // glowing fel tattoos (iconic Illidan markings): bright thin core + soft additive bloom
     // halo so the runes read as EMITTING fel light, not flat painted bars
     const felMat=new THREE.MeshBasicMaterial({color:fel, toneMapped:false});
@@ -996,10 +1002,13 @@ function addHeroExtras(g, hero, look){
       felLine(0.016,0.24, s*0.11,0.9, 0.19, s*-0.34);  // lower-ab fan
       felLine(0.014,0.2,  s*0.22,1.16,0.12, s*0.5);    // shoulder accent
     }
-    // hanging loincloth in front + side tassets so the hips aren't a plain slab
-    const loin=part(new THREE.BoxGeometry(0.26,0.5,0.06), leather); loin.position.set(0,0.5,0.26); loin.rotation.x=0.08; g.add(loin);
-    const loinTip=part(new THREE.ConeGeometry(0.13,0.22,4), leather); loinTip.position.set(0,0.24,0.255); loinTip.rotation.set(Math.PI,Math.PI/4,0); g.add(loinTip);
-    for(const s of [-1,1]){ const tass=part(new THREE.BoxGeometry(0.2,0.42,0.08), leather); tass.position.set(s*0.27,0.5,0.12); tass.rotation.z=s*-0.06; g.add(tass); }
+    // hanging loincloth: a tapered cloth panel that narrows to a point (drapes, not a plank) + fel trim
+    const lc=new THREE.Shape(); lc.moveTo(-0.16,0.26); lc.lineTo(0.16,0.26); lc.lineTo(0.11,-0.06); lc.lineTo(0.0,-0.34); lc.lineTo(-0.11,-0.06); lc.closePath();
+    const loin=new THREE.Mesh(new THREE.ShapeGeometry(lc), new THREE.MeshToonMaterial({color:0x3a2840, gradientMap:GRAD, side:THREE.DoubleSide}));
+    loin.castShadow=true; loin.position.set(0,0.5,0.25); loin.rotation.x=0.12; g.add(loin);
+    const loinTrim=new THREE.Mesh(new THREE.TorusGeometry(0.14,0.012,4,3,Math.PI), new THREE.MeshBasicMaterial({color:fel, transparent:true, opacity:0.6, toneMapped:false}));
+    loinTrim.position.set(0,0.4,0.26); g.add(loinTrim);
+    for(const s of [-1,1]){ const tass=part(new THREE.BoxGeometry(0.18,0.44,0.07), leather); tass.position.set(s*0.27,0.5,0.1); tass.rotation.z=s*-0.06; g.add(tass); }
     // clawed demon feet — talons splaying forward from each foot
     const talon=mix(look.skin,0xffffff,0.3);
     for(const s of [-1,1]) for(let i=-1;i<=1;i++){ const cl=part(new THREE.ConeGeometry(0.038,0.17,4), talon);
@@ -1189,16 +1198,17 @@ function buildModel(hero, team){
 
   // ---- arms (upper arm + elbow cop + armored forearm + gauntlet fist) ----
   function arm(side){
-    const grp=new THREE.Group(); grp.position.set(side*(look.bareArms?0.51:0.49)*bulk,1.32,0);
+    const grp=new THREE.Group(); grp.position.set(side*(look.bareArms?0.40:0.49)*bulk,1.32,0);
     if(look.bareArms){
-      // bare arm as a clearly ELONGATED cylindrical limb (prevents the round-mound/"butt" read
-      // from behind): small deltoid cap + long tapered upper arm + fel tattoo wrapping front & back
-      const delt=part(new THREE.SphereGeometry(0.12,12,10), bodyCol); delt.position.set(side*-0.02,-0.02,0); delt.scale.set(0.95,0.72,0.95); grp.add(delt);
-      const up=part(new THREE.CapsuleGeometry(0.092,0.4,6,12), bodyCol); up.position.y=-0.24; up.scale.set(1,1,0.95); grp.add(up);
-      const bicep=part(new THREE.SphereGeometry(0.062,10,9), bodyCol); bicep.position.set(0,-0.18,0.07); bicep.scale.set(0.8,1.6,0.55); grp.add(bicep);
+      // bare muscular arm. Deltoid is an EGG (tall, not a ball joint) overlapping the torso so
+      // there's no air gap; a trapezius bridge spans neck->shoulder; bicep+tricep give silhouette
+      const delt=part(new THREE.SphereGeometry(0.15,12,10), bodyCol); delt.position.set(side*0.0,0.0,0); delt.scale.set(1.0,1.3,1.0); grp.add(delt);
+      const up=part(new THREE.CapsuleGeometry(0.1,0.34,6,12), bodyCol); up.position.y=-0.26; up.scale.set(1,1,0.95); grp.add(up);
+      const bicep=part(new THREE.SphereGeometry(0.085,10,9), bodyCol); bicep.position.set(0,-0.2,0.06); bicep.scale.set(0.9,1.5,0.7); grp.add(bicep);
+      const tricep=part(new THREE.SphereGeometry(0.08,10,9), bodyCol); tricep.position.set(0,-0.22,-0.07); tricep.scale.set(0.9,1.5,0.65); grp.add(tricep);
       const tMat=new THREE.MeshBasicMaterial({color:look.eyes, toneMapped:false});
-      const tat=new THREE.Mesh(new THREE.BoxGeometry(0.014,0.3,0.03), tMat); tat.position.set(side*0.08,-0.22,0.04); tat.rotation.z=side*0.08; grp.add(tat);
-      const tatB=new THREE.Mesh(new THREE.BoxGeometry(0.014,0.26,0.03), tMat); tatB.position.set(side*0.07,-0.22,-0.06); tatB.rotation.z=side*0.08; grp.add(tatB);
+      const tat=new THREE.Mesh(new THREE.BoxGeometry(0.014,0.32,0.03), tMat); tat.position.set(side*0.085,-0.24,0.05); tat.rotation.z=side*0.08; grp.add(tat);
+      const tatB=new THREE.Mesh(new THREE.BoxGeometry(0.014,0.28,0.03), tMat); tatB.position.set(side*0.075,-0.24,-0.07); tatB.rotation.z=side*0.08; grp.add(tatB);
     }else{
       const up=bMat(new THREE.CapsuleGeometry(0.1,0.24,5,12), bodyCol); up.position.y=-0.16; grp.add(up);
     }
