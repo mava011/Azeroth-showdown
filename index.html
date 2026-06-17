@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.59';
+const BUILD = 'v0.60';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1189,15 +1189,16 @@ function buildModel(hero, team){
 
   // ---- arms (upper arm + elbow cop + armored forearm + gauntlet fist) ----
   function arm(side){
-    const grp=new THREE.Group(); grp.position.set(side*0.49*bulk,1.32,0);
+    const grp=new THREE.Group(); grp.position.set(side*(look.bareArms?0.51:0.49)*bulk,1.32,0);
     if(look.bareArms){
-      // bare muscular arm as ONE clean tapered limb (no stacked balls): small flat deltoid
-      // cap + an elongated capsule, with only a subtle FORWARD bicep swell
-      const delt=part(new THREE.SphereGeometry(0.125,12,10), bodyCol); delt.position.set(side*0.02,-0.03,0); delt.scale.set(1.0,0.75,1.0); grp.add(delt);
-      const up=part(new THREE.CapsuleGeometry(0.1,0.32,6,12), bodyCol); up.position.y=-0.22; up.scale.set(1,1,0.92); grp.add(up);
-      const bicep=part(new THREE.SphereGeometry(0.07,10,9), bodyCol); bicep.position.set(0,-0.16,0.07); bicep.scale.set(0.8,1.5,0.6); grp.add(bicep);
-      const tat=new THREE.Mesh(new THREE.BoxGeometry(0.016,0.26,0.03), new THREE.MeshBasicMaterial({color:look.eyes, toneMapped:false}));
-      tat.position.set(side*0.085,-0.2,0.05); tat.rotation.z=side*0.1; grp.add(tat);
+      // bare arm as a clearly ELONGATED cylindrical limb (prevents the round-mound/"butt" read
+      // from behind): small deltoid cap + long tapered upper arm + fel tattoo wrapping front & back
+      const delt=part(new THREE.SphereGeometry(0.12,12,10), bodyCol); delt.position.set(side*-0.02,-0.02,0); delt.scale.set(0.95,0.72,0.95); grp.add(delt);
+      const up=part(new THREE.CapsuleGeometry(0.092,0.4,6,12), bodyCol); up.position.y=-0.24; up.scale.set(1,1,0.95); grp.add(up);
+      const bicep=part(new THREE.SphereGeometry(0.062,10,9), bodyCol); bicep.position.set(0,-0.18,0.07); bicep.scale.set(0.8,1.6,0.55); grp.add(bicep);
+      const tMat=new THREE.MeshBasicMaterial({color:look.eyes, toneMapped:false});
+      const tat=new THREE.Mesh(new THREE.BoxGeometry(0.014,0.3,0.03), tMat); tat.position.set(side*0.08,-0.22,0.04); tat.rotation.z=side*0.08; grp.add(tat);
+      const tatB=new THREE.Mesh(new THREE.BoxGeometry(0.014,0.26,0.03), tMat); tatB.position.set(side*0.07,-0.22,-0.06); tatB.rotation.z=side*0.08; grp.add(tatB);
     }else{
       const up=bMat(new THREE.CapsuleGeometry(0.1,0.24,5,12), bodyCol); up.position.y=-0.16; grp.add(up);
     }
