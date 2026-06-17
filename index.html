@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.54';
+const BUILD = 'v0.55';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -794,13 +794,17 @@ function addBlindfold(g,glow){
   const band=part(new THREE.CylinderGeometry(0.41,0.41,0.18,12), 0x15101e); band.rotation.x=Math.PI/2; band.position.set(0,1.71,0); band.scale.set(1,1,0.95); g.add(band);
   const knot=part(new THREE.BoxGeometry(0.09,0.11,0.11), 0x15101e); knot.position.set(0,1.67,-0.41); g.add(knot);
   const glowMat=new THREE.MeshBasicMaterial({color:glow, toneMapped:false});
+  const bloomMat=new THREE.MeshBasicMaterial({color:glow, transparent:true, opacity:0.32, blending:THREE.AdditiveBlending, depthWrite:false, toneMapped:false});
   for(const s of [-1,1]){ const tail=part(new THREE.ConeGeometry(0.045,0.46,4), 0x15101e); tail.position.set(s*0.06,1.5,-0.44); tail.rotation.set(0.3,0,s*0.22); g.add(tail);
-    // angled fel eye — angry slanted glow burning through the cloth
-    const eye=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.06,0.02), glowMat);
-    eye.position.set(s*0.14,1.7,0.4); eye.rotation.z=-s*0.34; g.add(eye);
-    // soft fel bloom around each eye
-    const bloom=new THREE.Mesh(new THREE.PlaneGeometry(0.3,0.16), new THREE.MeshBasicMaterial({color:glow, transparent:true, opacity:0.28, blending:THREE.AdditiveBlending, depthWrite:false, toneMapped:false}));
-    bloom.position.set(s*0.14,1.7,0.39); g.add(bloom); }
+    // fierce almond fel eye blazing through the cloth (slanted down-inward = angry)
+    const eye=new THREE.Mesh(new THREE.SphereGeometry(0.072,12,9), glowMat);
+    eye.position.set(s*0.135,1.7,0.39); eye.scale.set(1.7,0.62,0.42); eye.rotation.z=-s*0.36; g.add(eye);
+    // bright hot core at the inner corner
+    const core=new THREE.Mesh(new THREE.SphereGeometry(0.03,8,6), glowMat); core.position.set(s*0.1,1.69,0.41); g.add(core);
+    // dark brow ridge angled down-in over the eye — menacing scowl
+    const brow=part(new THREE.BoxGeometry(0.21,0.045,0.05), 0x140d1c); brow.position.set(s*0.14,1.78,0.39); brow.rotation.z=-s*0.4; g.add(brow);
+    // soft fel bloom halo
+    const bloom=new THREE.Mesh(new THREE.PlaneGeometry(0.3,0.17), bloomMat); bloom.position.set(s*0.135,1.7,0.385); g.add(bloom); }
 }
 function addWings(g, look){
   const ws=(look&&look.wingScale)||1;
@@ -1282,26 +1286,34 @@ function buildWeapon(type, accent, style){
     if(glowC){ const str=new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.006,0.62,4), glowMat(glowC)); str.position.y=0.2; w.add(str); }
   }else if(type==='glaive'){
     const wgl = style==='warglaive';
-    const blCol = wgl?0x1c2614:accent, glow = wgl?0x53ff2b:accent;
-    const gMat=()=> new THREE.MeshBasicMaterial({color:glow, toneMapped:false});
-    // central grip the fist wraps + a fel-cored guard hub
-    const grip=part(new THREE.CylinderGeometry(0.05,0.055,0.36,6), 0x120d08); grip.position.y=0.0; w.add(grip);
-    const wrap=part(new THREE.TorusGeometry(0.055,0.018,6,10), 0x2a1c12); wrap.rotation.x=Math.PI/2; wrap.position.y=0.06; w.add(wrap);
-    const hub=part(new THREE.BoxGeometry(0.14,0.17,0.09), blCol); hub.position.y=0.18; w.add(hub);
-    const felHub=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.11,0.11), gMat()); felHub.position.y=0.18; w.add(felHub);
-    // a curved fel blade: dark crescent body + bright fel cutting edge + sharp tip
-    function blade(r,arc,y,rot,tube,scaleZ){
-      const body=part(new THREE.TorusGeometry(r,tube,8,22,arc), blCol);
-      body.position.set(0,y,0); body.rotation.z=rot; body.scale.set(1,1,scaleZ); w.add(body);
-      const edge=new THREE.Mesh(new THREE.TorusGeometry(r+tube*0.6,tube*0.4,6,22,arc), gMat());
-      edge.position.set(0,y,0); edge.rotation.z=rot; edge.scale.set(1,1,scaleZ); w.add(edge);
-      const ex=Math.cos(rot+arc)*r, ey=y+Math.sin(rot+arc)*r;
-      const tip=part(new THREE.ConeGeometry(tube*1.7,0.22,5), blCol); tip.position.set(ex,ey,0); tip.rotation.z=rot+arc-Math.PI/2; w.add(tip);
-      const tipE=new THREE.Mesh(new THREE.ConeGeometry(tube*0.7,0.22,5), gMat()); tipE.position.set(ex,ey,0); tipE.rotation.z=rot+arc-Math.PI/2; w.add(tipE);
+    const blCol = wgl?0x18220f:mix(accent,0x000000,0.35), glow = wgl?0x5bff33:accent;
+    const gMat=new THREE.MeshBasicMaterial({color:glow, toneMapped:false});
+    // central grip the fist wraps + a fel-cored guard hub (both blades emanate from here)
+    const grip=part(new THREE.CylinderGeometry(0.05,0.055,0.36,6), 0x120d08); w.add(grip);
+    const wrap=part(new THREE.TorusGeometry(0.058,0.018,6,10), 0x2a1c12); wrap.rotation.x=Math.PI/2; wrap.position.y=0.06; w.add(wrap);
+    const hub=part(new THREE.BoxGeometry(0.14,0.18,0.08), blCol); hub.position.y=0.2; w.add(hub);
+    const felHub=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.11,0.1), gMat); felHub.position.y=0.2; w.add(felHub);
+    // solid tapered crescent blade (ShapeGeometry) whose BASE meets the hub — no floating parts
+    function glaiveBlade(len,y,rot){
+      const grp=new THREE.Group(); grp.position.set(0,y,0); grp.rotation.z=rot; w.add(grp);
+      const S=new THREE.Shape();
+      S.moveTo(0,0);
+      S.quadraticCurveTo(0.30*len,0.18, 0.40*len,0.86*len);      // convex outer cutting edge -> tip
+      S.lineTo(0.30*len,0.97*len);                                // sharp tip
+      S.quadraticCurveTo(0.26*len,0.46*len, 0.13,0.07);          // concave inner edge back to base
+      S.closePath();
+      const body=new THREE.Mesh(new THREE.ShapeGeometry(S,14), new THREE.MeshToonMaterial({color:blCol, gradientMap:GRAD, side:THREE.DoubleSide}));
+      body.castShadow=true; grp.add(body);
+      // bright fel energy running up the cutting edge
+      const E=new THREE.Shape();
+      E.moveTo(0.03,0.05); E.quadraticCurveTo(0.28*len,0.2, 0.36*len,0.84*len);
+      E.lineTo(0.27*len,0.9*len); E.quadraticCurveTo(0.24*len,0.46*len, 0.1,0.09); E.closePath();
+      const edge=new THREE.Mesh(new THREE.ShapeGeometry(E,12), gMat); edge.position.z=0.015; grp.add(edge);
+      const edgeB=edge.clone(); edgeB.position.z=-0.015; grp.add(edgeB);
     }
-    // the Azzinoth double crescent: long main blade sweeping up-forward, shorter blade down-back
-    blade(0.46, Math.PI*0.80, 0.30, -0.42, 0.05, 0.42);
-    blade(0.32, Math.PI*0.66, -0.14, Math.PI-0.18, 0.042, 0.42);
+    // Azzinoth twin crescents: long main blade up-forward, shorter blade swept down-back
+    glaiveBlade(1.05, 0.24, -0.34);
+    glaiveBlade(0.66, 0.16, -2.55);
   }
   w.rotation.x=0.25;
   return w;
