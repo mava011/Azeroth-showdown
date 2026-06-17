@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.47';
+const BUILD = 'v0.48';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1197,11 +1197,17 @@ function buildWeapon(type, accent, style){
     if(glowC){ const str=new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.006,0.62,4), glowMat(glowC)); str.position.y=0.2; w.add(str); }
   }else if(type==='glaive'){
     const wgl = style==='warglaive';
-    const handle=part(new THREE.CylinderGeometry(0.04,0.04,0.55,6), 0x2b2f45); handle.position.y=0.12; w.add(handle);
-    const blCol = wgl?0x39ff14:accent;
-    const b1=part(new THREE.BoxGeometry(0.06,0.4,0.025), blCol); b1.position.set(0.12,0.46,0); b1.rotation.z=0.55; w.add(b1);
-    const b2=part(new THREE.BoxGeometry(0.06,0.4,0.025), blCol); b2.position.set(-0.12,0.46,0); b2.rotation.z=-0.55; w.add(b2);
-    if(wgl){ const cb=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.4,0.04), glowMat(0x9bff7a)); cb.position.set(0.12,0.46,0); cb.rotation.z=0.55; w.add(cb); }
+    const blCol = wgl?0x26331c:accent, glow = wgl?0x46ff1e:accent;
+    // central grip + hub
+    const grip=part(new THREE.CylinderGeometry(0.045,0.05,0.3,6), 0x140f0a); grip.position.y=0.02; w.add(grip);
+    const hub=part(new THREE.BoxGeometry(0.11,0.18,0.07), blCol); hub.position.y=0.22; w.add(hub);
+    // twin curved crescent blades (warglaives of Azzinoth) — one up-forward, one down-back
+    function crescent(r,tube,arc,y,rot){
+      const b=part(new THREE.TorusGeometry(r,tube,6,16,arc), blCol); b.position.set(0,y,0); b.rotation.set(0,0,rot); w.add(b);
+      const e=new THREE.Mesh(new THREE.TorusGeometry(r,tube*0.45,6,16,arc), glowMat(glow)); e.position.set(0,y,0.02); e.rotation.set(0,0,rot); w.add(e);
+    }
+    crescent(0.28,0.035,Math.PI*0.85, 0.42, -0.5);
+    crescent(0.2,0.03,Math.PI*0.7, 0.02, Math.PI-0.4);
   }
   w.rotation.x=0.25;
   return w;
