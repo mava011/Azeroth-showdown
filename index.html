@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.30';
+const BUILD = 'v0.31';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -917,25 +917,26 @@ function addHeroExtras(g, hero, look){
       const j=part(new THREE.BoxGeometry(r*1.3,r*0.5,r*0.7), bone); j.position.set(x,y-r*0.95,z+r*0.1); g.add(j);
       for(const sx of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(r*0.34,6,5), new THREE.MeshBasicMaterial({color:socket})); e.position.set(x+sx*r*0.4,y+r*0.1,z+r*0.7); g.add(e); }
     }
-    // forehead skull on the helm + big skull seated on top of the left pauldron
+    // forehead skull on the helm + big skull on the OUTER FACE of the left pauldron
     skullAt(0,1.86,0.34,0.07);
-    skullAt(-0.5*bulk,1.5,0.06,0.13);
+    skullAt(-0.58*bulk,1.4,0.18,0.115);
     // tattered fur-trimmed loincloth hanging from the belt
     const loin=new THREE.Mesh(new THREE.PlaneGeometry(0.36,0.52),
       new THREE.MeshToonMaterial({color:0x161922, gradientMap:GRAD, side:THREE.DoubleSide}));
     loin.position.set(0,0.46,0.33); loin.rotation.x=-0.08; g.add(loin);
     const furw=part(new THREE.TorusGeometry(0.3,0.07,8,18,Math.PI), 0x4a4f5a); furw.rotation.x=Math.PI/2; furw.rotation.z=Math.PI; furw.position.set(0,0.72,0.06); g.add(furw);
-    // layered breastplate: pectoral plates + sternum ridge (lighter steel for contrast)
-    const steel=0x6e7c92, lt=0x9fb0c8;
-    for(const s of [-1,1]){ const pec=metalPart(new THREE.SphereGeometry(0.16,12,10), steel); pec.position.set(s*0.15,1.2,0.27); pec.scale.set(1.1,0.95,0.62); g.add(pec); }
-    const stern=metalPart(new THREE.BoxGeometry(0.06,0.42,0.1), lt); stern.position.set(0,1.12,0.37); g.add(stern);
+    // single angular breastplate (one plate, not two pecs) + V-neck + sternum
+    const steel=0x6e7c92, lt=0xaebbd0;
+    const cp=metalPart(new THREE.CylinderGeometry(0.33,0.27,0.42,8), steel); cp.rotation.x=Math.PI/2; cp.position.set(0,1.18,0.24); cp.scale.set(1.06,1,0.34); g.add(cp);
+    for(const s of [-1,1]){ const v=metalPart(new THREE.BoxGeometry(0.045,0.3,0.05), lt); v.position.set(s*0.11,1.26,0.4); v.rotation.z=s*0.42; g.add(v); }
+    const stern=metalPart(new THREE.BoxGeometry(0.05,0.3,0.06), lt); stern.position.set(0,1.1,0.41); g.add(stern);
     // segmented ab / fauld plates
     for(let i=0;i<3;i++){ const ab=metalPart(new THREE.BoxGeometry(0.36-i*0.04,0.09,0.12), steel); ab.position.set(0,0.98-i*0.11,0.33); ab.rotation.x=-0.12; g.add(ab); }
-    // tattered cape hem (ragged dark flaps below the main cape)
-    const hemMat=new THREE.MeshToonMaterial({color:0x0e1016, gradientMap:GRAD, side:THREE.DoubleSide});
-    for(let i=0;i<6;i++){ const x=-0.3+i*0.12, len=0.55-Math.abs(i-2.5)*0.05+(i%2?0.12:0);
-      const flap=new THREE.Mesh(new THREE.PlaneGeometry(0.13,len), hemMat);
-      flap.position.set(x, 0.22-len*0.1, -0.36-Math.abs(x)*0.04); flap.rotation.x=0.12; g.add(flap); }
+    // tattered cape hem — flaps start AT the bottom of the cape and continue its arc
+    const hemMat=new THREE.MeshToonMaterial({color:look.capeCol||0x141824, gradientMap:GRAD, side:THREE.DoubleSide});
+    for(let i=0;i<7;i++){ const x=-0.36+i*0.12, len=0.46-Math.abs(i-3)*0.05+(i%2?0.1:0);
+      const flap=new THREE.Mesh(new THREE.PlaneGeometry(0.135,len), hemMat);
+      flap.position.set(x, 0.5-len*0.5, -0.42+Math.abs(x)*0.12); flap.rotation.x=0.1; g.add(flap); }
   }
 }
 function buildModel(hero, team){
@@ -1050,13 +1051,17 @@ function buildWeapon(type, accent, style){
   const glowMat=(c)=> new THREE.MeshBasicMaterial({color:c});
   if(type==='sword'){
     if(style==='frostmourne'){
-      // jagged runeblade with cold blue glow + runes
-      const blade=metalPart(new THREE.BoxGeometry(0.13,1.0,0.03), 0x59708c); blade.position.y=0.56; w.add(blade);
-      const tip=metalPart(new THREE.ConeGeometry(0.075,0.22,4), 0x59708c); tip.position.y=1.12; w.add(tip);
-      const glow=new THREE.Mesh(new THREE.BoxGeometry(0.17,1.04,0.05),
-        new THREE.MeshBasicMaterial({color:0x6fd0ff, transparent:true, opacity:0.45, toneMapped:false, blending:THREE.AdditiveBlending, depthWrite:false}));
-      glow.position.y=0.56; w.add(glow);
-      const runes=new THREE.Mesh(new THREE.BoxGeometry(0.035,0.9,0.06), glowMat(0x9fe3ff)); runes.position.y=0.56; w.add(runes);
+      // jagged runeblade with strong cold-blue glow + runes
+      const blade=metalPart(new THREE.BoxGeometry(0.15,1.08,0.035), 0x6a82a0); blade.position.y=0.6; w.add(blade);
+      const tip=metalPart(new THREE.ConeGeometry(0.085,0.28,4), 0x6a82a0); tip.position.y=1.24; w.add(tip);
+      // wide soft outer glow + a tight bright inner glow
+      const glow=new THREE.Mesh(new THREE.BoxGeometry(0.28,1.16,0.06),
+        new THREE.MeshBasicMaterial({color:0x7fdcff, transparent:true, opacity:0.5, toneMapped:false, blending:THREE.AdditiveBlending, depthWrite:false}));
+      glow.position.y=0.62; w.add(glow);
+      const glow2=new THREE.Mesh(new THREE.BoxGeometry(0.17,1.12,0.05),
+        new THREE.MeshBasicMaterial({color:0xbfeeff, transparent:true, opacity:0.6, toneMapped:false, blending:THREE.AdditiveBlending, depthWrite:false}));
+      glow2.position.y=0.62; w.add(glow2);
+      const runes=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.96,0.07), glowMat(0xcdf1ff)); runes.position.y=0.6; w.add(runes);
       const guard=part(new THREE.BoxGeometry(0.34,0.07,0.09), 0x2a2e38); guard.position.y=0.06; w.add(guard);
       for(const s of [-1,1]) addCone(w,0.04,0.18,0x2a2e38, s*0.19,0.12,0,[0,0,s*1.25]); // hooked quillons
       const grip=part(new THREE.CylinderGeometry(0.04,0.04,0.24,6), 0x171a22); grip.position.y=-0.1; w.add(grip);
