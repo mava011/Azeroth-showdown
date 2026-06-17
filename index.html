@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.57';
+const BUILD = 'v0.58';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -811,7 +811,7 @@ function addWings(g, look){
   // leathery membrane (visible mid-tone so it reads from any angle), dark bone ribs + claw tips
   const mem=new THREE.MeshToonMaterial({color:0x614a86, gradientMap:GRAD, side:THREE.DoubleSide});
   const memBack=new THREE.MeshToonMaterial({color:0x3c2c56, gradientMap:GRAD, side:THREE.DoubleSide});
-  const boneC=0x352841, clawC=0xd8ccdc;
+  const boneC=0x352841, clawC=0xa99db8;
   const veinMat=new THREE.MeshBasicMaterial({color:0x285417, toneMapped:false});
   // ---- draped demon wing in local XY (x = outward, y = up). The leading-edge arm juts UP-OUT to
   //      an elbow above the shoulder; the membrane then drapes DOWN with claw-tipped fingers. ----
@@ -843,7 +843,7 @@ function addWings(g, look){
       const vx=tx-E[0], vy=ty-E[1], vlen=Math.hypot(vx,vy);
       const vein=new THREE.Mesh(new THREE.BoxGeometry(0.013,vlen*0.88,0.01), veinMat);
       vein.position.set((E[0]+tx)/2,(E[1]+ty)/2,0.06); vein.rotation.z=Math.atan2(vy,vx)-Math.PI/2; W.add(vein);
-      const cl=part(new THREE.ConeGeometry(0.05,0.17,5), clawC);
+      const cl=part(new THREE.ConeGeometry(0.042,0.14,5), clawC);
       cl.position.set(tx,ty,0.02); cl.rotation.z=Math.atan2(ty-E[1],tx-E[0])-Math.PI/2; W.add(cl); }
   }
 }
@@ -1179,14 +1179,13 @@ function buildModel(hero, team){
   function arm(side){
     const grp=new THREE.Group(); grp.position.set(side*0.49*bulk,1.32,0);
     if(look.bareArms){
-      // bare muscular arm as ONE tapered limb: flat deltoid cap blending into a
-      // capsule that's thicker at the bicep and narrows toward the elbow (no stacked balls)
-      const delt=part(new THREE.SphereGeometry(0.135,12,10), bodyCol); delt.position.set(side*0.02,-0.02,0); delt.scale.set(1.0,0.82,1.0); grp.add(delt);
-      const up=part(new THREE.CapsuleGeometry(0.115,0.26,6,12), bodyCol); up.position.y=-0.19; up.scale.set(1,1,0.95); grp.add(up);
-      // subtle forward bicep swell (front only, doesn't bulge the sides)
-      const bicep=part(new THREE.SphereGeometry(0.085,10,9), bodyCol); bicep.position.set(0,-0.15,0.06); bicep.scale.set(0.85,1.4,0.7); grp.add(bicep);
+      // bare muscular arm as ONE clean tapered limb (no stacked balls): small flat deltoid
+      // cap + an elongated capsule, with only a subtle FORWARD bicep swell
+      const delt=part(new THREE.SphereGeometry(0.125,12,10), bodyCol); delt.position.set(side*0.02,-0.03,0); delt.scale.set(1.0,0.75,1.0); grp.add(delt);
+      const up=part(new THREE.CapsuleGeometry(0.1,0.32,6,12), bodyCol); up.position.y=-0.22; up.scale.set(1,1,0.92); grp.add(up);
+      const bicep=part(new THREE.SphereGeometry(0.07,10,9), bodyCol); bicep.position.set(0,-0.16,0.07); bicep.scale.set(0.8,1.5,0.6); grp.add(bicep);
       const tat=new THREE.Mesh(new THREE.BoxGeometry(0.016,0.26,0.03), new THREE.MeshBasicMaterial({color:look.eyes, toneMapped:false}));
-      tat.position.set(side*0.095,-0.18,0.05); tat.rotation.z=side*0.1; grp.add(tat);
+      tat.position.set(side*0.085,-0.2,0.05); tat.rotation.z=side*0.1; grp.add(tat);
     }else{
       const up=bMat(new THREE.CapsuleGeometry(0.1,0.24,5,12), bodyCol); up.position.y=-0.16; grp.add(up);
     }
