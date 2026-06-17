@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.42';
+const BUILD = 'v0.43';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -930,7 +930,7 @@ function addHeroExtras(g, hero, look){
     }
     // forehead skull on the helm + skull set into the FRONT of the big left pauldron
     skullAt(0,1.8,0.32,0.058);
-    skullAt(-0.52*bulk,1.36,0.3,0.135);
+    skullAt(-0.5*bulk,1.36,0.28,0.1);
     // tattered loincloth hanging BELOW the belt skull
     const loin=new THREE.Mesh(new THREE.PlaneGeometry(0.32,0.46),
       new THREE.MeshToonMaterial({color:0x161922, gradientMap:GRAD, side:THREE.DoubleSide}));
