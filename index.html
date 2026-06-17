@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.39';
+const BUILD = 'v0.40';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -876,14 +876,20 @@ function addHelm(g, style, look){
   const hs=look.headScale||1; if(hs!==1){ H.scale.setScalar(hs); H.position.y=1.68*(1-hs); }
   if(style==='lichking'){
     const dk=0x2c313d, st=0x4a5266, lt=0x6a7488, glow=look.eyes;
-    const dome=metalPart(new THREE.SphereGeometry(0.39,16,14), dk); dome.position.y=1.72; dome.scale.set(1.0,1.08,1.0); H.add(dome);
-    const face=metalPart(new THREE.BoxGeometry(0.4,0.44,0.2), st); face.position.set(0,1.66,0.27); H.add(face);
-    const ridge=metalPart(new THREE.BoxGeometry(0.08,0.46,0.16), lt); ridge.position.set(0,1.67,0.37); H.add(ridge);
-    const brow=metalPart(new THREE.BoxGeometry(0.42,0.07,0.16), dk); brow.position.set(0,1.82,0.32); H.add(brow);
+    // fitted crown (flatter than a bald sphere)
+    const dome=metalPart(new THREE.SphereGeometry(0.37,16,12), dk); dome.position.y=1.77; dome.scale.set(1.0,0.92,1.02); H.add(dome);
+    // brow band jutting forward (menacing)
+    const browB=metalPart(new THREE.BoxGeometry(0.5,0.12,0.18), lt); browB.position.set(0,1.76,0.27); browB.rotation.x=-0.2; H.add(browB);
+    // angular faceplate + nose ridge
+    const face=metalPart(new THREE.BoxGeometry(0.42,0.42,0.18), st); face.position.set(0,1.6,0.25); H.add(face);
+    const ridge=metalPart(new THREE.BoxGeometry(0.07,0.4,0.18), lt); ridge.position.set(0,1.6,0.34); H.add(ridge);
+    // pointed chin / jaw guard (skull-helm)
+    const jaw=metalPart(new THREE.ConeGeometry(0.21,0.3,4), st); jaw.position.set(0,1.42,0.19); jaw.rotation.set(Math.PI,Math.PI/4,0); H.add(jaw);
     for(const s of [-1,1]){
-      const e=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.05,0.03), new THREE.MeshBasicMaterial({color:glow, toneMapped:false}));
-      e.position.set(s*0.12,1.69,0.4); e.rotation.z=-s*0.28; H.add(e);
-      const cheek=metalPart(new THREE.BoxGeometry(0.08,0.3,0.22), dk); cheek.position.set(s*0.25,1.58,0.18); H.add(cheek);
+      const e=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.05,0.03), new THREE.MeshBasicMaterial({color:glow, toneMapped:false}));
+      e.position.set(s*0.12,1.64,0.37); e.rotation.z=-s*0.3; H.add(e);
+      // cheek guards tapering down to points
+      const cheek=metalPart(new THREE.ConeGeometry(0.1,0.36,4), dk); cheek.position.set(s*0.23,1.5,0.14); cheek.rotation.set(Math.PI,Math.PI/4,s*0.12); H.add(cheek);
     }
     // central crest fin running over the crown
     const crest=metalPart(new THREE.BoxGeometry(0.06,0.2,0.5), lt); crest.position.set(0,1.92,-0.02); H.add(crest);
@@ -931,8 +937,11 @@ function addHeroExtras(g, hero, look){
     const furw=part(new THREE.TorusGeometry(0.28,0.07,8,18,Math.PI), 0x4a4f5a); furw.rotation.x=Math.PI/2; furw.rotation.z=Math.PI; furw.scale.set(1,0.62,1); furw.position.set(0,0.72,0.04); g.add(furw);
     // surface trim: subtle V-neck rails + sternum (raised), and DARK recessed plate grooves (not bright stripes)
     const lt=look.trim||0x97a6bd, groove=0x11151c;
-    for(const s of [-1,1]){ const v=metalPart(new THREE.BoxGeometry(0.04,0.3,0.045), lt); v.position.set(s*0.1,1.28,0.245); v.rotation.z=s*0.42; g.add(v); }
-    const stern=metalPart(new THREE.BoxGeometry(0.045,0.32,0.055), lt); stern.position.set(0,1.12,0.25); g.add(stern);
+    // single raised breastplate panel (one piece, centred — NOT two pecs)
+    const bp=metalPart(new THREE.CylinderGeometry(0.27,0.21,0.36,10), look.armor||0x74849c);
+    bp.rotation.x=Math.PI/2; bp.position.set(0,1.2,0.13); bp.scale.set(1.0,1,0.4); g.add(bp);
+    for(const s of [-1,1]){ const v=metalPart(new THREE.BoxGeometry(0.04,0.3,0.045), lt); v.position.set(s*0.1,1.28,0.27); v.rotation.z=s*0.42; g.add(v); }
+    const stern=metalPart(new THREE.BoxGeometry(0.045,0.32,0.055), lt); stern.position.set(0,1.12,0.28); g.add(stern);
     for(let i=0;i<2;i++){ const seam=metalPart(new THREE.TorusGeometry(0.35-i*0.05,0.013,6,26), groove);
       seam.rotation.x=Math.PI/2; seam.position.y=0.96-i*0.15; seam.scale.set(1,0.62,1); g.add(seam); }
     // (cape tatter is now built into the one-piece cape geometry)
