@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.35';
+const BUILD = 'v0.36';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1029,14 +1029,18 @@ function buildModel(hero, team){
     const buckle=metalPart(new THREE.BoxGeometry(0.14,0.1,0.06), trimC); buckle.position.set(0,0.78,look.torsoProfile?0.2:0.32); g.add(buckle);
   }
 
-  // ---- pauldrons: faceted angular plates (not round bubbles), scalable per hero ----
+  // ---- pauldrons: stacked angular lames draping over the shoulder (layered plate look) ----
   const ps=look.pauldronScale||1;
   function pauldron(side){
-    const px=side*(0.45+0.06*ps)*bulk;
-    const pad=metalPart(new THREE.CylinderGeometry(0.27*ps,0.19*ps,0.3*ps,6), armorC);
-    pad.position.set(px,1.38,0); pad.rotation.set(0,Math.PI/6,-side*0.34); pad.scale.set(1.06,1,0.82); g.add(pad);
-    const lip=metalPart(new THREE.CylinderGeometry(0.22*ps,0.13*ps,0.11*ps,6), trimC);
-    lip.position.set(px+side*0.05,1.38-0.16*ps,0); lip.rotation.set(0,Math.PI/6,-side*0.34); g.add(lip);
+    const px=side*(0.43+0.05*ps)*bulk;
+    for(let i=0;i<3;i++){
+      const r=(0.28-i*0.045)*ps;
+      const lame=metalPart(new THREE.CylinderGeometry(r, r*0.82, 0.1*ps, 6), i===1?trimC:armorC);
+      lame.position.set(px+side*i*0.015, 1.46-i*0.13*ps, 0);
+      lame.rotation.set(0, Math.PI/6, -side*0.34);
+      lame.scale.set(1.12,1,0.78);
+      g.add(lame);
+    }
   }
   pauldron(-1); pauldron(1);
 
