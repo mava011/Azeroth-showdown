@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.36';
+const BUILD = 'v0.37';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -884,13 +884,16 @@ function addHelm(g, style, look){
       e.position.set(s*0.12,1.69,0.4); e.rotation.z=-s*0.28; H.add(e);
       const cheek=metalPart(new THREE.BoxGeometry(0.08,0.3,0.22), dk); cheek.position.set(s*0.25,1.58,0.18); H.add(cheek);
     }
-    // tall Helm-of-Domination crown: center tallest, sweeping up & out
-    function spike(r,h,x,y,z,rot){ const c=new THREE.Mesh(new THREE.ConeGeometry(r,h,6), metal(dk)); c.castShadow=true; c.position.set(x,y,z); c.rotation.set(rot[0],rot[1],rot[2]); H.add(c); }
-    spike(0.065,0.62, 0,2.08,-0.08,[-0.3,0,0]);
-    spike(0.06,0.52, -0.21,2.02,-0.07,[-0.28,0,0.32]);
-    spike(0.06,0.52, 0.21,2.02,-0.07,[-0.28,0,-0.32]);
-    spike(0.05,0.4, -0.36,1.93,-0.03,[-0.22,0,0.6]);
-    spike(0.05,0.4, 0.36,1.93,-0.03,[-0.22,0,-0.6]);
+    // central crest fin running over the crown
+    const crest=metalPart(new THREE.BoxGeometry(0.06,0.2,0.5), lt); crest.position.set(0,1.92,-0.02); H.add(crest);
+    // Helm-of-Domination crown: a fan of spikes along the back, swept up & back, tallest centre
+    function spike(h,x,y,z,lean,splay){ const c=new THREE.Mesh(new THREE.ConeGeometry(0.05,h,6), metal(dk));
+      c.castShadow=true; c.position.set(x,y,z); c.rotation.set(-lean, 0, -splay); H.add(c); }
+    spike(0.74, 0,    2.14,-0.22, 0.42, 0);
+    spike(0.62, -0.15,2.10,-0.25, 0.42,-0.22);
+    spike(0.62,  0.15,2.10,-0.25, 0.42, 0.22);
+    spike(0.48, -0.27,2.02,-0.27, 0.4, -0.45);
+    spike(0.48,  0.27,2.02,-0.27, 0.4,  0.45);
   }
 }
 // bespoke signature detail per hero (distinctive pieces beyond the shared skeleton)
@@ -989,10 +992,11 @@ function buildModel(hero, team){
   // ---- legs (thigh + knee + boot), pivot groups so they can swing ----
   function leg(side){
     const grp=new THREE.Group(); grp.position.set(side*0.18,0.66,0);
-    const thigh=bMat(new THREE.CapsuleGeometry(0.15,0.3,5,12), legCol); thigh.position.y=-0.2; grp.add(thigh);
-    const knee=metalPart(new THREE.TorusGeometry(0.15,0.045,8,14), armorC); knee.rotation.x=Math.PI/2; knee.position.y=-0.34; grp.add(knee);
-    const boot=metalPart(new THREE.CapsuleGeometry(0.17,0.14,5,12), dark); boot.position.y=-0.5; grp.add(boot);
-    const toe=metalPart(new THREE.SphereGeometry(0.17,10,8), dark); toe.position.set(0,-0.57,0.12); toe.scale.set(1,0.7,1.4); grp.add(toe);
+    const thigh=bMat(new THREE.CapsuleGeometry(0.15,0.24,5,12), legCol); thigh.position.y=-0.16; grp.add(thigh);
+    const knee=metalPart(new THREE.SphereGeometry(0.125,8,8), armorC); knee.position.y=-0.32; knee.scale.set(1,0.9,1.15); grp.add(knee);
+    const greave=metalPart(new THREE.CylinderGeometry(0.145,0.12,0.26,8), armorC); greave.position.y=-0.46; grp.add(greave);
+    const boot=metalPart(new THREE.SphereGeometry(0.16,10,8), dark); boot.position.set(0,-0.58,0.0); boot.scale.set(1,0.85,1); grp.add(boot);
+    const toe=metalPart(new THREE.BoxGeometry(0.2,0.13,0.27), dark); toe.position.set(0,-0.6,0.13); grp.add(toe);
     g.add(grp); return grp;
   }
   const lL=leg(-1), lR=leg(1);
@@ -1044,12 +1048,13 @@ function buildModel(hero, team){
   }
   pauldron(-1); pauldron(1);
 
-  // ---- arms (upper arm + cuff + gauntlet hand), pivot groups ----
+  // ---- arms (upper arm + elbow cop + armored forearm + gauntlet fist) ----
   function arm(side){
     const grp=new THREE.Group(); grp.position.set(side*0.49*bulk,1.32,0);
-    const up=bMat(new THREE.CapsuleGeometry(0.11,0.34,5,12), bodyCol); up.position.y=-0.22; grp.add(up);
-    const cuff=metalPart(new THREE.TorusGeometry(0.12,0.04,8,14), armorC); cuff.rotation.x=Math.PI/2; cuff.position.y=-0.4; grp.add(cuff);
-    const hand=metalPart(new THREE.SphereGeometry(0.14,10,10), dark); hand.position.y=-0.5; grp.add(hand);
+    const up=bMat(new THREE.CapsuleGeometry(0.1,0.24,5,12), bodyCol); up.position.y=-0.16; grp.add(up);
+    const elbow=metalPart(new THREE.SphereGeometry(0.105,8,8), armorC); elbow.position.y=-0.3; elbow.scale.set(1,0.85,1.1); grp.add(elbow);
+    const fore=metalPart(new THREE.CylinderGeometry(0.125,0.1,0.26,8), armorC); fore.position.y=-0.43; grp.add(fore);
+    const hand=metalPart(new THREE.BoxGeometry(0.17,0.16,0.19), dark); hand.position.y=-0.55; grp.add(hand);
     g.add(grp); return grp;
   }
   const armL=arm(-1), armR=arm(1);
