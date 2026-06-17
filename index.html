@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.53';
+const BUILD = 'v0.54';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -739,7 +739,7 @@ const HERO_LOOK = {
   jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, glow:false, feat:['ponytail'],                  bulk:0.94, hair:0xf3eccf, robe:true,  weaponStyle:'froststaff', robeCol:0x6fa8ff, bodyCol:0x5f93e0, armor:0xbfe3ff, trim:0xeaf4ff, capeCol:0x3a63b0},
   arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, capeTatter:0.9, torsoProfile:[[0.04,-0.46],[0.23,-0.4],[0.29,-0.26],[0.34,-0.08],[0.36,0.1],[0.35,0.24],[0.3,0.36],[0.2,0.44],[0.1,0.48],[0.04,0.5]], torsoDepth:0.6, pauldronScale:1.4, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x1e2630, armor:0x7e90ac, trim:0xaebed8, capeCol:0x10141d, legCol:0x1b232e},
   sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, glow:true,  feat:['hood','elfears'],            bulk:0.95, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a, bodyCol:0x2a2f4a, armor:0x46406a, trim:0x8a6fc0, capeCol:0x191d30, legCol:0x20243a},
-  illidan:  {skin:0xb084e2, eyes:0x7dff44, glow:true,  feat:['horns','blindfold','wings','longhair'], bulk:1.03, gscale:[0.94,1.22,0.92], noEmblem:true, noPauldron:true, noCape:true, bareChest:true, hornScale:2.2, wingScale:1.15, hair:0x140c24, weaponStyle:'warglaive', bodyCol:0xab7ad4, armor:0x5a3f86, trim:0xc79ff0, legCol:0x4a3470},
+  illidan:  {skin:0xb084e2, eyes:0x7dff44, glow:true,  feat:['horns','blindfold','wings','longhair'], bulk:1.03, gscale:[0.94,1.22,0.92], noEmblem:true, noPauldron:true, noCape:true, bareChest:true, dualWield:true, torsoProfile:[[0.04,-0.5],[0.2,-0.46],[0.24,-0.34],[0.26,-0.18],[0.30,0.0],[0.35,0.18],[0.35,0.3],[0.29,0.4],[0.16,0.48],[0.05,0.52]], torsoDepth:0.66, hornScale:2.2, wingScale:1.15, hair:0x140c24, weaponStyle:'warglaive', bodyCol:0xab7ad4, armor:0x5a3f86, trim:0xc79ff0, legCol:0x4a3470},
   uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'], metalBody:true, bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
   grommash: {skin:0x6aa05a, eyes:0x3a2a14, glow:false, feat:['tusks','topknot','warpaint'],bulk:1.20, hair:0x140d06, weaponStyle:'gorehowl', bodyCol:0x5a3320, armor:0x7a4a30, trim:0xb98a4a, capeCol:0x6a2018, legCol:0x2e2014},
   malfurion:{skin:0x9f86c9, eyes:0xffcf66, glow:true,  feat:['antlers','elfears','beard'], bulk:1.0,  hair:0x2f6f4b, robe:true,  weaponStyle:'naturestaff', robeCol:0x2f8f5b, bodyCol:0x2f8f5b, armor:0x6b4a2a, trim:0x8be07a, capeCol:0x245a3a, legCol:0x244a30},
@@ -956,22 +956,23 @@ function addHeroExtras(g, hero, look){
     const leather=0x2a1c30, fel=0x46ff1e, skinD=mix(look.skin,0x000000,0.42), skinH=mix(look.skin,0xffffff,0.12);
     // --- muscular bare chest: domed pecs + engraved grooves on the bare torso (NO bra straps) ---
     // pecs as broad, FLAT angular slabs (low profile, wide) — reads as a male chest, never round cups
-    for(const s of [-1,1]){ const pec=part(new THREE.BoxGeometry(0.27,0.17,0.07), look.bodyCol);
-      pec.position.set(s*0.14,1.21,0.24); pec.rotation.z=s*-0.05; g.add(pec); }
+    // (seated on the narrower lathe torso; z values pulled in to match its oval surface)
+    for(const s of [-1,1]){ const pec=part(new THREE.BoxGeometry(0.25,0.16,0.06), look.bodyCol);
+      pec.position.set(s*0.13,1.22,0.18); pec.rotation.z=s*-0.05; g.add(pec); }
     // engraved muscle lines (thin dark strips just proud of the surface)
     const groove=(w,h,x,y,z,rz)=>{ const m=part(new THREE.BoxGeometry(w,h,0.02), skinD); m.position.set(x,y,z); if(rz)m.rotation.z=rz; g.add(m); };
-    groove(0.022,0.2, 0,1.18,0.3,0);             // sternum between the pecs
-    for(const s of [-1,1]) groove(0.18,0.022, s*0.1,1.1,0.3, s*0.32);   // under-pec curves
+    groove(0.022,0.2, 0,1.19,0.24,0);            // sternum between the pecs
+    for(const s of [-1,1]) groove(0.16,0.022, s*0.09,1.12,0.23, s*0.32);  // under-pec curves
     // abdominals as engraved lines (central seam + three rungs) — defined, not robotic blocks
-    groove(0.022,0.34, 0,0.92,0.32,0);
-    for(let r=0;r<3;r++) groove(0.2,0.022, 0,1.02-r*0.13,0.32,0);
+    groove(0.02,0.32, 0,0.92,0.2,0);
+    for(let r=0;r<3;r++) groove(0.17,0.02, 0,1.0-r*0.12,0.2,0);
     // single diagonal baldric (weapon strap) — asymmetric, never reads as a bra
-    const bald=part(new THREE.BoxGeometry(0.085,0.82,0.05), leather); bald.position.set(0,1.05,0.3); bald.rotation.z=0.44; g.add(bald);
-    const buckle=part(new THREE.BoxGeometry(0.14,0.11,0.05), 0x6b5436); buckle.position.set(0,0.78,0.3); g.add(buckle);
+    const bald=part(new THREE.BoxGeometry(0.08,0.8,0.05), leather); bald.position.set(0,1.05,0.22); bald.rotation.z=0.44; g.add(bald);
+    const buckle=part(new THREE.BoxGeometry(0.13,0.1,0.05), 0x6b5436); buckle.position.set(0,0.78,0.21); g.add(buckle);
     // glowing fel tattoos following the abs/shoulders (the iconic Illidan markings)
     const felMat=new THREE.MeshBasicMaterial({color:fel, toneMapped:false});
-    for(const s of [-1,1]){ const t=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.42,0.03), felMat); t.position.set(s*0.07,0.95,0.34); g.add(t);
-      const sh=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.26,0.03), felMat); sh.position.set(s*0.24,1.16,0.18); sh.rotation.z=s*0.5; g.add(sh); }
+    for(const s of [-1,1]){ const t=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.4,0.03), felMat); t.position.set(s*0.06,0.96,0.23); g.add(t);
+      const sh=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.24,0.03), felMat); sh.position.set(s*0.2,1.16,0.16); sh.rotation.z=s*0.5; g.add(sh); }
     // hanging loincloth in front + side tassets so the hips aren't a plain slab
     const loin=part(new THREE.BoxGeometry(0.26,0.5,0.06), leather); loin.position.set(0,0.5,0.26); loin.rotation.x=0.08; g.add(loin);
     const loinTip=part(new THREE.ConeGeometry(0.13,0.22,4), leather); loinTip.position.set(0,0.24,0.255); loinTip.rotation.set(Math.PI,Math.PI/4,0); g.add(loinTip);
@@ -1194,6 +1195,12 @@ function buildModel(hero, team){
   const k=swingKind(hero.weapon);
   const restTilt = (k==='chop'||k==='slash') ? 0.62 : (k==='cast' ? 0.18 : 0.1);
   weapon.position.set(0.05,-0.5,0.12); weapon.rotation.set(restTilt,0,0); armR.add(weapon);
+  // dual-wielders (Illidan) carry a second, mirrored weapon in the off hand
+  let weapon2=null;
+  if(look.dualWield){
+    weapon2=buildWeapon(hero.weapon, hero.gem, look.weaponStyle);
+    weapon2.position.set(-0.05,-0.5,0.12); weapon2.rotation.set(restTilt,0,0); weapon2.scale.x=-1; armL.add(weapon2);
+  }
 
   if(look.gscale) g.scale.set(HERO_SCALE*look.gscale[0], HERO_SCALE*look.gscale[1], HERO_SCALE*look.gscale[2]);
   else g.scale.setScalar(HERO_SCALE);
@@ -1275,17 +1282,26 @@ function buildWeapon(type, accent, style){
     if(glowC){ const str=new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.006,0.62,4), glowMat(glowC)); str.position.y=0.2; w.add(str); }
   }else if(type==='glaive'){
     const wgl = style==='warglaive';
-    const blCol = wgl?0x26331c:accent, glow = wgl?0x46ff1e:accent;
-    // central grip + hub
-    const grip=part(new THREE.CylinderGeometry(0.045,0.05,0.3,6), 0x140f0a); grip.position.y=0.02; w.add(grip);
-    const hub=part(new THREE.BoxGeometry(0.11,0.18,0.07), blCol); hub.position.y=0.22; w.add(hub);
-    // twin curved crescent blades (warglaives of Azzinoth) — one up-forward, one down-back
-    function crescent(r,tube,arc,y,rot){
-      const b=part(new THREE.TorusGeometry(r,tube,6,16,arc), blCol); b.position.set(0,y,0); b.rotation.set(0,0,rot); w.add(b);
-      const e=new THREE.Mesh(new THREE.TorusGeometry(r,tube*0.45,6,16,arc), glowMat(glow)); e.position.set(0,y,0.02); e.rotation.set(0,0,rot); w.add(e);
+    const blCol = wgl?0x1c2614:accent, glow = wgl?0x53ff2b:accent;
+    const gMat=()=> new THREE.MeshBasicMaterial({color:glow, toneMapped:false});
+    // central grip the fist wraps + a fel-cored guard hub
+    const grip=part(new THREE.CylinderGeometry(0.05,0.055,0.36,6), 0x120d08); grip.position.y=0.0; w.add(grip);
+    const wrap=part(new THREE.TorusGeometry(0.055,0.018,6,10), 0x2a1c12); wrap.rotation.x=Math.PI/2; wrap.position.y=0.06; w.add(wrap);
+    const hub=part(new THREE.BoxGeometry(0.14,0.17,0.09), blCol); hub.position.y=0.18; w.add(hub);
+    const felHub=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.11,0.11), gMat()); felHub.position.y=0.18; w.add(felHub);
+    // a curved fel blade: dark crescent body + bright fel cutting edge + sharp tip
+    function blade(r,arc,y,rot,tube,scaleZ){
+      const body=part(new THREE.TorusGeometry(r,tube,8,22,arc), blCol);
+      body.position.set(0,y,0); body.rotation.z=rot; body.scale.set(1,1,scaleZ); w.add(body);
+      const edge=new THREE.Mesh(new THREE.TorusGeometry(r+tube*0.6,tube*0.4,6,22,arc), gMat());
+      edge.position.set(0,y,0); edge.rotation.z=rot; edge.scale.set(1,1,scaleZ); w.add(edge);
+      const ex=Math.cos(rot+arc)*r, ey=y+Math.sin(rot+arc)*r;
+      const tip=part(new THREE.ConeGeometry(tube*1.7,0.22,5), blCol); tip.position.set(ex,ey,0); tip.rotation.z=rot+arc-Math.PI/2; w.add(tip);
+      const tipE=new THREE.Mesh(new THREE.ConeGeometry(tube*0.7,0.22,5), gMat()); tipE.position.set(ex,ey,0); tipE.rotation.z=rot+arc-Math.PI/2; w.add(tipE);
     }
-    crescent(0.28,0.035,Math.PI*0.85, 0.42, -0.5);
-    crescent(0.2,0.03,Math.PI*0.7, 0.02, Math.PI-0.4);
+    // the Azzinoth double crescent: long main blade sweeping up-forward, shorter blade down-back
+    blade(0.46, Math.PI*0.80, 0.30, -0.42, 0.05, 0.42);
+    blade(0.32, Math.PI*0.66, -0.14, Math.PI-0.18, 0.042, 0.42);
   }
   w.rotation.x=0.25;
   return w;
