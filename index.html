@@ -1113,7 +1113,40 @@ function buildSpaulder(s, color){
   geo.center();
   const m=new THREE.Mesh(geo, metal(color)); m.castShadow=true; return m;
 }
+
+/* ---------------------- 2.5D sprite heroes (billboard) --------------------- */
+// Heroes listed here render as a flat, camera-facing illustrated sprite instead of
+// the procedural primitive model. Drop a transparent PNG at the path and add the id.
+const HERO_ART = {
+  // illidan:'assets/heroes/illidan.png',   // enabled once real art is wired
+};
+const HERO_ART_ASPECT = {};   // width/height per hero (default 0.72)
+const _heroTex = {};
+function heroTexture(url){
+  if(_heroTex[url]) return _heroTex[url];
+  const t = new THREE.TextureLoader().load(url);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
+  _heroTex[url] = t; return t;
+}
+// a camera-facing textured quad sized to read like the other heroes; pivot at the feet
+function buildSpriteModel(hero, team){
+  const g = new THREE.Group();
+  const tex = heroTexture(HERO_ART[hero.id]);
+  const aspect = HERO_ART_ASPECT[hero.id] || 0.72;
+  const H = 3.1, W = H*aspect;
+  const geo = new THREE.PlaneGeometry(W, H); geo.translate(0, H/2, 0);   // feet at y=0
+  const mat = new THREE.MeshBasicMaterial({ map:tex, transparent:true, alphaTest:0.3,
+    depthWrite:true, toneMapped:false, side:THREE.DoubleSide });
+  const plane = new THREE.Mesh(geo, mat);
+  g.add(plane);
+  g.userData = { isSprite:true, sprite:plane, body:plane, bodyMat:mat, hero,
+    t:Math.random()*6, bodyBase:{x:(team===1?-1:1), y:1, z:1} };
+  return g;
+}
+
 function buildModel(hero, team){
+  if(HERO_ART[hero.id]) return buildSpriteModel(hero, team);
   if(hero.companion) return buildBeast(hero, team);
   const g = new THREE.Group();
   const look = lookFor(hero);
@@ -2139,17 +2172,26 @@ function tick(){
     if(ud.armR){ ud.armR.rotation.set(armRx,0,armRz); }
     if(ud.armL){ ud.armL.rotation.x = armLx; }
     if(ud.weapon) ud.weapon.rotation.z = 0.0 + wRoll;
-    // whirlwind spin
-    if(u.spin>0) g.rotation.y += dt*30;
+    // whirlwind spin (3D models turn; sprites fake it with a horizontal flip in the scale below)
+    if(u.spin>0 && !ud.isSprite) g.rotation.y += dt*30;
     // squash & stretch: stretch tall on attack, squash flat on getting hit
     const bb=ud.bodyBase||{x:1,y:1,z:1};
     let bx=bb.x,by=bb.y,bz=bb.z;
     if(lk>0){ by+=0.14*lk; bx-=0.07*lk*bb.x; bz-=0.07*lk*bb.z; }
     if(u.flash>0){ const f=u.flash/0.16; by-=0.20*f; bx+=0.17*f*bb.x; bz+=0.17*f*bb.z; }
     if(u.castT>0){ const c=Math.sin((u.castT/0.45)*Math.PI); by+=0.1*c; }
+    if(ud.isSprite){
+      // sprites: lean into the attack lunge, and flip horizontally to fake the whirlwind spin
+      if(u.spin>0) bx = bb.x*Math.cos(ud.t*26);
+      ud.sprite.rotation.z = (lk>0 ? -bb.x*0.18*lk : 0);
+      ud.sprite.position.x = (lk>0 ? bb.x*0.12*lk : 0);
+    }
     ud.body.scale.set(bx,by,bz);
-    // hit flash: glow the body white briefly
-    if(ud.bodyMat) ud.bodyMat.emissive.setScalar(u.flash>0 ? (u.flash/0.16)*0.85 : 0);
+    // hit flash: 3D bodies glow emissive; sprites brighten toward white via color multiply
+    if(ud.bodyMat){
+      if(ud.isSprite){ const f=u.flash>0?(u.flash/0.16):0; ud.bodyMat.color.setScalar(1+f*0.9); }
+      else ud.bodyMat.emissive.setScalar(u.flash>0 ? (u.flash/0.16)*0.85 : 0);
+    }
     // contact shadow on the ground
     if(u.shadow){ u.shadow.position.set(g.position.x, 0.03, g.position.z); }
     // health bar (raised above the bigger heads, always drawn on top)
@@ -2277,8 +2319,9 @@ function pvTick(){
   if(!PV || $('#preview').classList.contains('hidden')){ if(PV)PV.running=false; return; }
   requestAnimationFrame(pvTick);
   const dt=Math.min(0.05, PV.clock.getDelta()); PV.t+=dt;
-  if(PV.spin && !PV.drag) PV.rot+=dt*0.55;
-  PV.turn.rotation.y=PV.rot+PV.manualRot;
+  const spriteModel = PV.model && PV.model.userData && PV.model.userData.isSprite;
+  if(PV.spin && !PV.drag && !spriteModel) PV.rot+=dt*0.55;     // billboards stay facing the camera
+  PV.turn.rotation.y = spriteModel ? 0 : (PV.rot+PV.manualRot);
   pvAnimate(dt);
   PV.r.render(PV.sc,PV.cam);
 }
