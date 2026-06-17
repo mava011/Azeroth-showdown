@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.43';
+const BUILD = 'v0.44';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -582,8 +582,8 @@ function metal(color, rough, mtl){
   return metalCache[key];
 }
 // armor piece: reflective metal, thinner outline (0 = no outline)
-// metal armor: NO cartoon outline by default (reads as real reflective steel). Pass k>0 to force one.
-function metalPart(geo, color, k){ const m=new THREE.Mesh(geo, metal(color)); m.castShadow=true; if(k) outlined(m, k); return m; }
+// metal armor: NO cartoon outline by default (reads as real reflective steel). Pass k>0 to force one, mtl for matte.
+function metalPart(geo, color, k, mtl){ const m=new THREE.Mesh(geo, metal(color, null, mtl)); m.castShadow=true; if(k) outlined(m, k); return m; }
 
 /* ---------------------------- Arena board --------------------------------- */
 const ARENA_W = 8.6, ARENA_L = 15.4;
@@ -737,7 +737,7 @@ const DEFAULT_LOOK = {skin:0xe8b98f, eyes:0x14182a, feat:[], bulk:1, robe:false,
 const HERO_LOOK = {
   thrall:   {skin:0x6fae74, eyes:0x66e0ff, glow:true,  feat:['tusks','topknot','fur'],     bulk:1.14, hair:0x1d140c, weaponStyle:'doomhammer', bodyCol:0x3a5d44, armor:0x9c7a3e, trim:0xc9a45a, capeCol:0x5a3a22, legCol:0x2c2a20},
   jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, glow:false, feat:['ponytail'],                  bulk:0.94, hair:0xf3eccf, robe:true,  weaponStyle:'froststaff', robeCol:0x6fa8ff, bodyCol:0x5f93e0, armor:0xbfe3ff, trim:0xeaf4ff, capeCol:0x3a63b0},
-  arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, capeTatter:0.9, torsoProfile:[[0.04,-0.46],[0.23,-0.4],[0.29,-0.26],[0.34,-0.08],[0.36,0.1],[0.35,0.24],[0.3,0.36],[0.2,0.44],[0.1,0.48],[0.04,0.5]], torsoDepth:0.6, pauldronScale:1.4, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x222934, armor:0x74849c, trim:0x97a6bd, capeCol:0x12161f, legCol:0x1d242e},
+  arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, capeTatter:0.9, torsoProfile:[[0.04,-0.46],[0.23,-0.4],[0.29,-0.26],[0.34,-0.08],[0.36,0.1],[0.35,0.24],[0.3,0.36],[0.2,0.44],[0.1,0.48],[0.04,0.5]], torsoDepth:0.6, pauldronScale:1.4, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x1e2630, armor:0x7e90ac, trim:0xaebed8, capeCol:0x10141d, legCol:0x1b232e},
   sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, glow:true,  feat:['hood','elfears'],            bulk:0.95, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a, bodyCol:0x2a2f4a, armor:0x46406a, trim:0x8a6fc0, capeCol:0x191d30, legCol:0x20243a},
   illidan:  {skin:0x7d52b6, eyes:0x39ff14, glow:true,  feat:['horns','blindfold','wings'], bulk:1.08, hair:0x1c1030, weaponStyle:'warglaive', bodyCol:0x3f2a63, armor:0x6b3fa0, trim:0x9d6fd6, capeCol:0x1c1030, legCol:0x281a40},
   uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'], metalBody:true, bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
@@ -1007,8 +1007,8 @@ function buildModel(hero, team){
     const thigh=bMat(new THREE.CapsuleGeometry(0.15,0.24,5,12), legCol); thigh.position.y=-0.16; grp.add(thigh);
     const knee=metalPart(new THREE.SphereGeometry(0.125,8,8), armorC); knee.position.y=-0.32; knee.scale.set(1,0.9,1.15); grp.add(knee);
     const greave=metalPart(new THREE.CylinderGeometry(0.145,0.12,0.26,8), armorC); greave.position.y=-0.46; grp.add(greave);
-    const boot=metalPart(new THREE.SphereGeometry(0.16,10,8), dark); boot.position.set(0,-0.58,0.0); boot.scale.set(1,0.85,1); grp.add(boot);
-    const toe=metalPart(new THREE.BoxGeometry(0.2,0.13,0.27), dark); toe.position.set(0,-0.6,0.13); grp.add(toe);
+    const boot=metalPart(new THREE.SphereGeometry(0.16,10,8), dark,0,0.2); boot.position.set(0,-0.58,0.0); boot.scale.set(1,0.85,1); grp.add(boot);
+    const toe=metalPart(new THREE.BoxGeometry(0.2,0.13,0.27), dark,0,0.2); toe.position.set(0,-0.6,0.13); grp.add(toe);
     g.add(grp); return grp;
   }
   const lL=leg(-1), lR=leg(1);
