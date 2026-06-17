@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.29';
+const BUILD = 'v0.30';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -564,10 +564,10 @@ function part(geo, color, k){ const m=new THREE.Mesh(geo, toon(color)); m.castSh
 const ENV = (function(){
   const c=document.createElement('canvas'); c.width=256; c.height=128; const x=c.getContext('2d');
   const g=x.createLinearGradient(0,0,0,128);
-  g.addColorStop(0,'#dce8ff'); g.addColorStop(0.46,'#8593b0'); g.addColorStop(0.52,'#525c70'); g.addColorStop(1,'#24293a');
+  g.addColorStop(0,'#eef4ff'); g.addColorStop(0.45,'#9fb0d0'); g.addColorStop(0.52,'#6a778e'); g.addColorStop(1,'#39405a');
   x.fillStyle=g; x.fillRect(0,0,256,128);
-  const sg=x.createRadialGradient(182,28,2,182,28,46); sg.addColorStop(0,'rgba(255,250,230,1)'); sg.addColorStop(1,'rgba(255,250,230,0)');
-  x.fillStyle=sg; x.fillRect(130,0,100,64);
+  const sg=x.createRadialGradient(182,26,2,182,26,52); sg.addColorStop(0,'rgba(255,252,238,1)'); sg.addColorStop(1,'rgba(255,252,238,0)');
+  x.fillStyle=sg; x.fillRect(120,0,124,72);
   const tex=new THREE.CanvasTexture(c); tex.mapping=THREE.EquirectangularReflectionMapping; tex.colorSpace=THREE.SRGBColorSpace;
   const pm=new THREE.PMREMGenerator(renderer);
   const env=pm.fromEquirectangular(tex).texture; tex.dispose(); pm.dispose(); return env;
@@ -575,8 +575,9 @@ const ENV = (function(){
 scene.environment = ENV;
 const metalCache={};
 function metal(color, rough){
-  const key=color+'_'+(rough||42);
-  if(!metalCache[key]) metalCache[key]=new THREE.MeshStandardMaterial({color, metalness:0.95, roughness:(rough||42)/100, envMap:ENV, envMapIntensity:1.05});
+  const key=color+'_'+(rough||45);
+  // brushed steel: metalness high enough to shine, low enough that the base colour/form still reads
+  if(!metalCache[key]) metalCache[key]=new THREE.MeshStandardMaterial({color, metalness:0.7, roughness:(rough||45)/100, envMap:ENV, envMapIntensity:1.2});
   return metalCache[key];
 }
 // armor piece: reflective metal, thinner outline (0 = no outline)
@@ -735,7 +736,7 @@ const DEFAULT_LOOK = {skin:0xe8b98f, eyes:0x14182a, feat:[], bulk:1, robe:false,
 const HERO_LOOK = {
   thrall:   {skin:0x6fae74, eyes:0x66e0ff, glow:true,  feat:['tusks','topknot','fur'],     bulk:1.14, hair:0x1d140c, weaponStyle:'doomhammer', bodyCol:0x3a5d44, armor:0x9c7a3e, trim:0xc9a45a, capeCol:0x5a3a22, legCol:0x2c2a20},
   jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, glow:false, feat:['ponytail'],                  bulk:0.94, hair:0xf3eccf, robe:true,  weaponStyle:'froststaff', robeCol:0x6fa8ff, bodyCol:0x5f93e0, armor:0xbfe3ff, trim:0xeaf4ff, capeCol:0x3a63b0},
-  arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, gscale:[0.92,1.2,0.92], headScale:0.86, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x2b313d, armor:0x49566a, trim:0x9fb2cc, capeCol:0x121419, legCol:0x232830},
+  arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x333b4a, armor:0x5a6678, trim:0xaebbd0, capeCol:0x141824, legCol:0x2a3140},
   sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, glow:true,  feat:['hood','elfears'],            bulk:0.95, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a, bodyCol:0x2a2f4a, armor:0x46406a, trim:0x8a6fc0, capeCol:0x191d30, legCol:0x20243a},
   illidan:  {skin:0x7d52b6, eyes:0x39ff14, glow:true,  feat:['horns','blindfold','wings'], bulk:1.08, hair:0x1c1030, weaponStyle:'warglaive', bodyCol:0x3f2a63, armor:0x6b3fa0, trim:0x9d6fd6, capeCol:0x1c1030, legCol:0x281a40},
   uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'], metalBody:true, bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
@@ -916,16 +917,16 @@ function addHeroExtras(g, hero, look){
       const j=part(new THREE.BoxGeometry(r*1.3,r*0.5,r*0.7), bone); j.position.set(x,y-r*0.95,z+r*0.1); g.add(j);
       for(const sx of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(r*0.34,6,5), new THREE.MeshBasicMaterial({color:socket})); e.position.set(x+sx*r*0.4,y+r*0.1,z+r*0.7); g.add(e); }
     }
-    // forehead skull on the helm + big skull seated on the left pauldron
+    // forehead skull on the helm + big skull seated on top of the left pauldron
     skullAt(0,1.86,0.34,0.07);
-    skullAt(-0.46*bulk,1.42,0.14,0.13);
+    skullAt(-0.5*bulk,1.5,0.06,0.13);
     // tattered fur-trimmed loincloth hanging from the belt
     const loin=new THREE.Mesh(new THREE.PlaneGeometry(0.36,0.52),
       new THREE.MeshToonMaterial({color:0x161922, gradientMap:GRAD, side:THREE.DoubleSide}));
     loin.position.set(0,0.46,0.33); loin.rotation.x=-0.08; g.add(loin);
     const furw=part(new THREE.TorusGeometry(0.3,0.07,8,18,Math.PI), 0x4a4f5a); furw.rotation.x=Math.PI/2; furw.rotation.z=Math.PI; furw.position.set(0,0.72,0.06); g.add(furw);
-    // layered breastplate: pectoral plates + sternum ridge
-    const steel=0x3a4252, lt=0x5c6880;
+    // layered breastplate: pectoral plates + sternum ridge (lighter steel for contrast)
+    const steel=0x6e7c92, lt=0x9fb0c8;
     for(const s of [-1,1]){ const pec=metalPart(new THREE.SphereGeometry(0.16,12,10), steel); pec.position.set(s*0.15,1.2,0.27); pec.scale.set(1.1,0.95,0.62); g.add(pec); }
     const stern=metalPart(new THREE.BoxGeometry(0.06,0.42,0.1), lt); stern.position.set(0,1.12,0.37); g.add(stern);
     // segmented ab / fauld plates
@@ -980,8 +981,10 @@ function buildModel(hero, team){
   const chest=metalPart(new THREE.SphereGeometry(0.34,16,14), armorC); chest.position.set(0,1.2,0.04); chest.scale.set(1.36,0.66,0.92); g.add(chest);
   const abdo=metalPart(new THREE.SphereGeometry(0.27,14,12), armorC); abdo.position.set(0,0.96,0.05); abdo.scale.set(1.0,0.72,0.85); g.add(abdo);
   const collar=metalPart(new THREE.TorusGeometry(0.2,0.05,8,16), trimC); collar.rotation.x=Math.PI/2; collar.position.y=1.42; g.add(collar);
-  const emb=new THREE.Mesh(new THREE.CircleGeometry(0.09,16), new THREE.MeshBasicMaterial({color:hero.gem, toneMapped:false}));
-  emb.position.set(0,1.18,0.5); g.add(emb);
+  if(!look.noEmblem){   // some heroes (plate knights) have an ornate chest instead of a gem
+    const emb=new THREE.Mesh(new THREE.CircleGeometry(0.08,16), new THREE.MeshBasicMaterial({color:hero.gem, toneMapped:false}));
+    emb.position.set(0,1.18,0.38); g.add(emb);
+  }
   // narrow belt + buckle
   const belt=part(new THREE.CylinderGeometry(0.31,0.31,0.13,16), dark); belt.position.y=0.78; g.add(belt);
   const buckle=metalPart(new THREE.BoxGeometry(0.14,0.1,0.06), trimC); buckle.position.set(0,0.78,0.32); g.add(buckle);
