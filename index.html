@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.41';
+const BUILD = 'v0.42';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -891,8 +891,9 @@ function addHelm(g, style, look){
       // cheek guards tapering down to points
       const cheek=metalPart(new THREE.ConeGeometry(0.1,0.36,4), dk); cheek.position.set(s*0.23,1.5,0.14); cheek.rotation.set(Math.PI,Math.PI/4,s*0.12); H.add(cheek);
     }
-    // central crest fin running over the crown
-    const crest=metalPart(new THREE.BoxGeometry(0.06,0.2,0.5), lt); crest.position.set(0,1.92,-0.02); H.add(crest);
+    // raised crown ridge running front-to-back over the dome (breaks the smooth egg)
+    const crest=metalPart(new THREE.BoxGeometry(0.08,0.16,0.62), lt); crest.position.set(0,1.94,-0.04); crest.rotation.x=0.1; H.add(crest);
+    const crestF=metalPart(new THREE.BoxGeometry(0.07,0.14,0.16), lt); crestF.position.set(0,1.86,0.3); H.add(crestF);
     // Helm-of-Domination crown: a fan of spikes along the back, swept up & back, tallest centre
     function spike(h,x,y,z,lean,splay){ const c=new THREE.Mesh(new THREE.ConeGeometry(0.05,h,6), metal(dk));
       c.castShadow=true; c.position.set(x,y,z); c.rotation.set(-lean, 0, -splay); H.add(c); }
@@ -928,7 +929,7 @@ function addHeroExtras(g, hero, look){
       for(const sx of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(r*0.34,6,5), new THREE.MeshBasicMaterial({color:socket})); e.position.set(x+sx*r*0.4,y+r*0.1,z+r*0.7); g.add(e); }
     }
     // forehead skull on the helm + skull set into the FRONT of the big left pauldron
-    skullAt(0,1.86,0.34,0.07);
+    skullAt(0,1.8,0.32,0.058);
     skullAt(-0.52*bulk,1.36,0.3,0.135);
     // tattered loincloth hanging BELOW the belt skull
     const loin=new THREE.Mesh(new THREE.PlaneGeometry(0.32,0.46),
