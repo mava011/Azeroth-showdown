@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.46';
+const BUILD = 'v0.47';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -936,6 +936,14 @@ function addHeroExtras(g, hero, look){
       new THREE.MeshToonMaterial({color:0x161922, gradientMap:GRAD, side:THREE.DoubleSide}));
     loin.position.set(0,0.4,0.2); loin.rotation.x=-0.08; g.add(loin);
     const furw=part(new THREE.TorusGeometry(0.28,0.07,8,18,Math.PI), 0x4a4f5a); furw.rotation.x=Math.PI/2; furw.rotation.z=Math.PI; furw.scale.set(1,0.62,1); furw.position.set(0,0.72,0.04); g.add(furw);
+    // angular hip tassets flanking the loincloth
+    const aC=look.armor||0x74849c, tC=look.trim||0x97a6bd;
+    for(const s of [-1,1]){
+      const t=metalPart(new THREE.BoxGeometry(0.15,0.26,0.05), mix(aC,0x000000,0.08));
+      t.position.set(s*0.18,0.6,0.14); t.rotation.set(0.14,s*-0.2,s*0.12); g.add(t);
+      const tEdge=metalPart(new THREE.BoxGeometry(0.15,0.04,0.06), tC);
+      tEdge.position.set(s*0.18,0.72,0.15); tEdge.rotation.set(0.14,s*-0.2,s*0.12); g.add(tEdge);
+    }
     // surface trim: subtle V-neck rails + sternum (raised), and DARK recessed plate grooves (not bright stripes)
     const lt=look.trim||0x97a6bd, groove=0x11151c;
     // single raised breastplate panel (one piece, centred — NOT two pecs)
