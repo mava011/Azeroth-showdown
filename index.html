@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.23';
+const BUILD = 'v0.24';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -556,9 +556,31 @@ function toon(color){
   if(!toonCache[color]) toonCache[color] = new THREE.MeshToonMaterial({color, gradientMap:GRAD});
   return toonCache[color];
 }
-const OUTLINE = new THREE.MeshBasicMaterial({color:0x141426, side:THREE.BackSide});
-function outlined(mesh, k){ const o=new THREE.Mesh(mesh.geometry, OUTLINE); o.scale.setScalar(k||1.08); mesh.add(o); return mesh; }
+const OUTLINE = new THREE.MeshBasicMaterial({color:0x12131c, side:THREE.BackSide});
+function outlined(mesh, k){ const o=new THREE.Mesh(mesh.geometry, OUTLINE); o.scale.setScalar(k||1.05); mesh.add(o); return mesh; }
 function part(geo, color, k){ const m=new THREE.Mesh(geo, toon(color)); m.castShadow=true; outlined(m,k); return m; }
+
+// ---- PBR metal: reflective forged-steel look via a procedural environment map ----
+const ENV = (function(){
+  const c=document.createElement('canvas'); c.width=256; c.height=128; const x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,128);
+  g.addColorStop(0,'#dce8ff'); g.addColorStop(0.46,'#8593b0'); g.addColorStop(0.52,'#525c70'); g.addColorStop(1,'#24293a');
+  x.fillStyle=g; x.fillRect(0,0,256,128);
+  const sg=x.createRadialGradient(182,28,2,182,28,46); sg.addColorStop(0,'rgba(255,250,230,1)'); sg.addColorStop(1,'rgba(255,250,230,0)');
+  x.fillStyle=sg; x.fillRect(130,0,100,64);
+  const tex=new THREE.CanvasTexture(c); tex.mapping=THREE.EquirectangularReflectionMapping; tex.colorSpace=THREE.SRGBColorSpace;
+  const pm=new THREE.PMREMGenerator(renderer);
+  const env=pm.fromEquirectangular(tex).texture; tex.dispose(); pm.dispose(); return env;
+})();
+scene.environment = ENV;
+const metalCache={};
+function metal(color, rough){
+  const key=color+'_'+(rough||42);
+  if(!metalCache[key]) metalCache[key]=new THREE.MeshStandardMaterial({color, metalness:0.95, roughness:(rough||42)/100, envMap:ENV, envMapIntensity:1.05});
+  return metalCache[key];
+}
+// armor piece: reflective metal, thinner outline (0 = no outline)
+function metalPart(geo, color, k){ const m=new THREE.Mesh(geo, metal(color)); m.castShadow=true; if(k!==0) outlined(m, k||1.03); return m; }
 
 /* ---------------------------- Arena board --------------------------------- */
 const ARENA_W = 8.6, ARENA_L = 15.4;
@@ -847,36 +869,38 @@ function addFace(g, look){
 // helmet builder (covers head; used in place of hair+face)
 function addHelm(g, style, look){
   if(style==='lichking'){
-    const dk=0x262a33, st=0x434a5a, lt=0x5a6273, glow=look.eyes;
+    const dk=0x2c313d, st=0x4a5266, lt=0x6a7488, glow=look.eyes;
     // fitted skull-cap (not an oversized ball)
-    const dome=part(new THREE.SphereGeometry(0.39,16,14), dk); dome.position.y=1.72; dome.scale.set(1.0,1.08,1.0); g.add(dome);
+    const dome=metalPart(new THREE.SphereGeometry(0.39,16,14), dk); dome.position.y=1.72; dome.scale.set(1.0,1.08,1.0); g.add(dome);
     // proud face visor + central ridge + brow
-    const face=part(new THREE.BoxGeometry(0.4,0.44,0.2), st); face.position.set(0,1.66,0.27); g.add(face);
-    const ridge=part(new THREE.BoxGeometry(0.08,0.46,0.16), lt); ridge.position.set(0,1.67,0.37); g.add(ridge);
-    const brow=part(new THREE.BoxGeometry(0.42,0.07,0.16), dk); brow.position.set(0,1.82,0.32); g.add(brow);
+    const face=metalPart(new THREE.BoxGeometry(0.4,0.44,0.2), st); face.position.set(0,1.66,0.27); g.add(face);
+    const ridge=metalPart(new THREE.BoxGeometry(0.08,0.46,0.16), lt); ridge.position.set(0,1.67,0.37); g.add(ridge);
+    const brow=metalPart(new THREE.BoxGeometry(0.42,0.07,0.16), dk); brow.position.set(0,1.82,0.32); g.add(brow);
     // angled glowing eye slits + cheek guards
     for(const s of [-1,1]){
       const e=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.05,0.03), new THREE.MeshBasicMaterial({color:glow, toneMapped:false}));
       e.position.set(s*0.12,1.69,0.4); e.rotation.z=-s*0.28; g.add(e);
-      const cheek=part(new THREE.BoxGeometry(0.08,0.3,0.22), dk); cheek.position.set(s*0.25,1.58,0.18); g.add(cheek);
+      const cheek=metalPart(new THREE.BoxGeometry(0.08,0.3,0.22), dk); cheek.position.set(s*0.25,1.58,0.18); g.add(cheek);
     }
     // tall Helm-of-Domination crown: center tallest, sweeping up & out
-    addCone(g,0.065,0.62,dk, 0,2.08,-0.08,[-0.3,0,0]);
-    addCone(g,0.06,0.52,dk, -0.21,2.02,-0.07,[-0.28,0,0.32]);
-    addCone(g,0.06,0.52,dk, 0.21,2.02,-0.07,[-0.28,0,-0.32]);
-    addCone(g,0.05,0.4,dk, -0.36,1.93,-0.03,[-0.22,0,0.6]);
-    addCone(g,0.05,0.4,dk, 0.36,1.93,-0.03,[-0.22,0,-0.6]);
+    function spike(r,h,x,y,z,rot){ const c=new THREE.Mesh(new THREE.ConeGeometry(r,h,6), metal(dk)); c.castShadow=true; c.position.set(x,y,z); c.rotation.set(rot[0],rot[1],rot[2]); outlined(c,1.03); g.add(c); }
+    spike(0.065,0.62, 0,2.08,-0.08,[-0.3,0,0]);
+    spike(0.06,0.52, -0.21,2.02,-0.07,[-0.28,0,0.32]);
+    spike(0.06,0.52, 0.21,2.02,-0.07,[-0.28,0,-0.32]);
+    spike(0.05,0.4, -0.36,1.93,-0.03,[-0.22,0,0.6]);
+    spike(0.05,0.4, 0.36,1.93,-0.03,[-0.22,0,-0.6]);
   }
 }
 // bespoke signature detail per hero (distinctive pieces beyond the shared skeleton)
 function addHeroExtras(g, hero, look){
   const bulk=look.bulk;
   if(hero.id==='arthas'){
-    const dk=0x262a33;
-    // jagged spikes rising off each pauldron
+    const dk=0x2c313d;
+    // jagged metal spikes rising off each pauldron
+    const spk=(r,h,x,y,z,rot)=>{ const c=new THREE.Mesh(new THREE.ConeGeometry(r,h,6), metal(dk)); c.castShadow=true; c.position.set(x,y,z); c.rotation.set(rot[0],rot[1],rot[2]); outlined(c,1.03); g.add(c); };
     for(const s of [-1,1]){
-      addCone(g,0.055,0.36,dk, s*0.5*bulk,1.52,0.02,[-0.18,0,s*0.32]);
-      addCone(g,0.042,0.26,dk, s*0.6*bulk,1.44,0.0,[-0.08,0,s*0.6]);
+      spk(0.055,0.36, s*0.5*bulk,1.52,0.02,[-0.18,0,s*0.32]);
+      spk(0.042,0.26, s*0.6*bulk,1.44,0.0,[-0.08,0,s*0.6]);
     }
     // skull belt buckle with glowing eyes
     const skull=part(new THREE.SphereGeometry(0.085,10,9), 0xd8d2c4); skull.position.set(0,0.78,0.33); skull.scale.set(1,1.1,0.8); g.add(skull);
@@ -907,9 +931,9 @@ function buildModel(hero, team){
   function leg(side){
     const grp=new THREE.Group(); grp.position.set(side*0.18,0.66,0);
     const thigh=part(new THREE.CapsuleGeometry(0.15,0.3,5,12), legCol); thigh.position.y=-0.2; grp.add(thigh);
-    const knee=part(new THREE.TorusGeometry(0.15,0.045,8,14), armorC); knee.rotation.x=Math.PI/2; knee.position.y=-0.34; grp.add(knee);
-    const boot=part(new THREE.CapsuleGeometry(0.17,0.14,5,12), dark); boot.position.y=-0.5; grp.add(boot);
-    const toe=part(new THREE.SphereGeometry(0.17,10,8), dark); toe.position.set(0,-0.57,0.12); toe.scale.set(1,0.7,1.4); grp.add(toe);
+    const knee=metalPart(new THREE.TorusGeometry(0.15,0.045,8,14), armorC); knee.rotation.x=Math.PI/2; knee.position.y=-0.34; grp.add(knee);
+    const boot=metalPart(new THREE.CapsuleGeometry(0.17,0.14,5,12), dark); boot.position.y=-0.5; grp.add(boot);
+    const toe=metalPart(new THREE.SphereGeometry(0.17,10,8), dark); toe.position.set(0,-0.57,0.12); toe.scale.set(1,0.7,1.4); grp.add(toe);
     g.add(grp); return grp;
   }
   const lL=leg(-1), lR=leg(1);
@@ -925,19 +949,19 @@ function buildModel(hero, team){
   if(look.robe){
     const robe=part(new THREE.CylinderGeometry(0.28,0.66,1.1,16), look.robeCol||bodyCol); robe.position.y=0.56; g.add(robe);
   }
-  const chest=part(new THREE.SphereGeometry(0.34,16,14), armorC); chest.position.set(0,1.2,0.04); chest.scale.set(1.36,0.66,0.92); g.add(chest);
-  const abdo=part(new THREE.SphereGeometry(0.27,14,12), armorC); abdo.position.set(0,0.96,0.05); abdo.scale.set(1.0,0.72,0.85); g.add(abdo);
-  const collar=part(new THREE.TorusGeometry(0.2,0.05,8,16), trimC); collar.rotation.x=Math.PI/2; collar.position.y=1.42; g.add(collar);
+  const chest=metalPart(new THREE.SphereGeometry(0.34,16,14), armorC); chest.position.set(0,1.2,0.04); chest.scale.set(1.36,0.66,0.92); g.add(chest);
+  const abdo=metalPart(new THREE.SphereGeometry(0.27,14,12), armorC); abdo.position.set(0,0.96,0.05); abdo.scale.set(1.0,0.72,0.85); g.add(abdo);
+  const collar=metalPart(new THREE.TorusGeometry(0.2,0.05,8,16), trimC); collar.rotation.x=Math.PI/2; collar.position.y=1.42; g.add(collar);
   const emb=new THREE.Mesh(new THREE.CircleGeometry(0.09,16), new THREE.MeshBasicMaterial({color:hero.gem, toneMapped:false}));
   emb.position.set(0,1.18,0.5); g.add(emb);
   // narrow belt + buckle
   const belt=part(new THREE.CylinderGeometry(0.31,0.31,0.13,16), dark); belt.position.y=0.78; g.add(belt);
-  const buckle=part(new THREE.BoxGeometry(0.14,0.1,0.06), trimC); buckle.position.set(0,0.78,0.32); g.add(buckle);
+  const buckle=metalPart(new THREE.BoxGeometry(0.14,0.1,0.06), trimC); buckle.position.set(0,0.78,0.32); g.add(buckle);
 
   // ---- pauldrons (rounded pad + bright trim ring) ----
   function pauldron(side){
-    const pad=part(new THREE.SphereGeometry(0.22,14,12), armorC); pad.position.set(side*0.48*bulk,1.34,0); pad.scale.set(1.2,0.82,1.2); g.add(pad);
-    const trim=part(new THREE.TorusGeometry(0.2,0.045,8,16), trimC); trim.position.set(side*0.48*bulk,1.28,0); trim.rotation.x=Math.PI/2.3; g.add(trim);
+    const pad=metalPart(new THREE.SphereGeometry(0.22,14,12), armorC); pad.position.set(side*0.48*bulk,1.34,0); pad.scale.set(1.2,0.82,1.2); g.add(pad);
+    const trim=metalPart(new THREE.TorusGeometry(0.2,0.045,8,16), trimC); trim.position.set(side*0.48*bulk,1.28,0); trim.rotation.x=Math.PI/2.3; g.add(trim);
   }
   pauldron(-1); pauldron(1);
 
@@ -945,8 +969,8 @@ function buildModel(hero, team){
   function arm(side){
     const grp=new THREE.Group(); grp.position.set(side*0.49*bulk,1.32,0);
     const up=part(new THREE.CapsuleGeometry(0.11,0.34,5,12), bodyCol); up.position.y=-0.22; grp.add(up);
-    const cuff=part(new THREE.TorusGeometry(0.12,0.04,8,14), armorC); cuff.rotation.x=Math.PI/2; cuff.position.y=-0.4; grp.add(cuff);
-    const hand=part(new THREE.SphereGeometry(0.14,10,10), dark); hand.position.y=-0.5; grp.add(hand);
+    const cuff=metalPart(new THREE.TorusGeometry(0.12,0.04,8,14), armorC); cuff.rotation.x=Math.PI/2; cuff.position.y=-0.4; grp.add(cuff);
+    const hand=metalPart(new THREE.SphereGeometry(0.14,10,10), dark); hand.position.y=-0.5; grp.add(hand);
     g.add(grp); return grp;
   }
   const armL=arm(-1), armR=arm(1);
@@ -988,8 +1012,8 @@ function buildWeapon(type, accent, style){
   if(type==='sword'){
     if(style==='frostmourne'){
       // jagged runeblade with cold blue glow + runes
-      const blade=part(new THREE.BoxGeometry(0.13,1.0,0.03), 0x39485a); blade.position.y=0.56; w.add(blade);
-      const tip=part(new THREE.ConeGeometry(0.075,0.22,4), 0x39485a); tip.position.y=1.12; w.add(tip);
+      const blade=metalPart(new THREE.BoxGeometry(0.13,1.0,0.03), 0x59708c); blade.position.y=0.56; w.add(blade);
+      const tip=metalPart(new THREE.ConeGeometry(0.075,0.22,4), 0x59708c); tip.position.y=1.12; w.add(tip);
       const glow=new THREE.Mesh(new THREE.BoxGeometry(0.17,1.04,0.05),
         new THREE.MeshBasicMaterial({color:0x6fd0ff, transparent:true, opacity:0.45, toneMapped:false, blending:THREE.AdditiveBlending, depthWrite:false}));
       glow.position.y=0.56; w.add(glow);
@@ -1900,7 +1924,7 @@ function initPreview(){
   r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
   r.shadowMap.enabled=true; r.shadowMap.type=THREE.PCFSoftShadowMap;
   r.outputColorSpace=THREE.SRGBColorSpace; r.toneMapping=THREE.ACESFilmicToneMapping; r.toneMappingExposure=1.12;
-  const sc=new THREE.Scene(); sc.background=new THREE.Color(0x0c1226);
+  const sc=new THREE.Scene(); sc.background=new THREE.Color(0x0c1226); sc.environment=ENV;
   const cam=new THREE.PerspectiveCamera(34,1,0.1,100);
   sc.add(new THREE.HemisphereLight(0xd6e6ff,0x40342a,0.95));
   const key=new THREE.DirectionalLight(0xfff0cf,1.7); key.position.set(4,8,6); key.castShadow=true;
