@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.38';
+const BUILD = 'v0.39';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1035,17 +1035,20 @@ function buildModel(hero, team){
     const buckle=metalPart(new THREE.BoxGeometry(0.14,0.1,0.06), trimC); buckle.position.set(0,0.78,look.torsoProfile?0.2:0.32); g.add(buckle);
   }
 
-  // ---- pauldrons: stacked angular lames draping over the shoulder (layered plate look) ----
+  // ---- pauldrons: stacked angular lames seated ON the shoulder, draping down the outer arm ----
   const ps=look.pauldronScale||1;
   function pauldron(side){
-    const px=side*(0.52+0.05*ps)*bulk;   // sit out over the shoulder, not across the chest
+    const px=side*0.46*bulk;   // at the shoulder joint so it connects to the body/arm
+    // shoulder connector so there is never a gap between torso and pauldron
+    const yoke=metalPart(new THREE.SphereGeometry(0.18*ps,10,8), mix(armorC,0x000000,0.1));
+    yoke.position.set(px*0.85,1.42,0); yoke.scale.set(1,0.9,0.9); g.add(yoke);
     for(let i=0;i<3;i++){
       const r=(0.26-i*0.045)*ps;
-      // uniform plate tone (darker toward the bottom) so the lames read as one layered pauldron
-      const lame=metalPart(new THREE.CylinderGeometry(r, r*0.82, 0.1*ps, 6), mix(armorC,0x000000,i*0.18));
-      lame.position.set(px+side*i*0.05, 1.46-i*0.13*ps, 0);
-      lame.rotation.set(0, Math.PI/6, -side*0.5);   // drape down-and-out over the arm
-      lame.scale.set(0.95,1,0.78);
+      const lame=metalPart(new THREE.CylinderGeometry(r, r*0.82, 0.1*ps, 6), mix(armorC,0x000000,i*0.16));
+      // descend down-and-out over the upper arm
+      lame.position.set(px+side*i*0.06, 1.5-i*0.14*ps, 0);
+      lame.rotation.set(0, Math.PI/6, -side*0.5);
+      lame.scale.set(0.98,1,0.78);
       g.add(lame);
     }
   }
