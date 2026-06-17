@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.55';
+const BUILD = 'v0.56';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -739,7 +739,7 @@ const HERO_LOOK = {
   jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, glow:false, feat:['ponytail'],                  bulk:0.94, hair:0xf3eccf, robe:true,  weaponStyle:'froststaff', robeCol:0x6fa8ff, bodyCol:0x5f93e0, armor:0xbfe3ff, trim:0xeaf4ff, capeCol:0x3a63b0},
   arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, capeTatter:0.9, torsoProfile:[[0.04,-0.46],[0.23,-0.4],[0.29,-0.26],[0.34,-0.08],[0.36,0.1],[0.35,0.24],[0.3,0.36],[0.2,0.44],[0.1,0.48],[0.04,0.5]], torsoDepth:0.6, pauldronScale:1.4, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x1e2630, armor:0x7e90ac, trim:0xaebed8, capeCol:0x10141d, legCol:0x1b232e},
   sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, glow:true,  feat:['hood','elfears'],            bulk:0.95, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a, bodyCol:0x2a2f4a, armor:0x46406a, trim:0x8a6fc0, capeCol:0x191d30, legCol:0x20243a},
-  illidan:  {skin:0xb084e2, eyes:0x7dff44, glow:true,  feat:['horns','blindfold','wings','longhair'], bulk:1.03, gscale:[0.94,1.22,0.92], noEmblem:true, noPauldron:true, noCape:true, bareChest:true, dualWield:true, torsoProfile:[[0.04,-0.5],[0.2,-0.46],[0.24,-0.34],[0.26,-0.18],[0.30,0.0],[0.35,0.18],[0.35,0.3],[0.29,0.4],[0.16,0.48],[0.05,0.52]], torsoDepth:0.66, hornScale:2.2, wingScale:1.15, hair:0x140c24, weaponStyle:'warglaive', bodyCol:0xab7ad4, armor:0x5a3f86, trim:0xc79ff0, legCol:0x4a3470},
+  illidan:  {skin:0xb084e2, eyes:0x7dff44, glow:true,  feat:['horns','blindfold','wings','longhair'], bulk:1.03, gscale:[0.94,1.22,0.92], noEmblem:true, noPauldron:true, noCape:true, bareChest:true, bareArms:true, dualWield:true, torsoProfile:[[0.04,-0.5],[0.2,-0.46],[0.24,-0.34],[0.26,-0.18],[0.30,0.0],[0.35,0.18],[0.35,0.3],[0.29,0.4],[0.16,0.48],[0.05,0.52]], torsoDepth:0.66, hornScale:2.2, wingScale:1.15, hair:0x140c24, weaponStyle:'warglaive', bodyCol:0xab7ad4, armor:0x5a3f86, trim:0xc79ff0, legCol:0x4a3470},
   uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'], metalBody:true, bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
   grommash: {skin:0x6aa05a, eyes:0x3a2a14, glow:false, feat:['tusks','topknot','warpaint'],bulk:1.20, hair:0x140d06, weaponStyle:'gorehowl', bodyCol:0x5a3320, armor:0x7a4a30, trim:0xb98a4a, capeCol:0x6a2018, legCol:0x2e2014},
   malfurion:{skin:0x9f86c9, eyes:0xffcf66, glow:true,  feat:['antlers','elfears','beard'], bulk:1.0,  hair:0x2f6f4b, robe:true,  weaponStyle:'naturestaff', robeCol:0x2f8f5b, bodyCol:0x2f8f5b, armor:0x6b4a2a, trim:0x8be07a, capeCol:0x245a3a, legCol:0x244a30},
@@ -809,8 +809,10 @@ function addBlindfold(g,glow){
 function addWings(g, look){
   const ws=(look&&look.wingScale)||1;
   // leathery membrane (visible mid-tone so it reads from any angle), dark bone ribs + claw tips
-  const mem=new THREE.MeshToonMaterial({color:0x564178, gradientMap:GRAD, side:THREE.DoubleSide});
-  const boneC=0x2a1f3a, clawC=0xd8ccdc;
+  const mem=new THREE.MeshToonMaterial({color:0x614a86, gradientMap:GRAD, side:THREE.DoubleSide});
+  const memBack=new THREE.MeshToonMaterial({color:0x3c2c56, gradientMap:GRAD, side:THREE.DoubleSide});
+  const boneC=0x352841, clawC=0xd8ccdc;
+  const veinMat=new THREE.MeshBasicMaterial({color:0x285417, toneMapped:false});
   // ---- draped demon wing in local XY (x = outward, y = up). The leading-edge arm juts UP-OUT to
   //      an elbow above the shoulder; the membrane then drapes DOWN with claw-tipped fingers. ----
   const E=[0.62,0.5];                          // elbow apex (just above the shoulder)
@@ -829,13 +831,18 @@ function addWings(g, look){
     const W=new THREE.Group(); W.position.set(s*0.26,1.56,-0.16);
     W.rotation.set(0.05, s*0.42, s*0.05); W.scale.set(s*ws, ws, ws); g.add(W);
     const m=new THREE.Mesh(memGeo, mem); m.castShadow=true; W.add(m);
+    // darker under-layer offset back -> gives the membrane visible thickness/volume
+    const mb=new THREE.Mesh(memGeo, memBack); mb.position.z=-0.05; W.add(mb);
     // thick bony arm tracing the leading edge: root -> mid -> elbow
     const seg=(x1,y1,x2,y2,r)=>{ const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy);
       const b=part(new THREE.CylinderGeometry(r*0.7,r,len,5), boneC);
-      b.position.set((x1+x2)/2,(y1+y2)/2,0.03); b.rotation.z=Math.atan2(dy,dx)-Math.PI/2; W.add(b); };
+      b.position.set((x1+x2)/2,(y1+y2)/2,0.04); b.rotation.z=Math.atan2(dy,dx)-Math.PI/2; W.add(b); };
     seg(0.04,0.02, 0.36,0.55, 0.055); seg(0.36,0.55, E[0],E[1], 0.05);
-    // thin finger spars fanning from the elbow toward each claw + claws at the tips
+    // thin finger spars fanning from the elbow toward each claw, a fel vein on each, claws at the tips
     for(const [tx,ty] of tips){ seg(E[0],E[1], tx,ty, 0.022);
+      const vx=tx-E[0], vy=ty-E[1], vlen=Math.hypot(vx,vy);
+      const vein=new THREE.Mesh(new THREE.BoxGeometry(0.013,vlen*0.88,0.01), veinMat);
+      vein.position.set((E[0]+tx)/2,(E[1]+ty)/2,0.06); vein.rotation.z=Math.atan2(vy,vx)-Math.PI/2; W.add(vein);
       const cl=part(new THREE.ConeGeometry(0.05,0.17,5), clawC);
       cl.position.set(tx,ty,0.02); cl.rotation.z=Math.atan2(ty-E[1],tx-E[0])-Math.PI/2; W.add(cl); }
   }
@@ -1171,7 +1178,16 @@ function buildModel(hero, team){
   // ---- arms (upper arm + elbow cop + armored forearm + gauntlet fist) ----
   function arm(side){
     const grp=new THREE.Group(); grp.position.set(side*0.49*bulk,1.32,0);
-    const up=bMat(new THREE.CapsuleGeometry(0.1,0.24,5,12), bodyCol); up.position.y=-0.16; grp.add(up);
+    if(look.bareArms){
+      // bare muscular arm: rounded deltoid cap + bulged bicep + fel tattoo
+      const delt=part(new THREE.SphereGeometry(0.155,12,10), bodyCol); delt.position.set(side*0.03,-0.03,0); delt.scale.set(1.05,1.0,1.05); grp.add(delt);
+      const up=part(new THREE.CapsuleGeometry(0.12,0.2,6,12), bodyCol); up.position.y=-0.19; grp.add(up);
+      const bicep=part(new THREE.SphereGeometry(0.1,10,9), bodyCol); bicep.position.set(side*-0.02,-0.16,0.05); bicep.scale.set(1,1.35,0.85); grp.add(bicep);
+      const tat=new THREE.Mesh(new THREE.BoxGeometry(0.018,0.28,0.03), new THREE.MeshBasicMaterial({color:look.eyes, toneMapped:false}));
+      tat.position.set(side*0.1,-0.18,0.04); tat.rotation.z=side*0.1; grp.add(tat);
+    }else{
+      const up=bMat(new THREE.CapsuleGeometry(0.1,0.24,5,12), bodyCol); up.position.y=-0.16; grp.add(up);
+    }
     const elbow=metalPart(new THREE.SphereGeometry(0.105,8,8), armorC); elbow.position.y=-0.3; elbow.scale.set(1,0.85,1.1); grp.add(elbow);
     const fore=metalPart(new THREE.CylinderGeometry(0.125,0.1,0.26,8), armorC); fore.position.y=-0.43; grp.add(fore);
     const hand=metalPart(new THREE.BoxGeometry(0.17,0.16,0.19), dark); hand.position.y=-0.55; grp.add(hand);
