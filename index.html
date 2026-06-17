@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.61';
+const BUILD = 'v0.62';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -739,7 +739,7 @@ const HERO_LOOK = {
   jaina:    {skin:0xf1cda6, eyes:0x2a3a6a, glow:false, feat:['ponytail'],                  bulk:0.94, hair:0xf3eccf, robe:true,  weaponStyle:'froststaff', robeCol:0x6fa8ff, bodyCol:0x5f93e0, armor:0xbfe3ff, trim:0xeaf4ff, capeCol:0x3a63b0},
   arthas:   {skin:0xccd6e2, eyes:0x8fe3ff, glow:true,  feat:[], metalBody:true, noEmblem:true, gscale:[0.92,1.2,0.92], headScale:0.86, capeTatter:0.9, torsoProfile:[[0.04,-0.46],[0.23,-0.4],[0.29,-0.26],[0.34,-0.08],[0.36,0.1],[0.35,0.24],[0.3,0.36],[0.2,0.44],[0.1,0.48],[0.04,0.5]], torsoDepth:0.6, pauldronScale:1.4, bulk:1.12, hair:0xeae6c8, weaponStyle:'frostmourne', helm:'lichking', bodyCol:0x1e2630, armor:0x7e90ac, trim:0xaebed8, capeCol:0x10141d, legCol:0x1b232e},
   sylvanas: {skin:0xb9c6d2, eyes:0xff3b3b, glow:true,  feat:['hood','elfears'],            bulk:0.95, hair:0x2a2440, weaponStyle:'darkbow', cloak:0x20243a, bodyCol:0x2a2f4a, armor:0x46406a, trim:0x8a6fc0, capeCol:0x191d30, legCol:0x20243a},
-  illidan:  {skin:0xb084e2, eyes:0x7dff44, glow:true,  feat:['horns','blindfold','wings','longhair'], bulk:1.03, gscale:[0.94,1.22,0.92], noEmblem:true, noPauldron:true, noCape:true, bareChest:true, bareArms:true, dualWield:true, torsoProfile:[[0.04,-0.5],[0.2,-0.46],[0.24,-0.34],[0.27,-0.18],[0.31,0.0],[0.37,0.16],[0.40,0.28],[0.37,0.36],[0.26,0.44],[0.13,0.5],[0.05,0.54]], torsoDepth:0.66, hornScale:2.2, hornCol:0x5a5048, wingScale:1.15, hair:0x342d42, weaponStyle:'warglaive', bodyCol:0xab7ad4, armor:0x5a3f86, trim:0xc79ff0, legCol:0x4a3470},
+  illidan:  {skin:0xb084e2, eyes:0x7dff44, glow:true,  feat:['horns','blindfold','wings','longhair'], bulk:1.03, gscale:[0.94,1.22,0.92], noEmblem:true, noPauldron:true, noCape:true, bareChest:true, bareArms:true, dualWield:true, demonLegs:true, torsoProfile:[[0.04,-0.5],[0.2,-0.46],[0.24,-0.34],[0.27,-0.18],[0.31,0.0],[0.37,0.16],[0.40,0.28],[0.37,0.36],[0.26,0.44],[0.13,0.5],[0.05,0.54]], torsoDepth:0.66, hornScale:2.2, hornCol:0x8a7d6e, wingScale:1.15, hair:0x342d42, weaponStyle:'warglaive', bodyCol:0xab7ad4, armor:0x5a3f86, trim:0xc79ff0, legCol:0x4a3470},
   uther:    {skin:0xe8b98f, eyes:0x3a4a6a, glow:false, feat:['beard','fur','crown'], metalBody:true, bulk:1.13, hair:0xf0e6c0, weaponStyle:'lighthammer', bodyCol:0xd9b34a, armor:0xf4d36a, trim:0xfff2b0, capeCol:0x8a2030, legCol:0x9c7a30},
   grommash: {skin:0x6aa05a, eyes:0x3a2a14, glow:false, feat:['tusks','topknot','warpaint'],bulk:1.20, hair:0x140d06, weaponStyle:'gorehowl', bodyCol:0x5a3320, armor:0x7a4a30, trim:0xb98a4a, capeCol:0x6a2018, legCol:0x2e2014},
   malfurion:{skin:0x9f86c9, eyes:0xffcf66, glow:true,  feat:['antlers','elfears','beard'], bulk:1.0,  hair:0x2f6f4b, robe:true,  weaponStyle:'naturestaff', robeCol:0x2f8f5b, bodyCol:0x2f8f5b, armor:0x6b4a2a, trim:0x8be07a, capeCol:0x245a3a, legCol:0x244a30},
@@ -1009,10 +1009,12 @@ function addHeroExtras(g, hero, look){
     const loinTrim=new THREE.Mesh(new THREE.TorusGeometry(0.14,0.012,4,3,Math.PI), new THREE.MeshBasicMaterial({color:fel, transparent:true, opacity:0.6, toneMapped:false}));
     loinTrim.position.set(0,0.4,0.26); g.add(loinTrim);
     for(const s of [-1,1]){ const tass=part(new THREE.BoxGeometry(0.18,0.44,0.07), leather); tass.position.set(s*0.27,0.5,0.1); tass.rotation.z=s*-0.06; g.add(tass); }
-    // clawed demon feet — talons splaying forward from each foot
-    const talon=mix(look.skin,0xffffff,0.3);
-    for(const s of [-1,1]) for(let i=-1;i<=1;i++){ const cl=part(new THREE.ConeGeometry(0.038,0.17,4), talon);
-      cl.position.set(s*0.18+i*0.06,0.05,0.3); cl.rotation.x=1.9; g.add(cl); }
+    // carve the torso: raised serratus/oblique relief flanking the abs so the side reads as muscle
+    for(const s of [-1,1]) for(let r=0;r<3;r++){ const ser=part(new THREE.BoxGeometry(0.07,0.05,0.1), look.bodyCol);
+      ser.position.set(s*(0.16-r*0.015),1.02-r*0.1,0.16); ser.rotation.z=s*0.5; g.add(ser); }
+    // spine fel runes down the bare back + shoulder-blade marks (back was undecorated)
+    felLine(0.018,0.5, 0,0.95,-0.2,0);
+    for(const s of [-1,1]){ felLine(0.015,0.22, s*0.13,1.16,-0.16, s*-0.5); felLine(0.014,0.16, s*0.1,0.82,-0.18, s*0.4); }
     return;
   }
   if(hero.id==='arthas'){
@@ -1132,6 +1134,17 @@ function buildModel(hero, team){
   // ---- legs (thigh + knee + boot), pivot groups so they can swing ----
   function leg(side){
     const grp=new THREE.Group(); grp.position.set(side*0.18,0.66,0);
+    if(look.demonLegs){
+      // digitigrade demon leg: smooth tapered thigh->calf (NO ball knee), back-angled hock, clawed foot
+      const thigh=part(new THREE.CylinderGeometry(0.17,0.12,0.36,12), legCol); thigh.position.set(0,-0.16,0.02); grp.add(thigh);
+      const calf=part(new THREE.CylinderGeometry(0.12,0.072,0.34,12), legCol); calf.position.set(0,-0.48,-0.03); calf.rotation.x=-0.12; grp.add(calf);
+      const fetlock=part(new THREE.SphereGeometry(0.075,10,8), legCol); fetlock.position.set(0,-0.63,0.02); fetlock.scale.set(1,0.9,1.1); grp.add(fetlock);
+      const foot=part(new THREE.BoxGeometry(0.16,0.08,0.2), 0x241a2c); foot.position.set(0,-0.66,0.1); grp.add(foot);
+      const talonC=mix(look.skin,0xffffff,0.32);
+      for(let i=-1;i<=1;i++){ const cl=part(new THREE.ConeGeometry(0.036,0.17,4), talonC); cl.position.set(i*0.058,-0.67,0.22); cl.rotation.x=1.95; grp.add(cl); }
+      const heel=part(new THREE.ConeGeometry(0.03,0.12,4), talonC); heel.position.set(0,-0.64,-0.08); heel.rotation.x=-1.9; grp.add(heel);
+      g.add(grp); return grp;
+    }
     const thigh=bMat(new THREE.CapsuleGeometry(0.15,0.24,5,12), legCol); thigh.position.y=-0.16; grp.add(thigh);
     const knee=metalPart(new THREE.SphereGeometry(0.125,8,8), armorC); knee.position.y=-0.32; knee.scale.set(1,0.9,1.15); grp.add(knee);
     const greave=metalPart(new THREE.CylinderGeometry(0.145,0.12,0.26,8), armorC); greave.position.y=-0.46; grp.add(greave);
