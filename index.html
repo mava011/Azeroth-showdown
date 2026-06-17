@@ -322,7 +322,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.19';
+const BUILD = 'v0.20';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -410,10 +410,13 @@ const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 200);
 // Auto-fit the whole play area into view on any screen/orientation.
 const CAM = { base:new THREE.Vector3(), target:new THREE.Vector3(0,0.7,0), shake:0 };
 const PLAY = { hx:3.7, z:7.7, yTop:2.9, yBot:0 };
+// the camera frames a slightly tighter region than the full board so the heroes
+// read bigger (the outer board rim / far props can sit just off-screen)
+const FRAME = { hx:3.55, z:6.95 };
 function playCorners(){
   const out=[];
   for(const sx of [-1,1]) for(const sz of [-1,1]) for(const sy of [PLAY.yBot,PLAY.yTop])
-    out.push(new THREE.Vector3(sx*PLAY.hx, sy, sz*PLAY.z));
+    out.push(new THREE.Vector3(sx*FRAME.hx, sy, sz*FRAME.z));
   return out;
 }
 function frameCamera(){
@@ -452,8 +455,8 @@ function frameCamera(){
     }
     // Scale: keep the larger half-span inside ~0.86 of the frame (≈14% margin).
     const centred=Math.abs(cx)<0.01 && Math.abs(cy)<0.01;
-    if(halfSpan>0.9) D*=1.04;
-    else if(halfSpan<0.82) D*=0.975;
+    if(halfSpan>0.98) D*=1.04;
+    else if(halfSpan<0.92) D*=0.975;
     else if(centred) break;
   }
   CAM.base.copy(camera.position);
