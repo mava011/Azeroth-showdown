@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.44';
+const BUILD = 'v0.45';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -983,6 +983,18 @@ function buildTorso(profile, color, depth){
   geo.scale(1,1,depth&&depth!==1?depth:1); geo.computeVertexNormals();   // flatten -> oval chest
   const m=new THREE.Mesh(geo, metal(color, 62, 0.3)); m.castShadow=true; return m;   // matte cuirass (no mirror stripes)
 }
+// sharp angular spaulder via ExtrudeGeometry: a beveled hard-edged shoulder plate
+// (flat outer face, pointed lower edge) — not a rounded cylinder.
+function buildSpaulder(s, color){
+  const S=new THREE.Shape();
+  S.moveTo(-0.30*s, 0.18*s); S.lineTo(0.30*s, 0.18*s);
+  S.lineTo(0.36*s, 0.0*s);   S.lineTo(0.24*s,-0.26*s);
+  S.lineTo(0.0*s, -0.34*s);  S.lineTo(-0.24*s,-0.26*s);
+  S.lineTo(-0.36*s, 0.0*s);  S.closePath();
+  const geo=new THREE.ExtrudeGeometry(S, {depth:0.16*s, bevelEnabled:true, bevelThickness:0.05*s, bevelSize:0.05*s, bevelSegments:2, steps:1});
+  geo.center();
+  const m=new THREE.Mesh(geo, metal(color)); m.castShadow=true; return m;
+}
 function buildModel(hero, team){
   if(hero.companion) return buildBeast(hero, team);
   const g = new THREE.Group();
@@ -1045,22 +1057,23 @@ function buildModel(hero, team){
     const buckle=metalPart(new THREE.BoxGeometry(0.14,0.1,0.06), trimC); buckle.position.set(0,0.78,look.torsoProfile?0.2:0.32); g.add(buckle);
   }
 
-  // ---- pauldrons: stacked angular lames seated ON the shoulder, draping down the outer arm ----
+  // ---- pauldrons: SHARP angular spaulder plates with spikes, seated on the shoulder ----
   const ps=look.pauldronScale||1;
   function pauldron(side){
-    const px=side*0.46*bulk;   // at the shoulder joint so it connects to the body/arm
-    // shoulder connector so there is never a gap between torso and pauldron
-    const yoke=metalPart(new THREE.SphereGeometry(0.18*ps,10,8), mix(armorC,0x000000,0.1));
-    yoke.position.set(px*0.85,1.42,0); yoke.scale.set(1,0.9,0.9); g.add(yoke);
-    for(let i=0;i<3;i++){
-      const r=(0.26-i*0.045)*ps;
-      const lame=metalPart(new THREE.CylinderGeometry(r, r*0.82, 0.1*ps, 6), mix(armorC,0x000000,i*0.16));
-      // descend down-and-out over the upper arm
-      lame.position.set(px+side*i*0.06, 1.5-i*0.14*ps, 0);
-      lame.rotation.set(0, Math.PI/6, -side*0.5);
-      lame.scale.set(0.98,1,0.78);
-      g.add(lame);
-    }
+    const px=side*0.46*bulk;
+    // yoke connector (no gap to torso)
+    const yoke=metalPart(new THREE.SphereGeometry(0.15*ps,8,7), mix(armorC,0x000000,0.2));
+    yoke.position.set(px*0.78,1.42,0); yoke.scale.set(1,0.85,0.9); g.add(yoke);
+    // faceted angular shoulder cap (low-poly = hard facets, not a smooth bubble)
+    const cap=metalPart(new THREE.SphereGeometry(0.26*ps,5,4), armorC);
+    cap.position.set(px,1.42,0); cap.scale.set(1.18,0.82,1.0); cap.rotation.y=Math.PI/5; g.add(cap);
+    // angular lower rim plate over the upper arm
+    const rim=metalPart(new THREE.CylinderGeometry(0.22*ps,0.15*ps,0.16*ps,5), mix(armorC,0x000000,0.22));
+    rim.position.set(px+side*0.03,1.22,0); rim.rotation.set(0,Math.PI/5,-side*0.22); g.add(rim);
+    // 3 spikes rising off the top edge
+    for(let i=0;i<3;i++){ const off=(-0.12+i*0.12)*ps;
+      const spike=metalPart(new THREE.ConeGeometry(0.045*ps,0.32*ps,4), mix(armorC,0x000000,0.1));
+      spike.position.set(px+side*0.04, 1.56, off); spike.rotation.set(-0.35,0,-side*0.32); g.add(spike); }
   }
   pauldron(-1); pauldron(1);
 
