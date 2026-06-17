@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.28';
+const BUILD = 'v0.29';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -924,6 +924,17 @@ function addHeroExtras(g, hero, look){
       new THREE.MeshToonMaterial({color:0x161922, gradientMap:GRAD, side:THREE.DoubleSide}));
     loin.position.set(0,0.46,0.33); loin.rotation.x=-0.08; g.add(loin);
     const furw=part(new THREE.TorusGeometry(0.3,0.07,8,18,Math.PI), 0x4a4f5a); furw.rotation.x=Math.PI/2; furw.rotation.z=Math.PI; furw.position.set(0,0.72,0.06); g.add(furw);
+    // layered breastplate: pectoral plates + sternum ridge
+    const steel=0x3a4252, lt=0x5c6880;
+    for(const s of [-1,1]){ const pec=metalPart(new THREE.SphereGeometry(0.16,12,10), steel); pec.position.set(s*0.15,1.2,0.27); pec.scale.set(1.1,0.95,0.62); g.add(pec); }
+    const stern=metalPart(new THREE.BoxGeometry(0.06,0.42,0.1), lt); stern.position.set(0,1.12,0.37); g.add(stern);
+    // segmented ab / fauld plates
+    for(let i=0;i<3;i++){ const ab=metalPart(new THREE.BoxGeometry(0.36-i*0.04,0.09,0.12), steel); ab.position.set(0,0.98-i*0.11,0.33); ab.rotation.x=-0.12; g.add(ab); }
+    // tattered cape hem (ragged dark flaps below the main cape)
+    const hemMat=new THREE.MeshToonMaterial({color:0x0e1016, gradientMap:GRAD, side:THREE.DoubleSide});
+    for(let i=0;i<6;i++){ const x=-0.3+i*0.12, len=0.55-Math.abs(i-2.5)*0.05+(i%2?0.12:0);
+      const flap=new THREE.Mesh(new THREE.PlaneGeometry(0.13,len), hemMat);
+      flap.position.set(x, 0.22-len*0.1, -0.36-Math.abs(x)*0.04); flap.rotation.x=0.12; g.add(flap); }
   }
 }
 function buildModel(hero, team){
