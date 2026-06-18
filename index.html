@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.63';
+const BUILD = 'v0.64';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1120,7 +1120,7 @@ function buildSpaulder(s, color){
 const HERO_ART = {
   illidan:'assets/heroes/illidan.png',
 };
-const HERO_ART_ASPECT = { illidan:0.75 };   // width/height per hero (default 0.72)
+const HERO_ART_ASPECT = { illidan:0.826 };   // width/height per hero (default 0.72)
 const _heroTex = {};
 function heroTexture(url){
   if(_heroTex[url]) return _heroTex[url];
