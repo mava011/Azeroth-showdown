@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.65';
+const BUILD = 'v0.66';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -435,13 +435,14 @@ const scene = new THREE.Scene();
 function skyTexture(){
   const c=document.createElement('canvas'); c.width=16; c.height=256;
   const ctx=c.getContext('2d'); const g=ctx.createLinearGradient(0,0,0,256);
-  // deeper top, warm hazy horizon (sun-washed)
-  g.addColorStop(0,'#1b356e'); g.addColorStop(0.42,'#3f74bd'); g.addColorStop(0.74,'#86b4dc'); g.addColorStop(0.93,'#dfe6d8'); g.addColorStop(1,'#f3e7c4');
+  // epic Azeroth war-dusk: deep indigo crown -> royal blue -> smoky violet -> fiery amber horizon
+  g.addColorStop(0,'#12193e'); g.addColorStop(0.38,'#27407e'); g.addColorStop(0.64,'#6a5e93');
+  g.addColorStop(0.82,'#c07a55'); g.addColorStop(0.94,'#e8a85a'); g.addColorStop(1,'#f6d089');
   ctx.fillStyle=g; ctx.fillRect(0,0,16,256);
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
 }
 scene.background = skyTexture();
-scene.fog = new THREE.Fog(0x9fbcd8, 40, 92);          // gentle haze on the far background only
+scene.fog = new THREE.Fog(0xb98a64, 42, 96);          // warm dusk haze on the far background
 
 const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 200);
 // Auto-fit the whole play area into view on any screen/orientation.
@@ -590,15 +591,21 @@ const ARENA_W = 8.6, ARENA_L = 15.4;
 const X_MIN=-3.2, X_MAX=3.2;
 const arena = new THREE.Group(); scene.add(arena);
 const TOWERS=[]; const BRAZIERS=[];
-// mown-grass texture: base green + alternating stripes + speckle for a Clash-style field
-function grassTexture(){
+// Azeroth factions: near half (z>0) = Alliance (blue/gold), far half (z<0) = Horde (red/black)
+const FAC = {
+  alliance:{ cloth:0x2a5bd0, trim:0xf0c84a, stone:0xc3ccdb, stone2:0x8e99ad, glow:0x74b8ff },
+  horde:   { cloth:0xb52a22, trim:0x231c20, wood:0x4a3526, iron:0x36333c, bone:0xe6dfca, glow:0xff6a32 },
+};
+function teamFac(team){ return team===0?FAC.alliance:FAC.horde; }
+// speckled ground texture (base + faint banding + two speckle colors) — reused for both fields
+function groundTexture(base, a, b){
   const c=document.createElement('canvas'); c.width=128; c.height=256; const x=c.getContext('2d');
-  x.fillStyle='#4f9e5c'; x.fillRect(0,0,128,256);
-  for(let i=0;i<16;i++){ x.fillStyle=(i%2)?'rgba(255,255,255,0.05)':'rgba(0,46,12,0.07)'; x.fillRect(0,i*16,128,16); }
-  for(let i=0;i<1500;i++){ const px=Math.random()*128, py=Math.random()*256;
-    x.fillStyle=Math.random()<0.5?'rgba(46,96,46,0.22)':'rgba(150,210,140,0.16)'; x.fillRect(px,py,2,2); }
+  x.fillStyle=base; x.fillRect(0,0,128,256);
+  for(let i=0;i<14;i++){ x.fillStyle=(i%2)?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.06)'; x.fillRect(0,i*18,128,18); }
+  for(let i=0;i<1600;i++){ const px=Math.random()*128, py=Math.random()*256;
+    x.fillStyle=Math.random()<0.5?a:b; x.fillRect(px,py,2,2); }
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
-  t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(2,3); return t;
+  t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(2,2); return t;
 }
 // flowing-water texture (scrolled in the render loop)
 function riverTexture(){
@@ -635,12 +642,42 @@ function buildRock(s){
   g.scale.setScalar(s||1); return g;
 }
 function buildBanner(team){
-  const g=new THREE.Group(); const col=team===0?0x3f7bd0:0xcf4b45;
-  const pole=part(new THREE.CylinderGeometry(0.04,0.04,1.7,6), 0x4a3a22); pole.position.y=0.85; g.add(pole);
-  const cloth=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.92),
-    new THREE.MeshToonMaterial({color:col, gradientMap:GRAD, side:THREE.DoubleSide}));
-  cloth.position.set(0,1.2,0); g.add(cloth);
-  const fin=part(new THREE.ConeGeometry(0.06,0.18,6), 0xf4c542); fin.position.y=1.74; g.add(fin);
+  const f=teamFac(team); const g=new THREE.Group();
+  const pole=part(new THREE.CylinderGeometry(0.045,0.045,2.0,6), team===0?0xbfa76a:0x3a2a1e); pole.position.y=1.0; g.add(pole);
+  const cloth=new THREE.Mesh(new THREE.PlaneGeometry(0.72,1.05),
+    new THREE.MeshToonMaterial({color:f.cloth, gradientMap:GRAD, side:THREE.DoubleSide}));
+  cloth.position.set(0,1.38,0); g.add(cloth);
+  // faction emblem: Alliance = gold ring/crest, Horde = black jagged spike
+  if(team===0){ const ring=part(new THREE.TorusGeometry(0.17,0.045,8,18), f.trim); ring.position.set(0,1.42,0.03); g.add(ring);
+    const bar=part(new THREE.BoxGeometry(0.06,0.34,0.05), f.trim); bar.position.set(0,1.42,0.03); g.add(bar); }
+  else { const em=part(new THREE.OctahedronGeometry(0.2,0), 0x14100f); em.position.set(0,1.42,0.04); em.scale.set(1,1.5,0.4); g.add(em); }
+  const fin=part(new THREE.ConeGeometry(0.06,0.2,6), f.trim); fin.position.y=2.06; g.add(fin);
+  return g;
+}
+// Horde war totem: pole topped with a tusked skull, horns and feathers
+function buildTotem(){
+  const g=new THREE.Group();
+  const pole=part(new THREE.CylinderGeometry(0.07,0.09,1.4,6), 0x4a3526); pole.position.y=0.7; g.add(pole);
+  const skull=part(new THREE.SphereGeometry(0.2,8,7), 0xe6dfca); skull.position.y=1.5; skull.scale.set(1,1.05,0.92); g.add(skull);
+  const jaw=part(new THREE.BoxGeometry(0.22,0.08,0.16), 0xcfc6ad); jaw.position.y=1.37; g.add(jaw);
+  for(const s of [-1,1]){ const h=part(new THREE.ConeGeometry(0.05,0.34,5), 0x2a2026); h.position.set(s*0.18,1.62,0); h.rotation.z=s*0.8; g.add(h);
+    const fe=part(new THREE.ConeGeometry(0.05,0.3,4), 0xb52a22); fe.position.set(s*0.1,1.02,-0.12); fe.rotation.set(0.3,0,s*0.2); g.add(fe); }
+  return g;
+}
+// Alliance camp tent (blue & white)
+function buildTent(){
+  const g=new THREE.Group();
+  const body=part(new THREE.ConeGeometry(0.62,0.78,4), 0xe4ebf4); body.position.y=0.39; body.rotation.y=Math.PI/4; g.add(body);
+  const trim=part(new THREE.CylinderGeometry(0.64,0.68,0.1,4), 0x2a5bd0); trim.position.y=0.05; trim.rotation.y=Math.PI/4; g.add(trim);
+  const flag=part(new THREE.ConeGeometry(0.05,0.16,5), 0xf0c84a); flag.position.y=0.84; g.add(flag);
+  return g;
+}
+// scattered bone pile (Horde wastes)
+function buildBones(){
+  const g=new THREE.Group();
+  for(let i=0;i<4;i++){ const b=part(new THREE.CapsuleGeometry(0.035,0.22,3,6), 0xe6dfca);
+    b.position.set((Math.random()-0.5)*0.45,0.07,(Math.random()-0.5)*0.45); b.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3); g.add(b); }
+  const skull=part(new THREE.SphereGeometry(0.12,8,7), 0xe6dfca); skull.position.set(0.05,0.12,0); g.add(skull);
   return g;
 }
 function buildBrazier(team){
@@ -652,23 +689,39 @@ function buildBrazier(team){
   flame.position.y=0.96; g.add(flame); g.userData={flame}; BRAZIERS.push(flame); return g;
 }
 function buildTower(x,z,team){
-  const t=new THREE.Group();
-  const stone=0x9aa0ab, stone2=0x7b818d, trim=team===0?0x3f7bd0:0xcf4b45;
-  const base=part(new THREE.CylinderGeometry(0.8,0.94,0.42,8), stone2); base.position.y=0.21; t.add(base);
-  const body=part(new THREE.CylinderGeometry(0.6,0.74,1.5,8), stone); body.position.y=1.1; t.add(body);
-  const band=part(new THREE.CylinderGeometry(0.75,0.75,0.16,8), trim); band.position.y=1.86; t.add(band);
-  const top=part(new THREE.CylinderGeometry(0.78,0.72,0.26,8), stone2); top.position.y=2.05; t.add(top);
-  for(let i=0;i<8;i++){ const a=(i/8)*6.283; const m=part(new THREE.BoxGeometry(0.17,0.24,0.17), stone);
-    m.position.set(Math.cos(a)*0.68, 2.28, Math.sin(a)*0.68); t.add(m); }
-  // hanging faction banner
-  const cloth=new THREE.Mesh(new THREE.PlaneGeometry(0.42,0.66),
-    new THREE.MeshToonMaterial({color:trim, gradientMap:GRAD, side:THREE.DoubleSide}));
-  cloth.position.set(0,1.18,0.62); t.add(cloth);
-  // glowing runestone
-  const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(0.3),
-    new THREE.MeshBasicMaterial({color: team===0?0x6fb4ff:0xff7a5a, toneMapped:false}));
-  crystal.position.y=2.62; t.add(crystal);
-  t.position.set(x,0,z); arena.add(t); TOWERS.push(crystal); return t;
+  const t=new THREE.Group(); const f=teamFac(team);
+  if(team===0){
+    // Alliance keep: pale stone tower, blue conical roof, gold band, crenellations
+    const base=part(new THREE.CylinderGeometry(0.86,1.0,0.5,10), f.stone2); base.position.y=0.25; t.add(base);
+    const body=part(new THREE.CylinderGeometry(0.6,0.78,1.55,10), f.stone); body.position.y=1.18; t.add(body);
+    const band=part(new THREE.CylinderGeometry(0.74,0.74,0.14,10), f.trim); band.position.y=1.92; t.add(band);
+    for(let i=0;i<10;i++){ const a=(i/10)*6.283; const m=part(new THREE.BoxGeometry(0.16,0.26,0.16), f.stone2);
+      m.position.set(Math.cos(a)*0.66, 2.12, Math.sin(a)*0.66); t.add(m); }
+    const roof=part(new THREE.ConeGeometry(0.84,0.95,10), f.cloth); roof.position.y=2.7; t.add(roof);
+    const finial=part(new THREE.ConeGeometry(0.05,0.26,6), f.trim); finial.position.y=3.32; t.add(finial);
+    const cloth=new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.78),
+      new THREE.MeshToonMaterial({color:f.cloth, gradientMap:GRAD, side:THREE.DoubleSide}));
+    cloth.position.set(0,1.14,0.66); t.add(cloth);
+    const emblem=part(new THREE.TorusGeometry(0.11,0.035,8,16), f.trim); emblem.position.set(0,1.2,0.69); t.add(emblem);
+  } else {
+    // Horde spike-tower: dark wood & iron, bone palisade spikes, front tusks + skull
+    const base=part(new THREE.CylinderGeometry(0.92,1.06,0.46,8), f.iron); base.position.y=0.23; t.add(base);
+    const body=part(new THREE.CylinderGeometry(0.58,0.82,1.7,8), f.wood); body.position.y=1.2; t.add(body);
+    for(const yy of [0.6,1.66]){ const b=part(new THREE.CylinderGeometry(0.72,0.8,0.13,8), f.iron); b.position.y=yy; t.add(b); }
+    for(let i=0;i<9;i++){ const a=(i/9)*6.283; const sp=part(new THREE.ConeGeometry(0.08,0.5,5), f.bone);
+      sp.position.set(Math.cos(a)*0.72, 2.1, Math.sin(a)*0.72); t.add(sp); }
+    for(const s of [-1,1]){ const tusk=part(new THREE.ConeGeometry(0.1,0.8,6), f.bone);
+      tusk.position.set(s*0.5,1.7,0.52); tusk.rotation.set(0.7,0,-s*0.5); t.add(tusk); }
+    const skull=part(new THREE.SphereGeometry(0.22,8,7), f.bone); skull.position.set(0,1.62,0.6); skull.scale.set(1,1.05,0.9); t.add(skull);
+    const cloth=new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.82),
+      new THREE.MeshToonMaterial({color:f.cloth, gradientMap:GRAD, side:THREE.DoubleSide}));
+    cloth.position.set(0,1.05,0.72); t.add(cloth);
+  }
+  // floating faction power-core (spun & bobbed by the TOWERS render loop); above the roof/spikes
+  const core = new THREE.Mesh(team===0?new THREE.OctahedronGeometry(0.27):new THREE.IcosahedronGeometry(0.27,0),
+    new THREE.MeshBasicMaterial({color:f.glow, toneMapped:false}));
+  core.position.y = team===0?3.62:2.78; core.userData.baseY=core.position.y; t.add(core); TOWERS.push(core);
+  t.position.set(x,0,z); arena.add(t); return t;
 }
 function buildBridge(x){
   const g=new THREE.Group();
@@ -678,57 +731,61 @@ function buildBridge(x){
 }
 (function buildArena(){
   const board = new THREE.Mesh(new THREE.BoxGeometry(ARENA_W, 0.8, ARENA_L),
-    new THREE.MeshToonMaterial({color:0x3f8a4e, gradientMap:GRAD}));
+    new THREE.MeshToonMaterial({color:0x2c2620, gradientMap:GRAD}));
   board.position.y=-0.4; board.receiveShadow=true; arena.add(board);
-  // textured grass field
-  const grass = new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.4, ARENA_L-0.4),
-    new THREE.MeshToonMaterial({color:0xffffff, map:grassTexture(), gradientMap:GRAD}));
-  grass.rotation.x=-Math.PI/2; grass.position.y=0.005; grass.receiveShadow=true; arena.add(grass);
-  // worn dirt lane paths down each side
+  // faction-split battlefield: Alliance grassland (near, z>0) vs Horde scorched waste (far, z<0)
+  const half=(ARENA_L-0.4)/2;
+  const grass=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.4, half-0.1),
+    new THREE.MeshToonMaterial({color:0xffffff, map:groundTexture('#3f7a3e','rgba(120,170,100,0.30)','rgba(26,62,30,0.42)'), gradientMap:GRAD}));
+  grass.rotation.x=-Math.PI/2; grass.position.set(0,0.005,half/2+0.3); grass.receiveShadow=true; arena.add(grass);
+  const dirt=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.4, half-0.1),
+    new THREE.MeshToonMaterial({color:0xffffff, map:groundTexture('#5e3a28','rgba(132,76,46,0.42)','rgba(38,22,16,0.5)'), gradientMap:GRAD}));
+  dirt.rotation.x=-Math.PI/2; dirt.position.set(0,0.005,-(half/2+0.3)); dirt.receiveShadow=true; arena.add(dirt);
+  // worn war-road lanes down each side
   const pathTex=pathTexture();
   for(const lx of [-2.0,2.0]){
     const path=new THREE.Mesh(new THREE.PlaneGeometry(1.5, ARENA_L-1.0),
-      new THREE.MeshToonMaterial({color:0xffffff, map:pathTex, gradientMap:GRAD, transparent:true, opacity:0.92}));
+      new THREE.MeshToonMaterial({color:0xffffff, map:pathTex, gradientMap:GRAD, transparent:true, opacity:0.9}));
     path.rotation.x=-Math.PI/2; path.position.set(lx,0.011,0); path.receiveShadow=true; arena.add(path);
   }
   // team deployment pads near each end
   for(const s of [-1,1]){ const pad=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-1.0,2.4),
-      new THREE.MeshBasicMaterial({color:s>0?0x3a7bd5:0xe0524d, transparent:true, opacity:0.12, depthWrite:false}));
+      new THREE.MeshBasicMaterial({color:s>0?0x3a7bd5:0xe0524d, transparent:true, opacity:0.13, depthWrite:false}));
     pad.rotation.x=-Math.PI/2; pad.position.set(0,0.012,s*5.6); arena.add(pad); }
-  // center river (flowing) + stone banks + foam
+  // contested war-front river in a rocky gorge
   RIVER_TEX=riverTexture();
   const river = new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.3, 1.5),
-    new THREE.MeshToonMaterial({color:0x8fd0ee, map:RIVER_TEX, gradientMap:GRAD}));
+    new THREE.MeshToonMaterial({color:0x4f7fa0, map:RIVER_TEX, gradientMap:GRAD}));
   river.rotation.x=-Math.PI/2; river.position.y=0.02; arena.add(river);
-  for(const s of [-1,1]){ const bank=part(new THREE.BoxGeometry(ARENA_W-0.3,0.16,0.18), 0x8c7d63);
-    bank.position.set(0,0.04,s*0.82); arena.add(bank);
-    const foam=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.3,0.12),
-      new THREE.MeshBasicMaterial({color:0xeaf7ff, transparent:true, opacity:0.5, depthWrite:false}));
+  for(const s of [-1,1]){ const bank=part(new THREE.BoxGeometry(ARENA_W-0.3,0.2,0.22), 0x6b6258);
+    bank.position.set(0,0.05,s*0.82); arena.add(bank);
+    const foam=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.3,0.1),
+      new THREE.MeshBasicMaterial({color:0xdce9f0, transparent:true, opacity:0.4, depthWrite:false}));
     foam.rotation.x=-Math.PI/2; foam.position.set(0,0.025,s*0.7); arena.add(foam); }
-  buildBridge(-2.0); buildBridge(2.0);            // lane bridges over the river
+  buildBridge(-2.0); buildBridge(2.0);            // lane bridges over the gorge
   // border rail
   const rail = new THREE.Mesh(new THREE.BoxGeometry(ARENA_W+0.4, 0.5, ARENA_L+0.4),
-    new THREE.MeshToonMaterial({color:0x6b4a2a, gradientMap:GRAD}));
+    new THREE.MeshToonMaterial({color:0x4a3a2a, gradientMap:GRAD}));
   rail.position.y=-0.5; arena.add(rail);
   // stone tile border framing the field
-  const bw=0.36, bcol=0xb6a079;
+  const bw=0.36, bcol=0x9a8a6a;
   for(const s of [-1,1]){
     const long=part(new THREE.BoxGeometry(bw,0.13,ARENA_L-0.4), bcol); long.position.set(s*(ARENA_W/2-0.2-bw/2),0.0,0); arena.add(long);
     const short=part(new THREE.BoxGeometry(ARENA_W-0.4,0.13,bw), bcol); short.position.set(0,0.0,s*(ARENA_L/2-0.2-bw/2)); arena.add(short);
   }
   outlined(board,1.005);
-  // end towers (player = blue near, rival = red far)
+  // keeps: Alliance near (team 0), Horde far (team 1)
   buildTower(-2.7, 7.0, 0); buildTower(2.7, 7.0, 0);
   buildTower(-2.7,-7.0, 1); buildTower(2.7,-7.0, 1);
-  // scenery props in the green margins (clear of the unit lanes, |x|<=2.7)
   const place=(obj,x,z,ry)=>{ obj.position.set(x,0,z); if(ry)obj.rotation.y=ry; arena.add(obj); };
   place(buildBanner(0),0,7.7); place(buildBanner(1),0,-7.7);
-  for(const z of [7.2,-7.2]) for(const x of [-1.55,1.55]) place(buildBrazier(z>0?0:1), x, z);
-  // pines & rocks along the long edges
-  const edgeZ=[6.2,4.2,2.4,-2.4,-4.2,-6.2];
-  edgeZ.forEach((z,i)=>{ const s=0.85+((i*7)%5)*0.08;
-    place(buildPine(s), -3.55, z, i); place(i%2?buildRock(0.9):buildPine(s*0.9), 3.55, z, -i); });
-  place(buildRock(1.1),-3.0,7.4,0.4); place(buildRock(1.0),3.0,-7.4,1.2);
+  for(const x of [-1.55,1.55]){ place(buildBrazier(0),x,7.2); place(buildBrazier(1),x,-7.2); }
+  // Alliance margins (z>0): Elwynn pines + camp tents + a banner
+  [6.0,4.0,2.2].forEach((z,i)=>{ place(buildPine(0.95+(i%2)*0.12), -3.55, z, i); place(i%2?buildTent():buildPine(0.9), 3.55, z, -i); });
+  place(buildBanner(0),-3.05,6.6,0.4); place(buildTent(),3.1,6.5,0.6);
+  // Horde margins (z<0): war totems + bone piles + rocks
+  [-6.0,-4.0,-2.2].forEach((z,i)=>{ place(buildTotem(), -3.55, z, i); place(i%2?buildBones():buildRock(0.95), 3.55, z, -i); });
+  place(buildTotem(),3.05,-6.6,0.3); place(buildBones(),-3.1,-6.5,0);
 })();
 
 /* ---------------------------- Hero looks ---------------------------------- */
@@ -2118,7 +2175,7 @@ function tick(){
   // commander cooldown
   if(G.cast && G.cast.cd>0){ G.cast.cd-=dt; if(G.cast.cd<0)G.cast.cd=0; updateCastBtn(); }
   // spinning tower crystals
-  for(const c of TOWERS){ c.rotation.y+=dt*1.2; c.position.y=2.62+Math.sin(clock.elapsedTime*2+c.id)*0.05; }
+  for(const c of TOWERS){ c.rotation.y+=dt*1.2; c.position.y=(c.userData.baseY||2.62)+Math.sin(clock.elapsedTime*2+c.id)*0.05; }
   for(const f of BRAZIERS){ const k=0.85+Math.sin(clock.elapsedTime*16+f.id)*0.12+Math.random()*0.06;
     f.scale.set(1, k, 1); }
   if(RIVER_TEX) RIVER_TEX.offset.y += dt*0.18;   // flowing water
