@@ -37,6 +37,11 @@
     { "id": "jaina", "filename": "jaina.png", "category": "heroes", "aspect": "3:4", "transparent": true,
       "prompt": "Jaina Proudmoore the Archmage, a regal human sorceress with fair skin and long platinum-blonde hair with a signature white streak, elegant blue-and-white mage robes with gold trim, a tall staff crowned with a radiant blue frost crystal, swirling arcane frost and snowflakes, full body, three-quarter front view, isolated full-body cutout, no ground, no scenery, vertical." },
     { "id": "rexxar", "filename": "rexxar.png", "category": "heroes", "aspect": "3:4", "transparent": true,
-      "prompt": "Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with broad green-brown muscle, a fanged beast-skull mask helm, heavy fur-and-bone armor with animal pelts, wielding twin heavy axes, weathered and wild, full body, three-quarter front view, heroic idle stance, isolated full-body cutout, no ground, no scenery, vertical." }
+      "prompt": "Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with broad green-brown muscle, a fanged beast-skull mask helm, heavy fur-and-bone armor with animal pelts, wielding twin heavy axes, weathered and wild, full body, three-quarter front view, heroic idle stance, isolated full-body cutout, no ground, no scenery, vertical." },
+
+    { "id": "misha", "filename": "misha.png", "category": "heroes", "aspect": "1:1", "transparent": true,
+      "prompt": "Misha, Rexxar's loyal giant war-bear, a massive shaggy brown grizzly bear with battle scars and fierce loyal amber eyes, a few leather-and-bone armor straps, standing in a powerful protective four-legged stance, full body head-to-paws clearly in frame, three-quarter front view, isolated full-body cutout, no ground, no scenery." },
+    { "id": "treant", "filename": "treant.png", "category": "heroes", "aspect": "3:4", "transparent": true,
+      "prompt": "A summoned Ancient Treant, a towering walking tree-creature with a gnarled mossy bark body, thick root-like legs and clawed branch arms, glowing green eyes set in a carved-bark face, a leafy mossy crown, vines and small glowing nature wisps, noble and ancient, complete head-to-roots full body clearly in frame, three-quarter front view, isolated full-body cutout, no ground, no scenery, vertical." }
   ]
 }

@@ -366,7 +366,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.71';
+const BUILD = 'v0.72';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -381,7 +381,8 @@ const ABILITIES = {
   berserk:        {name:"Berserk",         desc:"Rage: +dmg & speed", cd:6.0, passive:false},
   heal:           {name:"Holy Light",      desc:"Heal wounded ally", cd:4.0, passive:false},
   whirlwind:      {name:"Whirlwind",       desc:"Spin, hit all near", cd:5.0, passive:false},
-  summon:         {name:"Summon",          desc:"Call a companion", cd:7.0, passive:false},
+  summon:         {name:"Summon Treant",   desc:"Grow an Ancient (ongoing)", cd:8.0, passive:false},
+  bestial_wrath:  {name:"Bestial Wrath",   desc:"Enrage self + beast", cd:7.0, passive:false},
   root:           {name:"Entangle",        desc:"Root nearest foe", cd:5.0, passive:false},
   starfall:       {name:"Starfall",        desc:"Stars smash an area", cd:5.5, passive:false},
 };
@@ -400,7 +401,7 @@ const PRESETS = [
   H({id:"grommash", name:"Grommash",  cls:"Warrior",      color:0x7a4a30, gem:0xff5a4d, hp:175, dmg:22, atk:1.1, kind:"melee",  rng:1.3, spd:2.0, cost:4, weapon:"axe",    ability:"whirlwind"}),
   H({id:"malfurion",name:"Malfurion", cls:"Druid",        color:0x2f8f5b, gem:0xffcf66, hp:140, dmg:12, atk:0.9, kind:"ranged", rng:4.0, spd:1.5, cost:4, weapon:"staff",  ability:"summon"}),
   H({id:"tyrande",  name:"Tyrande",   cls:"Priestess",    color:0x9b6fd6, gem:0xfff2b0, hp:115, dmg:13, atk:1.0, kind:"ranged", rng:5.0, spd:1.8, cost:4, weapon:"bow",    ability:"starfall"}),
-  H({id:"rexxar",   name:"Rexxar",    cls:"Beastmaster",  color:0x8a6a3a, gem:0xff8c42, hp:170, dmg:16, atk:1.0, kind:"melee",  rng:1.3, spd:1.8, cost:5, weapon:"axe",    ability:"summon"}),
+  H({id:"rexxar",   name:"Rexxar",    cls:"Beastmaster",  color:0x8a6a3a, gem:0xff8c42, hp:170, dmg:16, atk:1.0, kind:"melee",  rng:1.3, spd:1.8, cost:5, weapon:"axe",    ability:"bestial_wrath"}),
 ];
 const SWATCHES = [0x3aaa6f,0x6fa8ff,0xe0524d,0xe8c46b,0x9b6fd6,0x46c46a,0xff8c42,0x4dd0e1,0xa9bccd,0x6b3fa0,0xc0577a,0x394063];
 const WEAPONS = ["sword","axe","mace","staff","bow","glaive"];
@@ -1197,11 +1198,14 @@ const HERO_ART = {
   tyrande:'public/assets/heroes/tyrande.png',
   jaina:'public/assets/heroes/jaina.png',
   rexxar:'public/assets/heroes/rexxar.png',
+  misha:'public/assets/heroes/misha.png',     // Rexxar's war-bear companion
+  treant:'public/assets/heroes/treant.png',   // Malfurion's summoned Ancient
 };
 // width/height of each painted cutout (drives the billboard quad's proportions). Default 0.72.
 const HERO_ART_ASPECT = {
   illidan:0.667, arthas:0.582, sylvanas:0.632, uther:0.586, grommash:0.678,
   malfurion:0.650, thrall:0.680, tyrande:0.639, jaina:0.642, rexxar:0.661,
+  misha:1.042, treant:0.640,
 };
 // a camera-facing textured quad sized to read like the other heroes; pivot at the feet
 function buildSpriteModel(hero, team){
@@ -1644,6 +1648,23 @@ function vines(pos){
     m.position.set(pos.x+Math.cos(ang)*r,-0.45,pos.z+Math.sin(ang)*r); m.rotation.z=(Math.random()-0.5)*0.6;
     let t=0; addVfx(m,(dt)=>{ t+=dt; m.position.y=t<0.22? -0.45+t*3.4 : 0.3; if(t>0.6){ m.scale.y=Math.max(0.01,1-(t-0.6)*3); m.material.opacity=Math.max(0,1-(t-0.6)*3);} return t<0.95; }); }
 }
+// spiralling green nature wisps where a treant rises from the earth
+function natureSwirl(pos){
+  ringBurst(pos,0x8be07a,0.4,1.8,0.5);
+  for(let i=0;i<10;i++){ const a=(i/10)*6.283;
+    const m=new THREE.Sprite(glowSpriteMat(i%2?0xaef07a:0x6fd06a)); m.scale.set(0.22,0.22,1);
+    const r=1.0; let t=0;
+    addVfx(m,(dt)=>{ t+=dt; const k=t/0.7, ang=a+t*5, rr=r*(1-k);
+      m.position.set(pos.x+Math.cos(ang)*rr, 0.2+k*2.0, pos.z+Math.sin(ang)*rr);
+      m.material.opacity=Math.max(0,1-k); return t<0.7; }); }
+}
+// concentric roar shockwave (Rexxar's Bestial Wrath)
+function roar(pos){
+  for(let i=0;i<3;i++){ const m=new THREE.Mesh(new THREE.RingGeometry(0.3,0.5,28),
+      new THREE.MeshBasicMaterial({color:0xffb060, transparent:true, opacity:0.8, side:THREE.DoubleSide, toneMapped:false}));
+    m.rotation.x=-Math.PI/2; m.position.set(pos.x,0.1+i*0.15,pos.z);
+    let t=-i*0.12; addVfx(m,(dt)=>{ t+=dt; if(t<0)return true; const k=t/0.5; m.scale.setScalar(1+k*4); m.material.opacity=Math.max(0,0.8*(1-k)); return k<1; }); }
+}
 
 /* =========================================================================
    GAME / BATTLE STATE
@@ -1801,7 +1822,9 @@ function makeCompanion(team, type, x, z){
     hp:d.hp, dmg:d.dmg, atk:d.atk, kind:'melee', rng:1.3, spd:d.spd, cost:0,
     weapon:'none', ability:'lifesteal', companion:type};
   const px = x!=null?x:0, pz = z!=null?z:(team===0?6.0:-6.0);
-  return spawnUnit(beast, team, px, pz, type==='treant'?1.05:0.9, true);
+  // painted billboard companions are sized off the hero sprite (H≈3.9): a low chunky bear,
+  // a tall imposing Ancient — both read smaller than a full hero.
+  return spawnUnit(beast, team, px, pz, type==='treant'?0.92:0.62, true);
 }
 // quadruped / ancient companion models (own userData so the anim loop is happy)
 function buildBeast(hero, team){
@@ -1914,17 +1937,37 @@ function dealDamage(attacker, target, amount, color){
   if(amount>=30){ const p=target.group.position.clone(); p.y=0.12;
     ringBurst(p, 0xffffff, 0.18, 0.75, 0.22); hitStop(0.05); }
   if(attacker && attacker.hero.ability==='lifesteal' && !attacker.dead){
-    attacker.hp=Math.min(attacker.maxHp, attacker.hp+amount*0.35);
-    soulWisp(target.group.position, attacker.group.position, attacker.hero.id==='arthas'?0x8fe3ff:0xb27bff);
+    const healed=Math.min(attacker.maxHp-attacker.hp, amount*0.4);
+    attacker.hp+=healed;
+    const col=attacker.hero.id==='arthas'?0x8fe3ff:0xc46bff;
+    lifeDrain(target.group.position, attacker, col);                 // visible soul stream victim -> attacker
+    if(healed>=1){ healGlow(attacker.group.position, col); attacker.flash=Math.max(attacker.flash,0.1);
+      damageNumber(attacker.group.position, '+'+Math.round(healed), '#8fffd0'); }
   }
   if(target.hp<=0){ killUnit(target); }
 }
-// a wisp that drains from victim to attacker (Frostmourne / lifesteal)
-function soulWisp(from, to, color){
-  const m=new THREE.Mesh(new THREE.SphereGeometry(0.1,8,6), new THREE.MeshBasicMaterial({color, transparent:true}));
-  const a=from.clone(); a.y+=0.9; const b=to.clone(); b.y+=0.9; m.position.copy(a);
-  let t=0; addVfx(m,(dt)=>{ t+=dt/0.35; m.position.lerpVectors(a,b,Math.min(1,t));
-    m.material.opacity=1-t*0.5; return t<1; });
+// a bright stream of soul wisps torn from the victim and pulled into the attacker (Frostmourne / lifesteal)
+function lifeDrain(from, to, color){
+  // a quick "soul tear" flash where life is ripped out of the victim
+  const tear=new THREE.Sprite(glowSpriteMat(color)); tear.position.copy(from); tear.position.y+=1.0; tear.scale.set(1.0,1.0,1);
+  let tt=0; addVfx(tear,(dt)=>{ tt+=dt; const k=tt/0.25; tear.scale.setScalar(1.0+k*0.9); tear.material.opacity=Math.max(0,1-k); return k<1; });
+  for(let i=0;i<7;i++){
+    const m=new THREE.Sprite(glowSpriteMat(color)); const sz=0.26+Math.random()*0.18; m.scale.set(sz,sz,1);
+    const a=from.clone(); a.x+=(Math.random()-0.5)*0.7; a.y+=0.6+Math.random()*1.0; a.z+=(Math.random()-0.5)*0.5;
+    m.position.copy(a);
+    const arc=(Math.random()-0.5)*1.2, delay=i*0.045; let t=-delay;
+    addVfx(m,(dt)=>{ t+=dt; if(t<0) return true; const b=to.group.position.clone(); b.y+=1.0; const k=Math.min(1,t/0.55);
+      m.position.lerpVectors(a,b,k*k); m.position.y+=Math.sin(k*Math.PI)*arc;        // curved soul arc
+      m.scale.setScalar(sz*(1+k*0.6)); m.material.opacity=k<0.8?1:Math.max(0,1-(k-0.8)*5); return k<1; });
+  }
+}
+// soft healing pulse + rising plus-motes on a unit that just leeched life
+function healGlow(pos, color){
+  const ring=new THREE.Mesh(new THREE.RingGeometry(0.3,0.46,24),
+    new THREE.MeshBasicMaterial({color:0x8fffd0, transparent:true, opacity:0.85, side:THREE.DoubleSide, toneMapped:false}));
+  ring.rotation.x=-Math.PI/2; ring.position.set(pos.x,0.12,pos.z);
+  let t=0; addVfx(ring,(dt)=>{ t+=dt; const k=t/0.5; ring.scale.setScalar(1+k*2.2); ring.material.opacity=Math.max(0,0.85*(1-k)); return k<1; });
+  glowParticles(pos, 0x9fffe0, 5, 0.5, 1.6);
 }
 function killUnit(u){
   u.dead=true; u.state='dead'; u.deathT=0;
@@ -1966,7 +2009,9 @@ function triggerAbility(u){
     case 'multishot':{
       if(!enemies.length) return false;
       const sorted=enemies.slice().sort((a,b)=>dist(u,a)-dist(u,b)).slice(0,3);
-      sorted.forEach(t=>fireProjectile(u,t,u.hero.dmg*0.8,0xb27bff));
+      // Sylvanas's volley: blighted arrows that leave a shadow-decay poison (green tint + DoT)
+      sorted.forEach(t=>{ fireProjectile(u,t,u.hero.dmg*0.8,0xb27bff);
+        t.poisonT=Math.max(t.poisonT,3.5); t.poisonDmg=Math.max(t.poisonDmg||0, u.hero.dmg*0.16); t.poisonSrc=u; });
       sfx(700,0.05); return true;
     }
     case 'berserk':{
@@ -2002,9 +2047,20 @@ function triggerAbility(u){
       sfx(240,0.1); return true;
     }
     case 'summon':{
-      const type = u.hero.id==='malfurion' ? 'treant' : 'bear';
-      const comp=makeCompanion(u.team, type, u.x+0.7, u.z);
-      poof(comp.group.position, type==='treant'?0x8be07a:0xffce8a); sfx(520,0.08); return true;
+      // Malfurion's ongoing Treant summon — cap at 2 living Ancients so it doesn't swarm
+      const mine=G.units.filter(x=>!x.dead && x.summonedBy===u && x.hero.companion==='treant').length;
+      if(mine>=2) return false;
+      natureSwirl(new THREE.Vector3(u.x+0.9,0,u.z));
+      const comp=makeCompanion(u.team, 'treant', u.x+0.9, u.z); comp.summonedBy=u;
+      poof(comp.group.position, 0x8be07a); sfx(300,0.12,'sine'); return true;
+    }
+    case 'bestial_wrath':{
+      // Rexxar enrages himself and his beast companion(s): a roar, +dmg & speed
+      u.buffT=Math.max(u.buffT,5); u.dmgMul=1.6; u.spdMul=1.5;
+      const beasts=allies.filter(a=>a!==u && a.hero.companion);
+      beasts.forEach(b=>{ b.buffT=Math.max(b.buffT,5); b.dmgMul=1.6; b.spdMul=1.5; ringBurst(b.group.position,0xff7a3a,0.4,1.8,0.45); });
+      ringBurst(p,0xff7a3a,0.5,2.4,0.5); glowParticles(p,0xffb060,10,1.6,1.0);
+      roar(p); sfx(120,0.16,'sawtooth'); screenShake(0.3); return true;
     }
   }
   return false;
@@ -2062,7 +2118,7 @@ function slashArc(u, target){
 // signature aura that flashes at a caster when an ability fires
 function castAura(u){
   const tints={ chain_lightning:0x9be7ff, frost_blast:0xbfe9ff, multishot:0xb27bff, berserk:0x39ff14,
-    heal:0xfff2a0, whirlwind:0xff7b4d, starfall:0xfff2a0, root:0x6bd06a, summon:0x8be07a };
+    heal:0xfff2a0, whirlwind:0xff7b4d, starfall:0xfff2a0, root:0x6bd06a, summon:0x8be07a, bestial_wrath:0xff7a3a };
   const c=tints[u.hero.ability]||u.hero.gem;
   const p=u.group.position.clone(); p.y=0.12; ringBurst(p,c,0.3,1.4,0.45);
   const col=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,3.0,16,1,true),
