@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.68';
+const BUILD = 'v0.69';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -429,7 +429,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;   // filmic grade for that Clash warmth
-renderer.toneMappingExposure = 1.12;
+renderer.toneMappingExposure = 1.04;                  // pulled down for the moodier dusk grade
 
 const scene = new THREE.Scene();
 function skyTexture(){
@@ -442,7 +442,7 @@ function skyTexture(){
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
 }
 scene.background = skyTexture();
-scene.fog = new THREE.Fog(0xb98a64, 42, 96);          // warm dusk haze on the far background
+scene.fog = new THREE.Fog(0xc0925f, 28, 82);          // warmer dusk haze, pulled in so the far board/props sink into atmosphere
 
 const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 200);
 // Auto-fit the whole play area into view on any screen/orientation.
@@ -450,7 +450,7 @@ const CAM = { base:new THREE.Vector3(), target:new THREE.Vector3(0,0.7,0), shake
 const PLAY = { hx:3.7, z:7.7, yTop:2.9, yBot:0 };
 // the camera frames a slightly tighter region than the full board so the heroes
 // read bigger (the outer board rim / far props can sit just off-screen)
-const FRAME = { hx:3.55, z:6.95 };
+const FRAME = { hx:3.15, z:6.3 };   // tighter frame: heroes read bigger; the tall painted keeps still peek in at the far/near edges
 function playCorners(){
   const out=[];
   for(const sx of [-1,1]) for(const sz of [-1,1]) for(const sy of [PLAY.yBot,PLAY.yTop])
@@ -503,19 +503,20 @@ function frameCamera(){
 function screenShake(a){ CAM.shake=Math.min(1.2, Math.max(CAM.shake,a)); }
 function hitStop(t){ G.hitStop=Math.max(G.hitStop||0, t); }
 
-// lights
-const hemi = new THREE.HemisphereLight(0xd6e6ff, 0x4f4030, 0.9);
+// lights — graded to the painted dusk: warmer, dimmer key + cooler low fill so the
+// board/props sit in the same moody golden-hour as the painted hero sprites & backdrop.
+const hemi = new THREE.HemisphereLight(0xc2d4f0, 0x46342a, 0.6);
 scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xfff0cf, 1.7);     // golden-hour key light
+const sun = new THREE.DirectionalLight(0xffe1b0, 1.25);    // golden-dusk key light
 sun.position.set(8, 17, 8); sun.castShadow = true;
 sun.shadow.mapSize.set(4096,4096);                         // crisper shadows
 sun.shadow.camera.near=1; sun.shadow.camera.far=60;
 sun.shadow.camera.left=-11; sun.shadow.camera.right=11; sun.shadow.camera.top=14; sun.shadow.camera.bottom=-14;
 sun.shadow.bias=-0.0004; sun.shadow.normalBias=0.025;
 scene.add(sun);
-const fill = new THREE.DirectionalLight(0x9fc0ff, 0.4); fill.position.set(-7,9,-7); scene.add(fill);
-const rim = new THREE.DirectionalLight(0xffe0a8, 0.7); rim.position.set(0,7,-13); scene.add(rim); // warm back rim
-scene.add(new THREE.AmbientLight(0x44607f, 0.38));
+const fill = new THREE.DirectionalLight(0x8fb0ee, 0.3); fill.position.set(-7,9,-7); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xffd79a, 0.8); rim.position.set(0,7,-13); scene.add(rim); // warm back rim separates units
+scene.add(new THREE.AmbientLight(0x3c3a4e, 0.3));
 // warm sun glow disc in the sky
 (function(){
   const c=document.createElement('canvas'); c.width=128; c.height=128; const x=c.getContext('2d');
@@ -527,18 +528,18 @@ scene.add(new THREE.AmbientLight(0x44607f, 0.38));
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthWrite:false, depthTest:false, fog:false, blending:THREE.AdditiveBlending}));
   s.position.set(10,17,-18); s.scale.set(22,22,1); s.renderOrder=-1; scene.add(s);
 })();
-// drifting dust motes for atmosphere
+// drifting embers + ash for the dusk-warzone atmosphere
 const MOTES=[];
 (function(){
   const c=document.createElement('canvas'); c.width=32; c.height=32; const x=c.getContext('2d');
-  const g=x.createRadialGradient(16,16,0,16,16,16); g.addColorStop(0,'rgba(255,250,230,0.9)'); g.addColorStop(1,'rgba(255,250,230,0)');
+  const g=x.createRadialGradient(16,16,0,16,16,16); g.addColorStop(0,'rgba(255,190,110,0.95)'); g.addColorStop(1,'rgba(255,150,70,0)');
   x.fillStyle=g; x.fillRect(0,0,32,32);
   const tex=new THREE.CanvasTexture(c);
-  const mat=new THREE.SpriteMaterial({map:tex, transparent:true, depthWrite:false, fog:false, blending:THREE.AdditiveBlending, opacity:0.5});
-  for(let i=0;i<46;i++){ const m=new THREE.Sprite(mat.clone());
+  const mat=new THREE.SpriteMaterial({map:tex, transparent:true, depthWrite:false, fog:false, blending:THREE.AdditiveBlending, opacity:0.55});
+  for(let i=0;i<64;i++){ const m=new THREE.Sprite(mat.clone());
     m.position.set((Math.random()-0.5)*9, 0.5+Math.random()*4.5, (Math.random()-0.5)*15);
-    const sc=0.05+Math.random()*0.09; m.scale.set(sc,sc,1);
-    m.userData={vy:0.1+Math.random()*0.15, vx:(Math.random()-0.5)*0.1, ph:Math.random()*6.28};
+    const sc=0.04+Math.random()*0.09; m.scale.set(sc,sc,1);
+    m.userData={vy:0.12+Math.random()*0.2, vx:(Math.random()-0.5)*0.12, ph:Math.random()*6.28};
     scene.add(m); MOTES.push(m);
   }
 })();
@@ -644,19 +645,6 @@ function pathTexture(){
 }
 let RIVER_TEX=null;   // referenced by the render loop to scroll the water
 // ---- props ----
-function buildPine(s){
-  const g=new THREE.Group();
-  const trunk=part(new THREE.CylinderGeometry(0.08,0.12,0.4,6), 0x5a3f24); trunk.position.y=0.2; g.add(trunk);
-  const c1=part(new THREE.ConeGeometry(0.42,0.6,7), 0x2f6f43); c1.position.y=0.62; g.add(c1);
-  const c2=part(new THREE.ConeGeometry(0.33,0.5,7), 0x357a4b); c2.position.y=0.95; g.add(c2);
-  const c3=part(new THREE.ConeGeometry(0.23,0.42,7), 0x3c834f); c3.position.y=1.26; g.add(c3);
-  g.scale.setScalar(s||1); return g;
-}
-function buildRock(s){
-  const g=new THREE.Group();
-  const r=part(new THREE.IcosahedronGeometry(0.3,0), 0x8c93a1); r.position.y=0.1; r.scale.set(1,0.7,1.1); g.add(r);
-  g.scale.setScalar(s||1); return g;
-}
 function buildBanner(team){
   const f=teamFac(team); const g=new THREE.Group();
   const pole=part(new THREE.CylinderGeometry(0.045,0.045,2.0,6), team===0?0xbfa76a:0x3a2a1e); pole.position.y=1.0; g.add(pole);
@@ -668,32 +656,6 @@ function buildBanner(team){
     const bar=part(new THREE.BoxGeometry(0.06,0.34,0.05), f.trim); bar.position.set(0,1.42,0.03); g.add(bar); }
   else { const em=part(new THREE.OctahedronGeometry(0.2,0), 0x14100f); em.position.set(0,1.42,0.04); em.scale.set(1,1.5,0.4); g.add(em); }
   const fin=part(new THREE.ConeGeometry(0.06,0.2,6), f.trim); fin.position.y=2.06; g.add(fin);
-  return g;
-}
-// Horde war totem: pole topped with a tusked skull, horns and feathers
-function buildTotem(){
-  const g=new THREE.Group();
-  const pole=part(new THREE.CylinderGeometry(0.07,0.09,1.4,6), 0x4a3526); pole.position.y=0.7; g.add(pole);
-  const skull=part(new THREE.SphereGeometry(0.2,8,7), 0xe6dfca); skull.position.y=1.5; skull.scale.set(1,1.05,0.92); g.add(skull);
-  const jaw=part(new THREE.BoxGeometry(0.22,0.08,0.16), 0xcfc6ad); jaw.position.y=1.37; g.add(jaw);
-  for(const s of [-1,1]){ const h=part(new THREE.ConeGeometry(0.05,0.34,5), 0x2a2026); h.position.set(s*0.18,1.62,0); h.rotation.z=s*0.8; g.add(h);
-    const fe=part(new THREE.ConeGeometry(0.05,0.3,4), 0xb52a22); fe.position.set(s*0.1,1.02,-0.12); fe.rotation.set(0.3,0,s*0.2); g.add(fe); }
-  return g;
-}
-// Alliance camp tent (blue & white)
-function buildTent(){
-  const g=new THREE.Group();
-  const body=part(new THREE.ConeGeometry(0.62,0.78,4), 0xe4ebf4); body.position.y=0.39; body.rotation.y=Math.PI/4; g.add(body);
-  const trim=part(new THREE.CylinderGeometry(0.64,0.68,0.1,4), 0x2a5bd0); trim.position.y=0.05; trim.rotation.y=Math.PI/4; g.add(trim);
-  const flag=part(new THREE.ConeGeometry(0.05,0.16,5), 0xf0c84a); flag.position.y=0.84; g.add(flag);
-  return g;
-}
-// scattered bone pile (Horde wastes)
-function buildBones(){
-  const g=new THREE.Group();
-  for(let i=0;i<4;i++){ const b=part(new THREE.CapsuleGeometry(0.035,0.22,3,6), 0xe6dfca);
-    b.position.set((Math.random()-0.5)*0.45,0.07,(Math.random()-0.5)*0.45); b.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3); g.add(b); }
-  const skull=part(new THREE.SphereGeometry(0.12,8,7), 0xe6dfca); skull.position.set(0.05,0.12,0); g.add(skull);
   return g;
 }
 function buildBrazier(team){
@@ -813,11 +775,12 @@ function buildBridge(x){
     const short=part(new THREE.BoxGeometry(ARENA_W-0.4,0.13,bw), bcol); short.position.set(0,0.0,s*(ARENA_L/2-0.2-bw/2)); arena.add(short);
   }
   outlined(board,1.005);
-  // optional painted Azeroth vista behind the far end (shows above the board's far edge)
+  // painted Azeroth vista behind the far end — raised & brought in a touch so the epic
+  // castle skyline looms above the board's far edge instead of a thin dark band
   if(BACKDROP_ART){
-    const bd=new THREE.Mesh(new THREE.PlaneGeometry(48,27),
+    const bd=new THREE.Mesh(new THREE.PlaneGeometry(52,29),
       new THREE.MeshBasicMaterial({map:tiledTexture(BACKDROP_ART,1,1), fog:false, depthWrite:false}));
-    bd.position.set(0,6.5,-27); arena.add(bd);
+    bd.position.set(0,8.6,-24); arena.add(bd);
   }
   // keeps: Alliance near (team 0), Horde far (team 1)
   buildTower(-2.7, 7.0, 0); buildTower(2.7, 7.0, 0);
@@ -825,12 +788,9 @@ function buildBridge(x){
   const place=(obj,x,z,ry)=>{ obj.position.set(x,0,z); if(ry)obj.rotation.y=ry; arena.add(obj); };
   place(buildBanner(0),0,7.7); place(buildBanner(1),0,-7.7);
   for(const x of [-1.55,1.55]){ place(buildBrazier(0),x,7.2); place(buildBrazier(1),x,-7.2); }
-  // Alliance margins (z>0): Elwynn pines + camp tents + a banner
-  [6.0,4.0,2.2].forEach((z,i)=>{ place(buildPine(0.95+(i%2)*0.12), -3.55, z, i); place(i%2?buildTent():buildPine(0.9), 3.55, z, -i); });
-  place(buildBanner(0),-3.05,6.6,0.4); place(buildTent(),3.1,6.5,0.6);
-  // Horde margins (z<0): war totems + bone piles + rocks
-  [-6.0,-4.0,-2.2].forEach((z,i)=>{ place(buildTotem(), -3.55, z, i); place(i%2?buildBones():buildRock(0.95), 3.55, z, -i); });
-  place(buildTotem(),3.05,-6.6,0.3); place(buildBones(),-3.1,-6.5,0);
+  // Procedural margin props (Elwynn pines, camp tents, war totems, bone piles, rocks) were
+  // removed in the painted-art migration — they read "toy" next to the painted keeps/heroes.
+  // The painted keeps + faction banners + glowing braziers now carry the margin flavour.
 })();
 
 /* ---------------------------- Hero looks ---------------------------------- */
@@ -1241,7 +1201,7 @@ function buildSpriteModel(hero, team){
   const g = new THREE.Group();
   const tex = heroTexture(HERO_ART[hero.id]);
   const aspect = HERO_ART_ASPECT[hero.id] || 0.72;
-  const H = 3.1, W = H*aspect;
+  const H = 3.9, W = H*aspect;   // taller billboards so the painted heroes are the focus
   const geo = new THREE.PlaneGeometry(W, H); geo.translate(0, H/2, 0);   // feet at y=0
   const mat = new THREE.MeshBasicMaterial({ map:tex, transparent:true, alphaTest:0.3,
     depthWrite:true, toneMapped:false, side:THREE.DoubleSide });
