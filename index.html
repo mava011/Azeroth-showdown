@@ -366,7 +366,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.70';
+const BUILD = 'v0.71';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1485,16 +1485,26 @@ function uiMat(color, extra){
   return new THREE.MeshBasicMaterial(Object.assign(
     {color, toneMapped:false, fog:false, depthTest:false, depthWrite:false, transparent:true}, extra||{}));
 }
-function makeHealthBar(team){
+function makeHealthBar(team, hasCd){
   const grp=new THREE.Group();
-  const W=0.92, H=0.12;
-  const frame=new THREE.Mesh(new THREE.PlaneGeometry(W+0.09,H+0.09), uiMat(0x0a0f1e));
-  const bg=new THREE.Mesh(new THREE.PlaneGeometry(W,H), uiMat(0x39405a)); bg.position.z=0.001;
-  const fill=new THREE.Mesh(new THREE.PlaneGeometry(W,H), uiMat(team===0?0x5fd873:0xff6a5e)); fill.position.z=0.002;
+  const W=0.92, H=0.12, CH=0.052;            // CH = cooldown bar height
+  const hpY = hasCd ? 0.045 : 0;             // lift the HP bar to make room for the cd bar
+  const frameH = hasCd ? H+CH+0.14 : H+0.09;
+  const frame=new THREE.Mesh(new THREE.PlaneGeometry(W+0.09,frameH), uiMat(0x0a0f1e));
+  const bg=new THREE.Mesh(new THREE.PlaneGeometry(W,H), uiMat(0x39405a)); bg.position.set(0,hpY,0.001);
+  const fill=new THREE.Mesh(new THREE.PlaneGeometry(W,H), uiMat(team===0?0x5fd873:0xff6a5e)); fill.position.set(0,hpY,0.002);
   const shine=new THREE.Mesh(new THREE.PlaneGeometry(W,H*0.34), uiMat(0xffffff,{opacity:0.18}));
-  shine.position.set(0,H*0.28,0.003);
+  shine.position.set(0,hpY+H*0.28,0.003);
   grp.add(frame); grp.add(bg); grp.add(fill); grp.add(shine);
-  grp.userData={fill, w:W}; grp.renderOrder=20; scene.add(grp); return grp;
+  grp.userData={fill, w:W};
+  if(hasCd){
+    const cdY=hpY-H*0.5-CH*0.5-0.02;
+    const cdbg=new THREE.Mesh(new THREE.PlaneGeometry(W,CH), uiMat(0x241b30)); cdbg.position.set(0,cdY,0.001);
+    const cdFill=new THREE.Mesh(new THREE.PlaneGeometry(W,CH), uiMat(0xffce54)); cdFill.position.set(0,cdY,0.002);
+    grp.add(cdbg); grp.add(cdFill);
+    grp.userData.cdFill=cdFill; grp.userData.cdW=W; grp.userData.cdMat=cdFill.material; grp.userData.cdY=cdY;
+  }
+  grp.renderOrder=20; scene.add(grp); return grp;
 }
 // soft contact shadow that grounds each unit on the field
 const SHADOW_TEX = (function(){
@@ -1579,6 +1589,11 @@ function glowPuff(pos,color,size,life,vel){
     m.scale.setScalar(size*(1+k*0.7)); m.material.opacity=Math.max(0,1-k); return k<1; });
   return m;
 }
+// small rising ember above a burning unit (used by the burn DoT tick)
+function emberPuff(pos){
+  const p=pos.clone(); p.x+=(Math.random()-0.5)*0.5; p.y+=0.6+Math.random()*0.7; p.z+=(Math.random()-0.5)*0.4;
+  glowPuff(p, Math.random()<0.5?0xff8a3a:0xffd060, 0.18+Math.random()*0.1, 0.5, {x:0,y:1.4,z:0});
+}
 function glowParticles(pos,color,n,spread,up){
   for(let i=0;i<(n||8);i++){ const ang=Math.random()*6.283, sp=(spread||1.5)*(0.4+Math.random());
     const p=pos.clone(); p.y+=0.9;
@@ -1600,6 +1615,16 @@ function frostShards(pos){
     m.position.set(pos.x+Math.cos(ang)*r,-0.3,pos.z+Math.sin(ang)*r);
     let t=0; addVfx(m,(dt)=>{ t+=dt; m.position.y=t<0.18? -0.3+t*3 : 0.24; if(t>0.55){ m.position.y-=dt*1.6; m.material.opacity=Math.max(0,1-(t-0.55)*3);} return t<0.9; }); }
   glowParticles(pos,0xeaf7ff,8,1.4,1.4);
+}
+// ice crystals that briefly encase a unit that just got frozen
+function frostbite(u){
+  const p=u.group.position;
+  glowParticles(p,0xbfe9ff,6,0.7,1.6);
+  for(let i=0;i<4;i++){ const ang=(i/4)*6.283+Math.random();
+    const m=fxToon(new THREE.ConeGeometry(0.07,0.42,5), 0xd6f2ff);
+    m.position.set(p.x+Math.cos(ang)*0.42, 0.1, p.z+Math.sin(ang)*0.42);
+    m.rotation.set((Math.random()-0.5)*0.5, ang, (Math.random()-0.5)*0.5);
+    let t=0; addVfx(m,(dt)=>{ t+=dt; m.scale.setScalar(Math.min(1,t*6)); if(t>0.9){ m.material.opacity=Math.max(0,1-(t-0.9)*2.2);} return t<1.4; }); }
 }
 function holyPillar(pos){
   const m=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.75,3.4,20,1,true),
@@ -1741,12 +1766,13 @@ function spawnUnit(hero, team, x, z, scaleMul, isMinion){
   const u={
     hero, team, group:g, x, z, hp, maxHp:hp,
     atkT:Math.random()*0.4, abilT:ABILITIES[hero.ability].cd*0.5+Math.random(),
-    state:'march', dead:false, slowT:0, rootT:0, shield:0, buffT:0, dmgMul:1, spdMul:1,
+    state:'march', dead:false, frozenT:0, burnT:0, poisonT:0, rootT:0, shield:0, buffT:0, dmgMul:1, spdMul:1,
     flash:0, lunge:0, spin:0, castT:0, isMinion:!!isMinion,
   };
   u.baseScale = g.scale.x;   // remember final scale (incl. minion multiplier) for death anim
   u.shadow=makeShadow(1.15*g.scale.x);
-  u.hb=makeHealthBar(team);
+  const ab=ABILITIES[hero.ability];
+  u.hb=makeHealthBar(team, !!ab && !ab.passive && ab.cd>0);
   if(!isMinion) u.label=makeLabel(hero.name, team);
   G.units.push(u);
   return u;
@@ -1934,7 +1960,7 @@ function triggerAbility(u){
     case 'frost_blast':{
       const t=nearest(u, enemies); if(!t) return false;
       frostShards(t.group.position);
-      enemies.forEach(e=>{ if(dist(e,t)<2.3){ dealDamage(u,e,u.hero.dmg*0.9,'#bfe9ff'); e.slowT=3; } });
+      enemies.forEach(e=>{ if(dist(e,t)<2.3){ dealDamage(u,e,u.hero.dmg*0.9,'#bfe9ff'); e.frozenT=Math.max(e.frozenT,3.2); frostbite(e); } });
       sfx(420,0.08); return true;
     }
     case 'multishot':{
@@ -2051,10 +2077,15 @@ function updateBattle(dt){
   G.roundTimer-=dt;
   for(const u of G.units){
     if(u.dead) continue;
-    // timers
-    if(u.slowT>0) u.slowT-=dt;
+    // status timers
+    if(u.frozenT>0) u.frozenT-=dt;
     if(u.rootT>0) u.rootT-=dt;
     if(u.buffT>0){ u.buffT-=dt; if(u.buffT<=0){ u.dmgMul=1; u.spdMul=1; } }
+    // damage-over-time: burn (fire) & poison (nature) tick ~3x/sec, with floating ticks
+    if(u.burnT>0){ u.burnT-=dt; u.dotAcc=(u.dotAcc||0)+dt;
+      if(u.dotAcc>=0.34){ u.dotAcc=0; dealDamage(u.burnSrc||null, u, (u.burnDmg||5), '#ffb15a'); emberPuff(u.group.position); } }
+    if(u.poisonT>0){ u.poisonT-=dt; u.pAcc=(u.pAcc||0)+dt;
+      if(u.pAcc>=0.4){ u.pAcc=0; dealDamage(u.poisonSrc||null, u, (u.poisonDmg||4), '#9be07a'); } }
     if(u.flash>0) u.flash-=dt;
     if(u.lunge>0) u.lunge-=dt;
     if(u.castT>0) u.castT-=dt;
@@ -2071,16 +2102,16 @@ function updateBattle(dt){
     // ability
     if(u.abilT<=0){ if(triggerAbility(u)) u.abilT=ABILITIES[u.hero.ability].cd; else u.abilT=0.5; }
 
+    const chill = u.frozenT>0?0.45:1;          // frost slows BOTH attack and movement
     if(d<=reach){
       u.state='attack';
       // face target
       faceToward(u, tgt.x, tgt.z);
-      if(u.atkT<=0){ basicAttackVisual(u, tgt); u.atkT = (1/u.hero.atk)/u.spdMul; sfx(u.team===0?330:300,0.03); }
+      if(u.atkT<=0){ basicAttackVisual(u, tgt); u.atkT = (1/u.hero.atk)/(u.spdMul*chill); sfx(u.team===0?330:300,0.03); }
     }else{
       u.state='march';
       if(u.rootT<=0){
-        const slow = u.slowT>0?0.45:1;
-        const step = u.hero.spd*u.spdMul*slow*dt;
+        const step = u.hero.spd*u.spdMul*chill*dt;
         const dx=tgt.x-u.x, dz=tgt.z-u.z; const len=Math.hypot(dx,dz)||1;
         u.x += dx/len*step; u.z += dz/len*step;
         faceToward(u, tgt.x, tgt.z);
@@ -2261,10 +2292,17 @@ function tick(){
       ud.sprite.position.x = (lk>0 ? bb.x*0.12*lk : 0);
     }
     ud.body.scale.set(bx,by,bz);
-    // hit flash: 3D bodies glow emissive; sprites brighten toward white via color multiply
+    // status + hit-flash tint. Sprites are tinted via colour-multiply (frost=blue, burn=
+    // orange, poison=green, rage=hot); 3D bodies glow emissive in the status colour.
     if(ud.bodyMat){
-      if(ud.isSprite){ const f=u.flash>0?(u.flash/0.16):0; ud.bodyMat.color.setScalar(1+f*0.9); }
-      else ud.bodyMat.emissive.setScalar(u.flash>0 ? (u.flash/0.16)*0.85 : 0);
+      let cr=1,cg=1,cb=1;
+      if(u.frozenT>0){ cr*=0.56; cg*=0.8; cb*=1.32; }
+      if(u.burnT>0){ cr*=1.34; cg*=0.74; cb*=0.5; }
+      if(u.poisonT>0){ cr*=0.74; cg*=1.24; cb*=0.72; }
+      if(u.buffT>0 && u.dmgMul>1){ cr*=1.26; cg*=0.92; cb*=0.74; }   // rage glow
+      const f=u.flash>0?(u.flash/0.16):0;                            // hit flash → white
+      if(ud.isSprite){ ud.bodyMat.color.setRGB(cr+f*0.9, cg+f*0.9, cb+f*0.9); }
+      else { ud.bodyMat.emissive.setRGB(f*0.85 + (u.burnT>0?0.32:0), f*0.85 + (u.poisonT>0?0.3:0), f*0.85 + (u.frozenT>0?0.38:0)); }
     }
     // contact shadow on the ground
     if(u.shadow){ u.shadow.position.set(g.position.x, 0.03, g.position.z); }
@@ -2275,6 +2313,15 @@ function tick(){
       const r=Math.max(0,u.hp/u.maxHp), w=u.hb.userData.w;
       u.hb.userData.fill.scale.x=r;
       u.hb.userData.fill.position.x=-0.5*w*(1-r);
+      // ability cooldown bar: fills as it recharges, pulses gold when ready to fire
+      const cdF=u.hb.userData.cdFill;
+      if(cdF){
+        const a=ABILITIES[u.hero.ability];
+        const prog=a.cd>0?Math.max(0,Math.min(1,1-Math.max(0,u.abilT)/a.cd)):1;
+        cdF.scale.x=prog; cdF.position.x=-0.5*u.hb.userData.cdW*(1-prog);
+        if(u.abilT<=0){ const pl=0.55+0.45*Math.sin(clock.elapsedTime*9); u.hb.userData.cdMat.color.setRGB(1,0.7+0.3*pl,0.25); }
+        else u.hb.userData.cdMat.color.setRGB(0.95,0.62,0.2);
+      }
     }
     if(u.label){
       u.label.position.set(g.position.x, 3.0+bob, g.position.z);
