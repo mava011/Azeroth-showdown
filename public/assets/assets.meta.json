@@ -119,5 +119,16 @@
     "model": "gpt-image-1",
     "prompt": "Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with broad green-brown muscle, a fanged beast-skull mask helm, heavy fur-and-bone armor with animal pelts, wielding twin heavy axes, weathered and wild, full body, three-quarter front view, heroic idle stance, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
     "generatedAt": "2026-06-22T06:14:17.964Z"
+  },
+  "illidan": {
+    "filename": "illidan.png",
+    "category": "heroes",
+    "aspect": "3:4",
+    "size": "1024x1536",
+    "transparent": true,
+    "flatBg": false,
+    "model": "gpt-image-1",
+    "prompt": "Illidan Stormrage the Betrayer, a tall muscular night-elf demon hunter with lavender-purple skin, huge backswept horns, a cloth blindfold with fierce fel-green eyes blazing through, bare fel-tattooed torso, massive leathery demon wings, dual fel-green Warglaives of Azzinoth, loincloth, clawed hooves, full body, three-quarter front view, heroic idle stance, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-22T09:08:14.997Z"
   }
 }

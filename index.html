@@ -83,6 +83,7 @@
   /* ---------- HUD ---------- */
   #hud{position:absolute; top:0; left:0; right:0; z-index:6; padding:max(8px,env(safe-area-inset-top)) 12px 8px;
     display:flex; align-items:center; justify-content:space-between; pointer-events:none;}
+  #hud.hidden{display:none;}   /* was inert (no rule) — the battle HUD used to bleed onto the menu/home */
   .hud-side{display:flex; flex-direction:column; gap:3px; background:rgba(11,16,32,.55); backdrop-filter:blur(6px);
     border-radius:12px; padding:6px 10px; border:1px solid rgba(255,255,255,.08);}
   .hud-side .lab{font-size:11px; color:var(--dim); font-weight:700; text-transform:uppercase; letter-spacing:1px;}
@@ -178,6 +179,13 @@
     radial-gradient(110% 70% at 50% 0%, rgba(86,120,200,0.22), rgba(0,0,0,0) 60%),
     radial-gradient(120% 80% at 50% 100%, rgba(180,120,40,0.12), rgba(0,0,0,0) 55%),
     linear-gradient(180deg, #0c1226, #0a0f20);}
+  /* Home screen: show the LIVE battlefield (the #scene canvas) behind the menu, with a
+     vignette so the logo (top) and buttons (bottom) stay legible and the arena reads in the middle. */
+  #title{background:
+    linear-gradient(180deg, rgba(8,12,28,0.90) 0%, rgba(8,12,28,0.30) 24%, rgba(8,12,28,0) 44%, rgba(8,12,28,0) 56%, rgba(8,12,28,0.40) 74%, rgba(8,12,28,0.95) 100%),
+    radial-gradient(135% 75% at 50% 44%, rgba(8,12,28,0) 42%, rgba(8,12,28,0.55) 100%);}
+  #title .logo h1{text-shadow:0 3px 20px rgba(0,0,0,0.85);}
+  #title .logo p{text-shadow:0 2px 10px rgba(0,0,0,0.9);}
   .logo h1{animation:logoGlow 3.2s ease-in-out infinite;}
   @keyframes logoGlow{0%,100%{filter:drop-shadow(0 0 6px rgba(244,197,66,0.35));}
     50%{filter:drop-shadow(0 0 16px rgba(244,197,66,0.65));}}
@@ -324,12 +332,11 @@
       <div id="pvName"></div>
       <button class="btn small" id="pvEdit">✎ Edit</button>
     </div>
-    <div id="pvHint">drag to rotate</div>
+    <div id="pvHint">tap to preview moves</div>
     <div id="pvInfo"></div>
     <div id="pvActions">
       <button class="btn small secondary" id="pvAttack">⚔ Attack</button>
       <button class="btn small secondary" id="pvCast">✦ Ability</button>
-      <button class="btn small secondary" id="pvSpin">⏸ Spin</button>
     </div>
   </div>
 
@@ -359,7 +366,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.69';
+const BUILD = 'v0.70';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -775,12 +782,12 @@ function buildBridge(x){
     const short=part(new THREE.BoxGeometry(ARENA_W-0.4,0.13,bw), bcol); short.position.set(0,0.0,s*(ARENA_L/2-0.2-bw/2)); arena.add(short);
   }
   outlined(board,1.005);
-  // painted Azeroth vista behind the far end — raised & brought in a touch so the epic
-  // castle skyline looms above the board's far edge instead of a thin dark band
+  // painted Azeroth vista behind the far end — sized to the art's true 16:9 (no stretch),
+  // large and raised so the castle skyline fills the horizon above the board's far edge
   if(BACKDROP_ART){
-    const bd=new THREE.Mesh(new THREE.PlaneGeometry(52,29),
+    const bw=62, bd=new THREE.Mesh(new THREE.PlaneGeometry(bw, bw/1.777),
       new THREE.MeshBasicMaterial({map:tiledTexture(BACKDROP_ART,1,1), fog:false, depthWrite:false}));
-    bd.position.set(0,8.6,-24); arena.add(bd);
+    bd.position.set(0,10.0,-23); arena.add(bd);
   }
   // keeps: Alliance near (team 0), Horde far (team 1)
   buildTower(-2.7, 7.0, 0); buildTower(2.7, 7.0, 0);
@@ -1193,7 +1200,7 @@ const HERO_ART = {
 };
 // width/height of each painted cutout (drives the billboard quad's proportions). Default 0.72.
 const HERO_ART_ASPECT = {
-  illidan:0.826, arthas:0.582, sylvanas:0.632, uther:0.586, grommash:0.678,
+  illidan:0.667, arthas:0.582, sylvanas:0.632, uther:0.586, grommash:0.678,
   malfurion:0.650, thrall:0.680, tyrande:0.639, jaina:0.642, rexxar:0.661,
 };
 // a camera-facing textured quad sized to read like the other heroes; pivot at the feet
@@ -2361,9 +2368,11 @@ function pvResize(){
   if(!PV) return; const c=$('#pvCanvas');
   const w=c.clientWidth||window.innerWidth, h=c.clientHeight||window.innerHeight;
   PV.r.setSize(w,h,false); PV.cam.aspect=w/h;
-  PV.cam.position.set(0,1.55,6.0); PV.cam.lookAt(0,1.05,0);
-  // pull back a touch on narrow/portrait screens so the full hero fits
-  if(PV.cam.aspect<0.75) PV.cam.position.z=6.8;
+  // frame the full painted sprite (≈3.9 tall) head-to-feet with comfortable margin so it
+  // fits the whole phone screen — pull back further on narrow/portrait aspects
+  PV.cam.position.set(0, 2.0, 8.6); PV.cam.lookAt(0, 1.78, 0);
+  if(PV.cam.aspect<0.62) PV.cam.position.z=9.8;
+  else if(PV.cam.aspect<0.78) PV.cam.position.z=9.2;
   PV.cam.updateProjectionMatrix();
 }
 function showPreview(idx){
@@ -2517,7 +2526,6 @@ $('#pvBack').onclick    =()=>{ closePreview(); hideAllScreens(); show('heroes');
 $('#pvEdit').onclick    =()=>{ const i=PV?PV.idx:-1; closePreview(); hideAllScreens(); show('heroes'); openEditor(i); };
 $('#pvAttack').onclick  =()=>{ if(PV){ PV.anim.atk=0.5; sfx(PV.hero&&PV.hero.team===1?300:330,0.04); } };
 $('#pvCast').onclick    =()=>{ if(PV){ PV.anim.cast=0.6; sfx(660,0.06); } };
-$('#pvSpin').onclick    =()=>{ if(PV){ PV.spin=!PV.spin; $('#pvSpin').textContent=PV.spin?'⏸ Spin':'▶ Spin'; } };
 $('#btnReroll').onclick =()=>{ if(G.rerolls>0){ G.rerolls--; G.offers=[randHero(),randHero(),randHero()]; sfx(500,0.05); renderDraft(); } };
 $('#btnFight').onclick  =()=>{ if(G.squad.length) startBattle(); };
 $('#btnAgain').onclick  =()=>{ startMatch(); };
