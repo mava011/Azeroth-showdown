@@ -366,7 +366,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.79';
+const BUILD = 'v0.80';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1896,6 +1896,7 @@ function aiDraft(){
 
 /* ----------------------------- Spawn units -------------------------------- */
 function clearBattle(){
+  stopAmbient();
   while(battleGroup.children.length) battleGroup.remove(battleGroup.children[0]);
   G.units.forEach(u=>{ if(u.hb) scene.remove(u.hb); if(u.label) scene.remove(u.label); });
   G.units=[];
@@ -2000,7 +2001,8 @@ function startBattle(){
   $('#phaseChip').textContent='Round '+G.round+' — Fight!';
   deploy(G.squad, foe);
   announce('FIGHT!', '#ffe07a');
-  sfx(200,0.12,'sawtooth'); screenShake(0.4);
+  sfx(200,0.12,'sawtooth'); tone(330,0.5,'sawtooth',{sweep:120,gain:0.05}); screenShake(0.4);
+  startAmbient();
 }
 
 /* ------------------- Commander spell: Meteor (player-cast) ----------------- */
@@ -2269,6 +2271,7 @@ function slashArc(u, target){
 }
 // signature aura that flashes at a caster when an ability fires
 function castAura(u){
+  abilityCue(u.hero.ability);                 // distinct per-ability sound
   const tints={ chain_lightning:0x9be7ff, frost_blast:0xbfe9ff, multishot:0xb27bff, berserk:0x39ff14,
     heal:0xfff2a0, whirlwind:0xff7b4d, starfall:0xfff2a0, root:0x6bd06a, summon:0x8be07a, bestial_wrath:0xff7a3a };
   const c=tints[u.hero.ability]||u.hero.gem;
@@ -2390,6 +2393,7 @@ function checkRoundEnd(){
 }
 function endRound(loser){
   G.ended=true; G.lastLoser=loser;
+  stopAmbient();
   G.lives[loser]=Math.max(0, G.lives[loser]-1);
   renderPips();
   $('#castBtn').classList.add('hidden');
@@ -2643,17 +2647,66 @@ function tick(){
 /* =========================================================================
    AUDIO (tiny, unlocked on first tap)
    ========================================================================= */
-let actx=null;
-function unlockAudio(){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
-function sfx(freq, dur, type){
-  if(!actx) return;
+let actx=null, master=null;
+function unlockAudio(){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)();
+  master=actx.createGain(); master.gain.value=0.55; master.connect(actx.destination); }catch(e){} } }
+// one shaped tone: envelope + optional pitch sweep + optional lowpass colour
+function tone(freq, dur, type, opt){
+  if(!actx) return; opt=opt||{};
   try{
-    const o=actx.createOscillator(), g=actx.createGain();
-    o.type=type||'sine'; o.frequency.value=freq;
-    g.gain.value=0.04; o.connect(g); g.connect(actx.destination);
-    o.start(); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+(dur||0.1));
-    o.stop(actx.currentTime+(dur||0.1)+0.02);
+    const t0=actx.currentTime, o=actx.createOscillator(), g=actx.createGain();
+    o.type=type||'sine'; o.frequency.setValueAtTime(freq, t0);
+    if(opt.sweep) o.frequency.exponentialRampToValueAtTime(Math.max(20,opt.sweep), t0+dur);
+    const peak=opt.gain!=null?opt.gain:0.04;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak, t0+(opt.attack||0.008));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    let node=o;
+    if(opt.filter){ const f=actx.createBiquadFilter(); f.type=opt.filterType||'lowpass'; f.frequency.value=opt.filter; node.connect(f); node=f; }
+    node.connect(g); g.connect(master||actx.destination);
+    o.start(t0); o.stop(t0+dur+0.03);
   }catch(e){}
+}
+function sfx(freq, dur, type){ tone(freq, dur||0.1, type, {gain:0.04}); }   // back-compat blip
+// a distinct, layered cue per signature ability
+function abilityCue(key){
+  if(!actx) return;
+  switch(key){
+    case 'frost_blast':    tone(960,0.22,'sine',{sweep:280,gain:0.05}); tone(480,0.34,'triangle',{sweep:170,gain:0.03}); break;
+    case 'chain_lightning':tone(1300,0.07,'sawtooth',{sweep:520,gain:0.04}); tone(900,0.13,'square',{sweep:1500,gain:0.025}); break;
+    case 'berserk':        tone(120,0.32,'sawtooth',{sweep:210,gain:0.06}); tone(180,0.26,'square',{gain:0.03}); break;
+    case 'heal':           tone(523,0.22,'sine',{gain:0.045}); setTimeout(()=>tone(784,0.32,'sine',{gain:0.04}),70); break;
+    case 'starfall':       tone(1050,0.4,'sine',{sweep:1700,gain:0.04}); tone(660,0.5,'triangle',{gain:0.03}); break;
+    case 'whirlwind':      tone(220,0.3,'sawtooth',{sweep:520,gain:0.05,filter:1200}); break;
+    case 'bestial_wrath':  tone(85,0.42,'sawtooth',{sweep:150,gain:0.07}); tone(140,0.3,'square',{gain:0.03}); break;
+    case 'summon':         tone(300,0.34,'sine',{sweep:560,gain:0.045}); break;
+    case 'multishot':      tone(720,0.06,'square',{gain:0.03}); setTimeout(()=>tone(800,0.06,'square',{gain:0.03}),55); setTimeout(()=>tone(880,0.06,'square',{gain:0.03}),110); break;
+    case 'root':           tone(180,0.3,'triangle',{sweep:90,gain:0.05}); break;
+    default:               tone(660,0.14,'sine',{gain:0.04});
+  }
+}
+// a soft low battle pad (two detuned sines + slow tremolo) — starts in battle, fades on round end
+let ambientNodes=null;
+function startAmbient(){
+  if(!actx || ambientNodes) return;
+  try{
+    const g=actx.createGain(); g.gain.setValueAtTime(0.0001, actx.currentTime);
+    g.gain.linearRampToValueAtTime(0.02, actx.currentTime+1.6); g.connect(master);
+    const o1=actx.createOscillator(); o1.type='sine'; o1.frequency.value=55;
+    const o2=actx.createOscillator(); o2.type='sine'; o2.frequency.value=82.4;     // a hollow fifth
+    const lfo=actx.createOscillator(); lfo.frequency.value=0.16; const lg=actx.createGain(); lg.gain.value=0.007;
+    lfo.connect(lg); lg.connect(g.gain);
+    o1.connect(g); o2.connect(g); o1.start(); o2.start(); lfo.start();
+    ambientNodes={g,o1,o2,lfo};
+  }catch(e){}
+}
+function stopAmbient(){
+  if(!ambientNodes) return;
+  try{ const {g,o1,o2,lfo}=ambientNodes; g.gain.cancelScheduledValues(actx.currentTime);
+    g.gain.setValueAtTime(g.gain.value, actx.currentTime); g.gain.linearRampToValueAtTime(0.0001, actx.currentTime+0.8);
+    setTimeout(()=>{ try{o1.stop();o2.stop();lfo.stop();}catch(e){} }, 900);
+  }catch(e){}
+  ambientNodes=null;
 }
 window.addEventListener('pointerdown', unlockAudio, {once:true});
 
