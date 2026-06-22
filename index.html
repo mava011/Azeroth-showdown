@@ -366,7 +366,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.73';
+const BUILD = 'v0.74';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -419,8 +419,10 @@ function resetRoster(){ roster = PRESETS.map(h=>Object.assign({},h)); saveRoster
 /* ----------------------------- DOM helpers -------------------------------- */
 const $ = s=>document.querySelector(s);
 const screens = {title:$('#title'),heroes:$('#heroes'),howto:$('#howto'),draft:$('#draft'),result:$('#result')};
-function show(name){ for(const k in screens) screens[k].classList.toggle('hidden', k!==name); }
-function hideAllScreens(){ for(const k in screens) screens[k].classList.add('hidden'); }
+function show(name){ for(const k in screens) screens[k].classList.toggle('hidden', k!==name);
+  if(typeof titleGroup!=='undefined'){ if(name==='title') showTitleHeroes(); else clearTitleHeroes(); } }
+function hideAllScreens(){ for(const k in screens) screens[k].classList.add('hidden');
+  if(typeof clearTitleHeroes==='function') clearTitleHeroes(); }
 let toastT;
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1600); }
 function hx(c){ return '#'+('000000'+(c>>>0).toString(16)).slice(-6); }
@@ -1546,6 +1548,21 @@ function makeShadow(r){
     new THREE.MeshBasicMaterial({map:SHADOW_TEX, transparent:true, depthWrite:false, fog:false, toneMapped:false, opacity:0.8}));
   m.rotation.x=-Math.PI/2; m.scale.set(r,r,r); m.userData={r}; battleGroup.add(m); return m;
 }
+// ---- home-screen showcase: a painted hero lineup standing on the live arena ----
+const titleGroup=new THREE.Group(); scene.add(titleGroup);
+let titleSprites=[];
+function showTitleHeroes(){
+  clearTitleHeroes();
+  // an iconic hero lineup on the near board, facing the camera (Illidan front-and-centre)
+  const feature=[['jaina',-2.25,2.9],['illidan',0,3.5],['thrall',2.25,2.9]];
+  for(const [id,x,z] of feature){ const hero=roster.find(h=>h.id===id)||PRESETS.find(h=>h.id===id); if(!hero) continue;
+    const m=buildSpriteModel(hero,0); m.position.set(x,0,z); titleGroup.add(m);
+    const sh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),
+      new THREE.MeshBasicMaterial({map:SHADOW_TEX, transparent:true, depthWrite:false, fog:false, toneMapped:false, opacity:0.7}));
+    sh.rotation.x=-Math.PI/2; sh.scale.setScalar(1.9); sh.position.set(x,0.03,z); titleGroup.add(sh);
+    titleSprites.push({g:m, t:Math.random()*6}); }
+}
+function clearTitleHeroes(){ while(titleGroup.children.length){ const c=titleGroup.children[0]; titleGroup.remove(c); } titleSprites.length=0; }
 function rrect(cx,x,y,w,h,r){ cx.beginPath(); cx.moveTo(x+r,y);
   cx.arcTo(x+w,y,x+w,y+h,r); cx.arcTo(x+w,y+h,x,y+h,r);
   cx.arcTo(x,y+h,x,y,r); cx.arcTo(x,y,x+w,y,r); cx.closePath(); }
@@ -2329,6 +2346,9 @@ function tick(){
   for(const m of MOTES){ const u=m.userData; m.position.y+=u.vy*dt; m.position.x+=Math.sin(clock.elapsedTime*0.5+u.ph)*u.vx*dt;
     if(m.position.y>5){ m.position.y=0.4; m.position.x=(Math.random()-0.5)*9; m.position.z=(Math.random()-0.5)*15; }
     m.material.opacity=0.35+Math.sin(clock.elapsedTime*1.5+u.ph)*0.2; }
+  // home-screen hero lineup: gentle idle breathing
+  for(const s of titleSprites){ s.t+=dt; s.g.position.y=Math.sin(s.t*1.5)*0.05;
+    if(s.g.userData.body) s.g.userData.body.scale.y=s.g.userData.bodyBase.y*(1+Math.sin(s.t*1.5+1)*0.02); }
   // camera shake
   if(CAM.shake>0){
     CAM.shake=Math.max(0, CAM.shake-dt*3.2);
