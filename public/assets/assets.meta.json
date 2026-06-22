@@ -152,5 +152,115 @@
     "model": "gpt-image-1",
     "prompt": "A summoned Ancient Treant, a towering walking tree-creature with a gnarled mossy bark body, thick root-like legs and clawed branch arms, glowing green eyes set in a carved-bark face, a leafy mossy crown, vines and small glowing nature wisps, noble and ancient, complete head-to-roots full body clearly in frame, three-quarter front view, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
     "generatedAt": "2026-06-22T09:48:01.735Z"
+  },
+  "illidan_back": {
+    "filename": "illidan_back.png",
+    "category": "heroes",
+    "aspect": "3:4",
+    "size": "1024x1536",
+    "transparent": false,
+    "flatBg": true,
+    "model": "gpt-image-1",
+    "prompt": "BACK VIEW seen from directly behind: Illidan Stormrage the Betrayer, a tall muscular night-elf demon hunter with lavender-purple skin, huge backswept horns seen from behind, long black hair down his back, bare back covered in glowing fel-green tattoos, massive leathery demon wings spread from his shoulder blades, dual fel-green Warglaives of Azzinoth held at his sides, loincloth, clawed hooves, facing away from viewer, full body rear view, heroic stance, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed. Place the subject on a perfectly flat solid chroma-key lime-green (#00ff00) background, no gradient, no shadow, for later background removal.",
+    "generatedAt": "2026-06-22T11:02:03.315Z"
+  },
+  "arthas_back": {
+    "filename": "arthas_back.png",
+    "category": "heroes",
+    "aspect": "3:4",
+    "size": "1024x1536",
+    "transparent": true,
+    "flatBg": false,
+    "model": "gpt-image-1",
+    "prompt": "BACK VIEW seen from directly behind: Arthas the Lich King, a towering undead death knight in black spiked plate armor with large spiked pauldrons and the horned Helm of Domination seen from behind, a long tattered dark cape down his back, gripping the runeblade Frostmourne with an icy-blue glow at his side, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-22T10:50:57.152Z"
+  },
+  "sylvanas_back": {
+    "filename": "sylvanas_back.png",
+    "category": "heroes",
+    "aspect": "3:4",
+    "size": "1024x1536",
+    "transparent": true,
+    "flatBg": false,
+    "model": "gpt-image-1",
+    "prompt": "BACK VIEW seen from directly behind: Sylvanas Windrunner the Banshee Queen, an undead high-elf dark ranger with pale skin and long raven hair down her back, a hood and a black feathered shoulder mantle, black-and-violet leather armor, a quiver and an ornate dark longbow wreathed in red energy on her back, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-22T10:51:52.514Z"
+  },
+  "uther_back": {
+    "filename": "uther_back.png",
+    "category": "heroes",
+    "aspect": "3:4",
+    "size": "1024x1536",
+    "transparent": true,
+    "flatBg": false,
+    "model": "gpt-image-1",
+    "prompt": "BACK VIEW seen from directly behind: Uther the Lightbringer, a stalwart human paladin in ornate golden plate armor with silver filigree and large pauldrons, a long crimson cape down his back, holding a great two-handed warhammer of the Light glowing over his shoulder, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-22T10:52:56.280Z"
+  },
+  "grommash_back": {
+    "filename": "grommash_back.png",
+    "category": "heroes",
+    "aspect": "3:4",
+    "size": "1024x1536",
+    "transparent": true,
+    "flatBg": false,
+    "model": "gpt-image-1",
+    "prompt": "BACK VIEW seen from directly behind: Grommash Hellscream, a hulking brown-skinned orc warchief with huge muscular back, a long black topknot down his back, iron-and-leather shoulder armor, hefting the gigantic notched axe Gorehowl, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-22T10:54:01.776Z"
+  },
+  "malfurion_back": {
+    "filename": "malfurion_back.png",
+    "category": "heroes",
+    "aspect": "3:4",
+    "size": "1024x1536",
+    "transparent": true,
+    "flatBg": false,
+    "model": "gpt-image-1",
+    "prompt": "BACK VIEW seen from directly behind: Malfurion Stormrage the Archdruid, a night-elf druid with teal-green skin and towering branching stag antlers seen from behind, long green-blue hair, druidic leaf-and-vine robes with a leafy cloak down his back, a gnarled glowing nature staff at his side, facing away from viewer, complete head-to-feet full body rear view, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-22T10:54:59.041Z"
+  },
+  "thrall_back": {
+    "filename": "thrall_back.png",
+    "category": "heroes",
+    "aspect": "3:4",
+    "size": "1024x1536",
+    "transparent": true,
+    "flatBg": false,
+    "model": "gpt-image-1",
+    "prompt": "BACK VIEW seen from directly behind: Thrall the Worldshaman, a mighty green-skinned orc shaman with a muscular back and a long black braided topknot down his back, layered leather-fur-and-bone shaman armor with hanging totems, gripping the Doomhammer crackling with blue lightning at his side, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-22T10:55:59.786Z"
+  },
+  "tyrande_back": {
+    "filename": "tyrande_back.png",
+    "category": "heroes",
+    "aspect": "3:4",
+    "size": "1024x1536",
+    "transparent": true,
+    "flatBg": false,
+    "model": "gpt-image-1",
+    "prompt": "BACK VIEW seen from directly behind: Tyrande Whisperwind High Priestess of Elune, a graceful night-elf priestess with long teal-blue hair down her back, silvered moon-themed armor with a crescent-moon headdress and a flowing dark cape, holding a luminous moonlight bow, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-22T10:56:55.664Z"
+  },
+  "jaina_back": {
+    "filename": "jaina_back.png",
+    "category": "heroes",
+    "aspect": "3:4",
+    "size": "1024x1536",
+    "transparent": true,
+    "flatBg": false,
+    "model": "gpt-image-1",
+    "prompt": "BACK VIEW seen from directly behind: Jaina Proudmoore the Archmage, a regal human sorceress with long platinum-blonde hair with a white streak down her back, elegant blue-and-white mage robes with gold trim and a flowing cape, holding a tall staff with a glowing blue frost crystal, swirling frost, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-22T10:57:50.097Z"
+  },
+  "rexxar_back": {
+    "filename": "rexxar_back.png",
+    "category": "heroes",
+    "aspect": "3:4",
+    "size": "1024x1536",
+    "transparent": true,
+    "flatBg": false,
+    "model": "gpt-image-1",
+    "prompt": "BACK VIEW seen from directly behind: Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with a broad muscular back, a fanged beast-skull mask helm seen from behind, heavy fur-and-bone armor with animal pelts and a fur cloak down his back, twin axes at his sides, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-22T10:58:53.741Z"
   }
 }
