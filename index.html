@@ -366,7 +366,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.72';
+const BUILD = 'v0.73';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1489,6 +1489,24 @@ function uiMat(color, extra){
   return new THREE.MeshBasicMaterial(Object.assign(
     {color, toneMapped:false, fog:false, depthTest:false, depthWrite:false, transparent:true}, extra||{}));
 }
+// small status badge textures (drawn once, cached) so debuffs/buffs read at a glance
+const _statusTex={};
+function statusIconTex(type){
+  if(_statusTex[type]) return _statusTex[type];
+  const c=document.createElement('canvas'); c.width=48; c.height=48; const x=c.getContext('2d');
+  const cols={frost:'#5fb8ff',poison:'#7fe06a',burn:'#ff8a3a',stun:'#ffd24a',rage:'#ff6a5a',root:'#9ab85a'};
+  const col=cols[type]||'#fff';
+  x.fillStyle='rgba(8,12,24,0.9)'; x.beginPath(); x.arc(24,24,21,0,6.283); x.fill();
+  x.lineWidth=4; x.strokeStyle=col; x.stroke();
+  x.fillStyle=col; x.strokeStyle=col; x.lineWidth=5; x.lineCap='round'; x.lineJoin='round';
+  if(type==='frost'){ x.lineWidth=4; x.save(); x.translate(24,24); for(let i=0;i<3;i++){ x.rotate(Math.PI/3); x.beginPath(); x.moveTo(-12,0); x.lineTo(12,0); x.stroke(); } x.restore(); }
+  else if(type==='burn'){ x.beginPath(); x.moveTo(24,9); x.quadraticCurveTo(36,26,24,38); x.quadraticCurveTo(12,26,24,9); x.fill(); }
+  else if(type==='poison'){ x.beginPath(); x.arc(24,29,9,0,6.283); x.fill(); x.beginPath(); x.moveTo(24,11); x.lineTo(16,27); x.lineTo(32,27); x.closePath(); x.fill(); }
+  else if(type==='stun'){ x.beginPath(); x.moveTo(27,9); x.lineTo(16,27); x.lineTo(23,27); x.lineTo(20,39); x.lineTo(33,21); x.lineTo(26,21); x.closePath(); x.fill(); }
+  else if(type==='rage'){ x.beginPath(); x.moveTo(13,27); x.lineTo(24,17); x.lineTo(35,27); x.stroke(); x.beginPath(); x.moveTo(13,35); x.lineTo(24,25); x.lineTo(35,35); x.stroke(); }
+  else if(type==='root'){ x.beginPath(); x.moveTo(24,39); x.quadraticCurveTo(13,28,24,18); x.quadraticCurveTo(35,11,28,7); x.stroke(); }
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; _statusTex[type]=t; return t;
+}
 function makeHealthBar(team, hasCd){
   const grp=new THREE.Group();
   const W=0.92, H=0.12, CH=0.052;            // CH = cooldown bar height
@@ -1508,6 +1526,11 @@ function makeHealthBar(team, hasCd){
     grp.add(cdbg); grp.add(cdFill);
     grp.userData.cdFill=cdFill; grp.userData.cdW=W; grp.userData.cdMat=cdFill.material; grp.userData.cdY=cdY;
   }
+  // a row of reusable status-icon sprites above the bar (shown on demand per active status)
+  const icons=[];
+  for(let i=0;i<4;i++){ const s=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true, depthTest:false, toneMapped:false, fog:false}));
+    s.scale.set(0.3,0.3,1); s.visible=false; s.renderOrder=22; grp.add(s); icons.push(s); }
+  grp.userData.icons=icons; grp.userData.iconY=hpY+0.34;
   grp.renderOrder=20; scene.add(grp); return grp;
 }
 // soft contact shadow that grounds each unit on the field
@@ -1629,6 +1652,14 @@ function frostbite(u){
     m.position.set(p.x+Math.cos(ang)*0.42, 0.1, p.z+Math.sin(ang)*0.42);
     m.rotation.set((Math.random()-0.5)*0.5, ang, (Math.random()-0.5)*0.5);
     let t=0; addVfx(m,(dt)=>{ t+=dt; m.scale.setScalar(Math.min(1,t*6)); if(t>0.9){ m.material.opacity=Math.max(0,1-(t-0.9)*2.2);} return t<1.4; }); }
+}
+// crackling electric burst on a unit that just got chain-lightning stunned
+function shockRing(pos){
+  ringBurst(pos,0x9be7ff,0.3,1.4,0.35);
+  for(let i=0;i<5;i++){ const m=new THREE.Sprite(glowSpriteMat(i%2?0xeaf7ff:0x9be7ff)); const sz=0.14+Math.random()*0.1; m.scale.set(sz,sz,1);
+    const ang=Math.random()*6.283, r=0.2+Math.random()*0.4;
+    m.position.set(pos.x+Math.cos(ang)*r, 1.2+Math.random()*0.8, pos.z+Math.sin(ang)*r);
+    let t=0; addVfx(m,(dt)=>{ t+=dt; m.material.opacity=Math.max(0,1-t/0.3); return t<0.3; }); }
 }
 function holyPillar(pos){
   const m=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.75,3.4,20,1,true),
@@ -1787,7 +1818,7 @@ function spawnUnit(hero, team, x, z, scaleMul, isMinion){
   const u={
     hero, team, group:g, x, z, hp, maxHp:hp,
     atkT:Math.random()*0.4, abilT:ABILITIES[hero.ability].cd*0.5+Math.random(),
-    state:'march', dead:false, frozenT:0, burnT:0, poisonT:0, rootT:0, shield:0, buffT:0, dmgMul:1, spdMul:1,
+    state:'march', dead:false, frozenT:0, burnT:0, poisonT:0, rootT:0, stunT:0, kbX:0, kbZ:0, shield:0, buffT:0, dmgMul:1, spdMul:1,
     flash:0, lunge:0, spin:0, castT:0, isMinion:!!isMinion,
   };
   u.baseScale = g.scale.x;   // remember final scale (incl. minion multiplier) for death anim
@@ -1944,6 +1975,10 @@ function dealDamage(attacker, target, amount, color){
     if(healed>=1){ healGlow(attacker.group.position, col); attacker.flash=Math.max(attacker.flash,0.1);
       damageNumber(attacker.group.position, '+'+Math.round(healed), '#8fffd0'); }
   }
+  // Illidan's fel-charged glaives set foes ablaze while he's in Berserk (burn DoT)
+  if(attacker && attacker.hero.ability==='berserk' && attacker.buffT>0 && !attacker.dead && !target.dead){
+    target.burnT=Math.max(target.burnT,2.5); target.burnDmg=Math.max(target.burnDmg||0, attacker.hero.dmg*0.12); target.burnSrc=attacker;
+  }
   if(target.hp<=0){ killUnit(target); }
 }
 // a bright stream of soul wisps torn from the victim and pulled into the attacker (Frostmourne / lifesteal)
@@ -1996,7 +2031,7 @@ function triggerAbility(u){
         const cand=enemies.filter(e=>!hit.has(e));
         const t=nearest(prev, cand); if(!t) break;
         lightningArc(prev.group.position, t.group.position, 0x9be7ff);
-        dealDamage(u, t, u.hero.dmg*1.1, '#9be7ff'); hit.add(t); prev=t;
+        dealDamage(u, t, u.hero.dmg*1.1, '#9be7ff'); t.stunT=Math.max(t.stunT,1.1); shockRing(t.group.position); hit.add(t); prev=t;
       }
       sfx(880,0.06); return true;
     }
@@ -2029,7 +2064,9 @@ function triggerAbility(u){
     }
     case 'whirlwind':{
       u.spin=0.6; ringBurst(p,0xff7b4d,0.4,2.0,0.45); glowParticles(p,0xffcaa0,9,1.8,0.8);
-      enemies.forEach(e=>{ if(dist(e,u)<2.0) dealDamage(u,e,u.hero.dmg*1.0,'#ffb38a'); });
+      enemies.forEach(e=>{ if(dist(e,u)<2.2){ dealDamage(u,e,u.hero.dmg*1.0,'#ffb38a');
+        const dx=e.x-u.x, dz=e.z-u.z, len=Math.hypot(dx,dz)||1; const F=7;   // hurl foes outward
+        e.kbX+=dx/len*F; e.kbZ+=dz/len*F; } });
       sfx(300,0.1); return true;
     }
     case 'starfall':{
@@ -2038,7 +2075,7 @@ function triggerAbility(u){
       for(let i=0;i<5;i++){ const ang=Math.random()*6.28, rr=Math.random()*1.8;
         const sp=new THREE.Vector3(t.x+Math.cos(ang)*rr, 4, t.z+Math.sin(ang)*rr);
         starFall(sp); }
-      enemies.forEach(e=>{ if(dist(e,t)<2.1) dealDamage(u,e,u.hero.dmg*1.2,'#fff2a0'); });
+      enemies.forEach(e=>{ if(dist(e,t)<2.1){ dealDamage(u,e,u.hero.dmg*1.2,'#fff2a0'); e.stunT=Math.max(e.stunT,0.9); } });
       sfx(740,0.08); return true;
     }
     case 'root':{
@@ -2135,6 +2172,7 @@ function updateBattle(dt){
     if(u.dead) continue;
     // status timers
     if(u.frozenT>0) u.frozenT-=dt;
+    if(u.stunT>0) u.stunT-=dt;
     if(u.rootT>0) u.rootT-=dt;
     if(u.buffT>0){ u.buffT-=dt; if(u.buffT<=0){ u.dmgMul=1; u.spdMul=1; } }
     // damage-over-time: burn (fire) & poison (nature) tick ~3x/sec, with floating ticks
@@ -2154,6 +2192,9 @@ function updateBattle(dt){
     u.target=tgt;
     const d=dist(u,tgt);
     const reach=u.hero.rng;
+
+    // stunned units can't cast, attack, or move (chain-lightning / starfall)
+    if(u.stunT>0){ u.state='march'; continue; }
 
     // ability
     if(u.abilT<=0){ if(triggerAbility(u)) u.abilT=ABILITIES[u.hero.ability].cd; else u.abilT=0.5; }
@@ -2177,6 +2218,8 @@ function updateBattle(dt){
   separateUnits();
   // commit positions to the meshes (after separation has spread everyone out)
   for(const u of G.units){ if(u.dead) continue;
+    if(u.kbX||u.kbZ){ u.x+=u.kbX*dt; u.z+=u.kbZ*dt;   // whirlwind knockback, decaying
+      u.kbX*=0.85; u.kbZ*=0.85; if(Math.abs(u.kbX)<0.06)u.kbX=0; if(Math.abs(u.kbZ)<0.06)u.kbZ=0; }
     u.x=Math.max(X_MIN,Math.min(X_MAX,u.x));
     u.z=Math.max(-PLAY.z+0.6, Math.min(PLAY.z-0.6, u.z));
     u.group.position.x=u.x; u.group.position.z=u.z;
@@ -2356,6 +2399,7 @@ function tick(){
       if(u.burnT>0){ cr*=1.34; cg*=0.74; cb*=0.5; }
       if(u.poisonT>0){ cr*=0.74; cg*=1.24; cb*=0.72; }
       if(u.buffT>0 && u.dmgMul>1){ cr*=1.26; cg*=0.92; cb*=0.74; }   // rage glow
+      if(u.stunT>0){ const fl=0.7+0.3*Math.sin(clock.elapsedTime*30); cr*=1.3*fl+0.4; cg*=1.25*fl+0.4; cb*=0.5; }  // electric yellow flicker
       const f=u.flash>0?(u.flash/0.16):0;                            // hit flash → white
       if(ud.isSprite){ ud.bodyMat.color.setRGB(cr+f*0.9, cg+f*0.9, cb+f*0.9); }
       else { ud.bodyMat.emissive.setRGB(f*0.85 + (u.burnT>0?0.32:0), f*0.85 + (u.poisonT>0?0.3:0), f*0.85 + (u.frozenT>0?0.38:0)); }
@@ -2377,6 +2421,18 @@ function tick(){
         cdF.scale.x=prog; cdF.position.x=-0.5*u.hb.userData.cdW*(1-prog);
         if(u.abilT<=0){ const pl=0.55+0.45*Math.sin(clock.elapsedTime*9); u.hb.userData.cdMat.color.setRGB(1,0.7+0.3*pl,0.25); }
         else u.hb.userData.cdMat.color.setRGB(0.95,0.62,0.2);
+      }
+      // status icons above the bar — read active debuffs/buffs at a glance
+      const icons=u.hb.userData.icons;
+      if(icons){
+        const act=[];
+        if(u.stunT>0)act.push('stun'); if(u.frozenT>0)act.push('frost'); if(u.burnT>0)act.push('burn');
+        if(u.poisonT>0)act.push('poison'); if(u.rootT>0)act.push('root'); if(u.buffT>0&&u.dmgMul>1)act.push('rage');
+        const n=Math.min(act.length, icons.length), x0=-(n-1)*0.18;
+        for(let i=0;i<icons.length;i++){ const s=icons[i];
+          if(i<n){ if(s.userData.kind!==act[i]){ s.material.map=statusIconTex(act[i]); s.material.needsUpdate=true; s.userData.kind=act[i]; }
+            s.visible=true; s.position.set(x0+i*0.36, u.hb.userData.iconY, 0.02); }
+          else s.visible=false; }
       }
     }
     if(u.label){
