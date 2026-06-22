@@ -385,7 +385,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.82';
+const BUILD = 'v0.83';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -2733,6 +2733,7 @@ function startAmbient(){
     o1.connect(g); o2.connect(g); o1.start(); o2.start(); lfo.start();
     ambientNodes={g,o1,o2,lfo};
   }catch(e){}
+  startMusic();
 }
 function stopAmbient(){
   if(!ambientNodes) return;
@@ -2741,7 +2742,20 @@ function stopAmbient(){
     setTimeout(()=>{ try{o1.stop();o2.stop();lfo.stop();}catch(e){} }, 900);
   }catch(e){}
   ambientNodes=null;
+  stopMusic();
 }
+// a slow, sparse heroic motif looped under the battle (A-minor pentatonic wander)
+let musicTimer=null, musicStep=0;
+const MUSIC=[220,0,329,0, 440,0,329,0, 392,0,261,0, 293,0,329,0];   // 0 = rest
+function startMusic(){
+  if(!actx || musicTimer) return; musicStep=0;
+  musicTimer=setInterval(()=>{
+    try{ const n=MUSIC[musicStep%MUSIC.length]; musicStep++;
+      if(n){ tone(n,0.7,'triangle',{gain:0.022,filter:1500}); if(musicStep%4===0) tone(n*1.5,0.6,'sine',{gain:0.012}); }
+    }catch(e){}
+  }, 430);
+}
+function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer=null; } }
 window.addEventListener('pointerdown', unlockAudio, {once:true});
 
 /* =========================================================================
