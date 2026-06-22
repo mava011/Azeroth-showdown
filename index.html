@@ -366,7 +366,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.76';
+const BUILD = 'v0.77';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1804,6 +1804,14 @@ function beginDraft(){
   renderDraft();
   // idle camera over empty board
 }
+// card portrait: the painted hero art framed to the head/torso over a faction-tinted
+// backdrop; custom heroes without art fall back to the gem disc.
+function heroAvatar(h){
+  const art=HERO_ART[h.id];
+  if(art) return '<div class="av portrait" style="background:url('+art+') center 14%/175% auto no-repeat, radial-gradient(circle at 50% 26%,'+hx(h.color)+',#0a1022)"></div>';
+  return '<div class="av" style="background:radial-gradient(circle at 50% 35%,'+hx(h.color)+',#0d1430)">'+
+    '<div class="gem" style="background:radial-gradient(circle at 40% 30%,#fff,'+hx(h.gem)+')"></div></div>';
+}
 function renderDraft(){
   $('#ptsLeft').textContent=G.pts;
   $('#btnReroll').textContent='🎲 Reroll ('+G.rerolls+')';
@@ -1829,8 +1837,7 @@ function renderDraft(){
     if(!afford) c.classList.add('dim');
     c.innerHTML =
       '<div class="cost">'+h.cost+'</div>'+
-      '<div class="av" style="background:radial-gradient(circle at 50% 35%,'+hx(h.color)+',#0d1430)">'+
-        '<div class="gem" style="background:radial-gradient(circle at 40% 30%,#fff,'+hx(h.gem)+')"></div></div>'+
+      heroAvatar(h)+
       '<div class="nm">'+h.name+'</div>'+
       '<div class="abil">'+ABILITIES[h.ability].name+'</div>';
     c.onclick=()=>{
@@ -2703,8 +2710,7 @@ function renderRoster(){
     c.innerHTML =
       (h.preset?'':'<div class="badge-custom">YOURS</div>')+
       '<div class="cost">'+h.cost+'</div>'+
-      '<div class="av" style="background:radial-gradient(circle at 50% 32%,'+hx(h.color)+',#0d1430)">'+
-        '<div class="gem" style="background:radial-gradient(circle at 40% 30%,#fff,'+hx(h.gem)+')"></div></div>'+
+      heroAvatar(h)+
       '<div class="nm">'+h.name+'</div>'+
       '<div class="cls">'+h.cls+'</div>'+
       '<div class="stats"><span>❤<b>'+h.hp+'</b></span><span>⚔<b>'+h.dmg+'</b></span><span>'+
@@ -2836,6 +2842,8 @@ window.AZ = {
 try{ const q=new URLSearchParams(location.search); const mode=q.get('az');
   if(mode==='preview') AZ.preview(q.get('hero')||'illidan');
   else if(mode==='battle') AZ.battle((q.get('me')||'illidan').split(','), (q.get('foe')||'thrall,jaina').split(','));
+  else if(mode==='heroes'){ hideAllScreens(); show('heroes'); renderRoster(); }
+  else if(mode==='draft'){ startMatch(); }
 }catch(e){ console.warn('az test hook',e); }
 })();
 </script>
