@@ -607,6 +607,19 @@ function groundTexture(base, a, b){
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
   t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(2,2); return t;
 }
+// ---- authored terrain/backdrop art (drop PNGs in assets/terrain/, set the paths) ----
+const TERRAIN_ART = { alliance:null, horde:null };   // e.g. 'assets/terrain/alliance.png'
+const BACKDROP_ART = null;                            // e.g. 'assets/terrain/backdrop.png'
+function tiledTexture(url, rx, ry){
+  const t=new THREE.TextureLoader().load(url);
+  t.colorSpace=THREE.SRGBColorSpace; t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(rx||1, ry||1); t.anisotropy=8; return t;
+}
+// painted ground if art is supplied, else the procedural canvas texture
+function groundMap(faction, base, a, b){
+  const url=TERRAIN_ART[faction];
+  return url ? tiledTexture(url, 2, 2) : groundTexture(base, a, b);
+}
 // flowing-water texture (scrolled in the render loop)
 function riverTexture(){
   const c=document.createElement('canvas'); c.width=64; c.height=64; const x=c.getContext('2d');
@@ -736,10 +749,10 @@ function buildBridge(x){
   // faction-split battlefield: Alliance grassland (near, z>0) vs Horde scorched waste (far, z<0)
   const half=(ARENA_L-0.4)/2;
   const grass=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.4, half-0.1),
-    new THREE.MeshToonMaterial({color:0xffffff, map:groundTexture('#3f7a3e','rgba(120,170,100,0.30)','rgba(26,62,30,0.42)'), gradientMap:GRAD}));
+    new THREE.MeshToonMaterial({color:0xffffff, map:groundMap('alliance','#3f7a3e','rgba(120,170,100,0.30)','rgba(26,62,30,0.42)'), gradientMap:GRAD}));
   grass.rotation.x=-Math.PI/2; grass.position.set(0,0.005,half/2+0.3); grass.receiveShadow=true; arena.add(grass);
   const dirt=new THREE.Mesh(new THREE.PlaneGeometry(ARENA_W-0.4, half-0.1),
-    new THREE.MeshToonMaterial({color:0xffffff, map:groundTexture('#5e3a28','rgba(132,76,46,0.42)','rgba(38,22,16,0.5)'), gradientMap:GRAD}));
+    new THREE.MeshToonMaterial({color:0xffffff, map:groundMap('horde','#5e3a28','rgba(132,76,46,0.42)','rgba(38,22,16,0.5)'), gradientMap:GRAD}));
   dirt.rotation.x=-Math.PI/2; dirt.position.set(0,0.005,-(half/2+0.3)); dirt.receiveShadow=true; arena.add(dirt);
   // worn war-road lanes down each side
   const pathTex=pathTexture();
@@ -774,6 +787,12 @@ function buildBridge(x){
     const short=part(new THREE.BoxGeometry(ARENA_W-0.4,0.13,bw), bcol); short.position.set(0,0.0,s*(ARENA_L/2-0.2-bw/2)); arena.add(short);
   }
   outlined(board,1.005);
+  // optional painted Azeroth vista behind the far end (shows above the board's far edge)
+  if(BACKDROP_ART){
+    const bd=new THREE.Mesh(new THREE.PlaneGeometry(48,27),
+      new THREE.MeshBasicMaterial({map:tiledTexture(BACKDROP_ART,1,1), fog:false, depthWrite:false}));
+    bd.position.set(0,6.5,-27); arena.add(bd);
+  }
   // keeps: Alliance near (team 0), Horde far (team 1)
   buildTower(-2.7, 7.0, 0); buildTower(2.7, 7.0, 0);
   buildTower(-2.7,-7.0, 1); buildTower(2.7,-7.0, 1);
