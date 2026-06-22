@@ -73,6 +73,7 @@
   .hcard .nm{font-weight:800; font-size:14px; margin-top:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .hcard .cls{font-size:11px; color:var(--dim); margin-top:1px;}
   .hcard .abil{font-size:11px; color:#ffe39a; margin-top:5px; font-weight:700;}
+  .hcard .abildesc{font-size:9.5px; color:#9fb0d8; margin-top:2px; line-height:1.25;}
   .hcard .cost{position:absolute; top:8px; right:8px; min-width:24px; height:24px; padding:0 5px; border-radius:12px;
     background:linear-gradient(180deg,#a05cff,#6f33d6); color:#fff; font-weight:900; font-size:13px;
     display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.45);}
@@ -225,6 +226,10 @@
     color:#cfe0ff; font-size:13px; line-height:1.7; text-shadow:0 1px 4px rgba(0,0,0,.8); pointer-events:none;}
   #pvInfo .pill{display:inline-block; background:rgba(16,22,42,.7); border:1px solid #33406b;
     border-radius:11px; padding:3px 9px; margin:2px; font-weight:700;}
+  #pvInfo .pvabil{margin:8px auto 0; max-width:300px; background:rgba(12,18,38,.78); border:1px solid #3a4c7e;
+    border-radius:12px; padding:7px 12px; line-height:1.45; color:#e7f0ff;}
+  #pvInfo .pvabil b{color:#ffe79a;}
+  #pvInfo .pvdesc{color:#aebde0; font-size:12px;}
   #pvActions{position:absolute; left:0; right:0; bottom:max(16px,env(safe-area-inset-bottom)); z-index:2;
     display:flex; gap:8px; justify-content:center; flex-wrap:wrap; padding:0 10px;}
   #pvActions .btn{width:auto; min-width:96px;}
@@ -366,7 +371,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.80';
+const BUILD = 'v0.81';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -374,17 +379,17 @@ const BUILD = 'v0.80';
 
 /* ----------------------------- Ability catalog ----------------------------- */
 const ABILITIES = {
-  chain_lightning:{name:"Chain Lightning", desc:"Arcs to 3 foes", cd:4.5, passive:false},
-  frost_blast:    {name:"Frost Blast",     desc:"AoE slow + dmg",  cd:5.0, passive:false},
-  lifesteal:      {name:"Lifesteal",       desc:"Heal on every hit", cd:0, passive:true},
-  multishot:      {name:"Multishot",       desc:"3 arrows at once", cd:3.5, passive:false},
-  berserk:        {name:"Berserk",         desc:"Rage: +dmg & speed", cd:6.0, passive:false},
-  heal:           {name:"Holy Light",      desc:"Heal wounded ally", cd:4.0, passive:false},
-  whirlwind:      {name:"Whirlwind",       desc:"Spin, hit all near", cd:5.0, passive:false},
-  summon:         {name:"Summon Treant",   desc:"Grow an Ancient (ongoing)", cd:8.0, passive:false},
-  bestial_wrath:  {name:"Bestial Wrath",   desc:"Enrage self + beast", cd:7.0, passive:false},
-  root:           {name:"Entangle",        desc:"Root nearest foe", cd:5.0, passive:false},
-  starfall:       {name:"Starfall",        desc:"Stars smash an area", cd:5.5, passive:false},
+  chain_lightning:{name:"Chain Lightning", desc:"Arcs to 3 foes & stuns them", cd:4.5, passive:false},
+  frost_blast:    {name:"Frost Blast",     desc:"Freezes an area: dmg, slowed attack & move",  cd:5.0, passive:false},
+  lifesteal:      {name:"Lifesteal",       desc:"Drains life to heal on every hit", cd:0, passive:true},
+  multishot:      {name:"Multishot",       desc:"3 blighted arrows that poison", cd:3.5, passive:false},
+  berserk:        {name:"Berserk",         desc:"Rage: +dmg & speed, glaives burn", cd:6.0, passive:false},
+  heal:           {name:"Holy Light",      desc:"Heals the most wounded ally", cd:4.0, passive:false},
+  whirlwind:      {name:"Whirlwind",       desc:"Spin: dmg + knockback all near", cd:5.0, passive:false},
+  summon:         {name:"Summon Treant",   desc:"Grows an Ancient (ongoing, max 2)", cd:8.0, passive:false},
+  bestial_wrath:  {name:"Bestial Wrath",   desc:"Enrages himself & his bear", cd:7.0, passive:false},
+  root:           {name:"Entangle",        desc:"Roots the nearest foe", cd:5.0, passive:false},
+  starfall:       {name:"Starfall",        desc:"Falling stars: dmg + stun", cd:5.5, passive:false},
 };
 const ABILITY_KEYS = Object.keys(ABILITIES);
 
@@ -2764,7 +2769,10 @@ function showPreview(idx){
   $('#pvInfo').innerHTML=
     '<span class="pill">❤ '+hero.hp+'</span><span class="pill">⚔ '+hero.dmg+'</span>'+
     '<span class="pill">'+(hero.kind==='ranged'?'🏹 ranged':'🗡 melee')+'</span>'+
-    '<span class="pill">'+hero.weapon+'</span><span class="pill">✦ '+ABILITIES[hero.ability].name+'</span>';
+    '<span class="pill">'+hero.weapon+'</span>'+
+    '<div class="pvabil">✦ <b>'+ABILITIES[hero.ability].name+'</b> · '+
+      (ABILITIES[hero.ability].passive?'passive':'cd '+ABILITIES[hero.ability].cd+'s')+
+      '<br><span class="pvdesc">'+ABILITIES[hero.ability].desc+'</span></div>';
   hideAllScreens(); $('#preview').classList.remove('hidden');
   pvResize();
   if(!PV.running){ PV.running=true; PV.clock.getDelta(); pvTick(); }
@@ -2815,7 +2823,8 @@ function renderRoster(){
       '<div class="cls">'+h.cls+'</div>'+
       '<div class="stats"><span>❤<b>'+h.hp+'</b></span><span>⚔<b>'+h.dmg+'</b></span><span>'+
         (h.kind==='ranged'?'🏹':'🗡')+'</span></div>'+
-      '<div class="abil">✦ '+ABILITIES[h.ability].name+'</div>';
+      '<div class="abil">✦ '+ABILITIES[h.ability].name+'</div>'+
+      '<div class="abildesc">'+ABILITIES[h.ability].desc+'</div>';
     c.onclick=()=>showPreview(idx);
     grid.appendChild(c);
   });
