@@ -1,0 +1,15 @@
+{
+  "name": "azeroth-showdown",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Warcraft-inspired browser/mobile auto-battler + its asset-generation pipeline.",
+  "scripts": {
+    "generate:assets": "node scripts/generate-assets.mjs",
+    "shoot": "node tools/shoot.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "openai": "^4.67.3"
+  }
+}
