@@ -610,6 +610,9 @@ function groundTexture(base, a, b){
 // ---- authored terrain/backdrop art (drop PNGs in assets/terrain/, set the paths) ----
 const TERRAIN_ART = { alliance:'assets/terrain/alliance.png', horde:'assets/terrain/horde.png' };
 const BACKDROP_ART = 'assets/terrain/backdrop.png';
+// painted billboard structures (Alliance keep / Horde fortress) — drop PNGs, set paths
+const STRUCT_ART = { alliance:null, horde:null };   // e.g. 'assets/terrain/alliance_keep.png'
+const STRUCT_ASPECT = { alliance:0.82, horde:0.82 };
 function tiledTexture(url, rx, ry){
   const t=new THREE.TextureLoader().load(url);
   t.colorSpace=THREE.SRGBColorSpace; t.wrapS=t.wrapT=THREE.RepeatWrapping;
@@ -703,6 +706,18 @@ function buildBrazier(team){
 }
 function buildTower(x,z,team){
   const t=new THREE.Group(); const f=teamFac(team);
+  const sUrl = STRUCT_ART[team===0?'alliance':'horde'];
+  if(sUrl){
+    // painted billboard keep/fortress (faces the camera like the hero sprites)
+    const tex=heroTexture(sUrl); const aspect=STRUCT_ASPECT[team===0?'alliance':'horde']||0.82;
+    const H=3.8, W=H*aspect;
+    const geo=new THREE.PlaneGeometry(W,H); geo.translate(0,H/2,0);
+    const mat=new THREE.MeshBasicMaterial({map:tex, transparent:true, alphaTest:0.3, depthWrite:true, toneMapped:false, side:THREE.DoubleSide});
+    t.add(new THREE.Mesh(geo,mat));
+    const core=new THREE.Mesh(new THREE.OctahedronGeometry(0.22), new THREE.MeshBasicMaterial({color:f.glow, toneMapped:false}));
+    core.position.y=H*0.92; core.userData.baseY=core.position.y; t.add(core); TOWERS.push(core);
+    t.position.set(x,0,z); arena.add(t); return t;
+  }
   if(team===0){
     // Alliance keep: pale stone tower, blue conical roof, gold band, crenellations
     const base=part(new THREE.CylinderGeometry(0.86,1.0,0.5,10), f.stone2); base.position.y=0.25; t.add(base);
