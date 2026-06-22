@@ -50,13 +50,16 @@ Because shots come from the real browser, they match the device — trust them.
 ---
 
 ## Current known issues (update as we go)
-- **B1/B2 (P0):** painted sprites (Illidan, terrain, backdrop) clash with the
-  remaining toy 3D heroes + procedural towers/props, and the board is lit flat/bright
-  vs the dusk backdrop. → migrate all heroes + structures to painted sprites, then
-  grade lighting/atmosphere to the backdrop.
-- **B4 (P1):** heroes are small, lots of empty field. → tighten camera / scale up units.
-- **B5 (P1):** backdrop reads as a thin dark band; the epic castles are mostly hidden.
-  → raise/scale the backdrop plane once the rest is cohesive.
+- ✅ **B1/B2 (was P0):** all 10 heroes + both faction keeps are now painted sprites,
+  the toy margin props (pines/tents/totems) are removed, and the board is graded to
+  the dusk backdrop (#69, #70).
+- ✅ **B4 (was P1):** heroes scaled up (H 3.9) + tighter frame so they're the focus (#70).
+- ✅ **B5 (was P1):** backdrop raised/enlarged so the castle skyline looms (#70).
+- **P2 polish (open):** the wooden board rim + river strip are still procedural (read as
+  the arena stage, not as units); Malfurion's cutout is framed to the shins (reads
+  grounded but not full feet); no per-hero idle/attack *sprite* motion yet (billboards
+  bob/lunge as a quad). Re-key from a lime-green `--flat` regen if any cutout shows a
+  colour-clash halo (`scripts/key-alpha.mjs --green`).
 
 ## Reference bar
 The painted Illidan sprite + the painted ground/backdrop are the quality bar. Anything
