@@ -2563,6 +2563,24 @@ resize();
 show('title');
 $('#boot').classList.add('hidden');
 tick();
+
+/* ---- test/automation hooks (used by tools/shoot.mjs; harmless in normal play) ---- */
+window.AZ = {
+  ready:true,
+  roster:()=>roster.map(h=>h.id),
+  preview(id){ const i=roster.findIndex(h=>h.id===id); if(i<0) return false; hideAllScreens(); show('heroes'); showPreview(i); if(PV){ PV.spin=false; PV.rot=0; PV.manualRot=0; } return true; },
+  battle(meIds, foeIds){
+    const find=id=>roster.find(h=>h.id===id)||PRESETS.find(h=>h.id===id);
+    G.squad=(meIds||['illidan']).map(find).filter(Boolean);
+    if(foeIds&&foeIds.length) aiDraft=()=>foeIds.map(find).filter(Boolean);
+    G.round=1; try{ startBattle(); }catch(e){ console.warn('battle hook',e); }
+    return true;
+  }
+};
+try{ const q=new URLSearchParams(location.search); const mode=q.get('az');
+  if(mode==='preview') AZ.preview(q.get('hero')||'illidan');
+  else if(mode==='battle') AZ.battle((q.get('me')||'illidan').split(','), (q.get('foe')||'thrall,jaina').split(','));
+}catch(e){ console.warn('az test hook',e); }
 })();
 </script>
 </body>

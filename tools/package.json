@@ -1,0 +1,12 @@
+{
+  "name": "azeroth-tools",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "shoot": "node shoot.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "^1.61.0"
+  }
+}
