@@ -366,7 +366,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.77';
+const BUILD = 'v0.78';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1209,19 +1209,36 @@ const HERO_ART_ASPECT = {
   malfurion:0.650, thrall:0.680, tyrande:0.639, jaina:0.642, rexxar:0.661,
   misha:1.042, treant:0.640,
 };
+// rear-view art: shown when a unit is facing away from the camera (charging the far side),
+// so we see their backs Clash-style. Aspects filled from the keyed PNGs.
+const HERO_ART_BACK = {
+  illidan:'public/assets/heroes/illidan_back.png', arthas:'public/assets/heroes/arthas_back.png',
+  sylvanas:'public/assets/heroes/sylvanas_back.png', uther:'public/assets/heroes/uther_back.png',
+  grommash:'public/assets/heroes/grommash_back.png', malfurion:'public/assets/heroes/malfurion_back.png',
+  thrall:'public/assets/heroes/thrall_back.png', tyrande:'public/assets/heroes/tyrande_back.png',
+  jaina:'public/assets/heroes/jaina_back.png', rexxar:'public/assets/heroes/rexxar_back.png',
+};
+const HERO_ART_BACK_ASPECT = {   // from the keyed rear-view PNGs; falls back to the front aspect
+  illidan:0.722, arthas:0.612, sylvanas:0.590, uther:0.585, grommash:0.679,
+  malfurion:0.578, thrall:0.643, tyrande:0.610, jaina:0.594, rexxar:0.663,
+};
 // a camera-facing textured quad sized to read like the other heroes; pivot at the feet
 function buildSpriteModel(hero, team){
   const g = new THREE.Group();
   const tex = heroTexture(HERO_ART[hero.id]);
-  const aspect = HERO_ART_ASPECT[hero.id] || 0.72;
-  const H = 3.9, W = H*aspect;   // taller billboards so the painted heroes are the focus
+  const frontAspect = HERO_ART_ASPECT[hero.id] || 0.72;
+  const backUrl = HERO_ART_BACK[hero.id];
+  const texBack = backUrl ? heroTexture(backUrl) : null;
+  const backAspect = HERO_ART_BACK_ASPECT[hero.id] || frontAspect;
+  const H = 3.9, W = H*frontAspect;   // taller billboards so the painted heroes are the focus
   const geo = new THREE.PlaneGeometry(W, H); geo.translate(0, H/2, 0);   // feet at y=0
   const mat = new THREE.MeshBasicMaterial({ map:tex, transparent:true, alphaTest:0.3,
     depthWrite:true, toneMapped:false, side:THREE.DoubleSide });
   const plane = new THREE.Mesh(geo, mat);
   g.add(plane);
   g.userData = { isSprite:true, sprite:plane, body:plane, bodyMat:mat, hero,
-    t:Math.random()*6, bodyBase:{x:1, y:1, z:1}, faceSign:(team===1?-1:1), gaitPhase:Math.random()*6, lastFoot:0 };
+    t:Math.random()*6, bodyBase:{x:1, y:1, z:1}, faceSign:(team===1?-1:1), gaitPhase:Math.random()*6, lastFoot:0,
+    texFront:tex, texBack, frontAspect, backAspect, showingBack:false, turnT:0, turnTo:false };
   attachHeroFX(g, hero);   // animated signature effects (frost swirl, lightning, holy glow…)
   return g;
 }
@@ -2506,6 +2523,16 @@ function tick(){
       bx*=fs;                                                   // face left/right by horizontal flip
       if(gaitFoot){ by-=0.05*gaitFoot; bx+=0.04*gaitFoot*fs; }  // squash a touch on footfall
       if(u.spin>0) bx = bb.x*fs*Math.cos(ud.t*26);              // whirlwind: fake spin by flipping
+      // front/back facing: show the rear view while charging the far side, masked by a quick turn-squash
+      if(ud.texBack){
+        const faceAway = !!(u.target && u.target.z < u.z - 0.3);
+        if(faceAway!==ud.showingBack && ud.turnT<=0) { ud.turnT=0.22; ud.turnTo=faceAway; }
+        if(ud.turnT>0){ ud.turnT-=dt;
+          if(ud.turnT<=0.11 && ud.showingBack!==ud.turnTo){ ud.showingBack=ud.turnTo;
+            ud.bodyMat.map=ud.showingBack?ud.texBack:ud.texFront; ud.bodyMat.needsUpdate=true; }
+          bx*=Math.max(0.06, Math.abs(ud.turnT-0.11)/0.11); }
+        if(ud.showingBack) bx*=(ud.backAspect/ud.frontAspect);
+      }
       ud.sprite.rotation.z = gaitRock + (lk>0 ? -fs*0.18*lk : 0);  // rock while walking, lean on lunge
       ud.sprite.position.x = (lk>0 ? fs*0.12*lk : 0);
       updateHeroFX(g, dt, fs);                                   // animate signature effects
