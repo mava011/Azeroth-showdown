@@ -1,0 +1,16 @@
+# secrets — never commit API keys
+.env
+.env.*
+!.env.example
+
+# dependencies / build
+node_modules/
+tools/node_modules/
+
+# generated/local
+tools/shots/
+*.log
+.DS_Store
+
+# NOTE: public/assets/*.png and public/assets/assets.meta.json ARE committed
+# (the game art + prompt-traceability metadata are part of the repo).

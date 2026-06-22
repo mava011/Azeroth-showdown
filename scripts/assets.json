@@ -1,0 +1,42 @@
+{
+  "style": "Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+  "assets": [
+    {
+      "id": "alliance_keep", "filename": "alliance_keep.png", "category": "structures", "aspect": "3:4", "transparent": true,
+      "prompt": "A single Stormwind-style Alliance stone watchtower keep, pale blue-grey stone with a tall blue conical roof, gold trim, banners with the gold lion crest, glowing arcane-blue brazier, weathered and heroic, three-quarter view, isolated full structure cutout, no ground, no scenery, vertical."
+    },
+    {
+      "id": "horde_fortress", "filename": "horde_fortress.png", "category": "structures", "aspect": "3:4", "transparent": true,
+      "prompt": "A single Orgrimmar-style Horde watchtower, dark timber and black iron lashed with rope, bone palisade spikes and tusks, red banners with the black Horde emblem, a skull totem, glowing ember brazier, brutal and menacing, three-quarter view, isolated full structure cutout, no ground, no scenery, vertical."
+    },
+
+    { "id": "alliance_tile", "filename": "alliance.png", "category": "tiles", "aspect": "1:1", "transparent": false,
+      "prompt": "Seamless tileable top-down game ground texture, lush green Azeroth grassland with patches of mossy stone and trampled dirt paths, faint blue Alliance lion heraldry worn into the earth, flat even overhead lighting, no shadows, no characters, no horizon, low contrast so heroes read clearly on top, seamless repeating pattern." },
+    { "id": "horde_tile", "filename": "horde.png", "category": "tiles", "aspect": "1:1", "transparent": false,
+      "prompt": "Seamless tileable top-down game ground texture, scorched cracked red-brown Durotar wasteland, dry dirt with charred ash, faint glowing ember cracks, scattered bone fragments, flat even overhead lighting, no shadows, no characters, no horizon, low contrast so heroes read clearly on top, seamless repeating pattern." },
+
+    { "id": "war_backdrop", "filename": "backdrop.png", "category": "backdrops", "aspect": "16:9", "transparent": false,
+      "prompt": "Epic panoramic Azeroth battlefield vista at war-dusk, distant Alliance castle spires on the left and a jagged Horde fortress with red banners on the right, storm clouds with fiery amber and violet sky, smoke and drifting embers, atmospheric depth, no foreground characters, wide cinematic landscape." },
+
+    { "id": "illidan", "filename": "illidan.png", "category": "heroes", "aspect": "3:4", "transparent": true,
+      "prompt": "Illidan Stormrage the Betrayer, a tall muscular night-elf demon hunter with lavender-purple skin, huge backswept horns, a cloth blindfold with fierce fel-green eyes blazing through, bare fel-tattooed torso, massive leathery demon wings, dual fel-green Warglaives of Azzinoth, loincloth, clawed hooves, full body, three-quarter front view, heroic idle stance, isolated full-body cutout, no ground, no scenery, vertical." },
+    { "id": "arthas", "filename": "arthas.png", "category": "heroes", "aspect": "3:4", "transparent": true,
+      "prompt": "Arthas the Lich King, a towering undead death knight in black spiked plate armor and the horned Helm of Domination with pale-blue glowing eyes, a tattered dark cape, gripping the runeblade Frostmourne with a glowing icy-blue rune channel and a skull crossguard, swirling frost, full body, three-quarter front view, heroic idle stance, isolated full-body cutout, no ground, no scenery, vertical." },
+    { "id": "sylvanas", "filename": "sylvanas.png", "category": "heroes", "aspect": "3:4", "transparent": true,
+      "prompt": "Sylvanas Windrunner the Banshee Queen, an undead high-elf ranger with pale blue-grey skin, long raven hair, glowing crimson eyes, hooded dark ranger cloak with a black feathered shoulder mantle, black-and-violet leather armor, an ornate dark longbow wreathed in red energy, agile stance, full body, three-quarter front view, isolated full-body cutout, no ground, no scenery, vertical." },
+    { "id": "uther", "filename": "uther.png", "category": "heroes", "aspect": "3:4", "transparent": true,
+      "prompt": "Uther the Lightbringer, a stalwart older human paladin in ornate golden plate armor with silver filigree, white-blond beard, crimson tabard, radiant golden holy light, raising a great two-handed warhammer of the Light haloed in holy radiance, full body, three-quarter front view, heroic idle stance, isolated full-body cutout, no ground, no scenery, vertical." },
+    { "id": "grommash", "filename": "grommash.png", "category": "heroes", "aspect": "3:4", "transparent": true,
+      "prompt": "Grommash Hellscream, a hulking brown-skinned orc warchief with huge muscles, two lower tusks, a long black topknot, red war paint, iron-and-leather shoulder armor, hefting the gigantic notched double-bladed axe Gorehowl, ferocious, full body, three-quarter front view, heroic idle stance, isolated full-body cutout, no ground, no scenery, vertical." },
+    { "id": "malfurion", "filename": "malfurion.png", "category": "heroes", "aspect": "3:4", "transparent": true,
+      "prompt": "Malfurion Stormrage the Archdruid, a night-elf druid with teal-green skin, towering branching stag antlers, glowing amber eyes, long green-blue beard, druidic robes with leaves and vines, a gnarled living wooden staff glowing with green nature energy, swirling leaves, full body, three-quarter front view, isolated full-body cutout, no ground, no scenery, vertical." },
+    { "id": "thrall", "filename": "thrall.png", "category": "heroes", "aspect": "3:4", "transparent": true,
+      "prompt": "Thrall the Worldshaman, a mighty green-skinned orc shaman with two tusks and a long black braided topknot, layered leather-fur-and-bone shaman armor with glowing-rune totems, gripping the Doomhammer crackling with blue lightning, elemental storm energy, full body, three-quarter front view, heroic idle stance, isolated full-body cutout, no ground, no scenery, vertical." },
+    { "id": "tyrande", "filename": "tyrande.png", "category": "heroes", "aspect": "3:4", "transparent": true,
+      "prompt": "Tyrande Whisperwind High Priestess of Elune, a graceful night-elf priestess with soft lavender skin, glowing white eyes, long teal-blue hair, silvered moon-themed armor with a crescent-moon headdress, drawing a luminous moonlight bow with a glowing silver arrow, serene moonlit glow, full body, three-quarter front view, isolated full-body cutout, no ground, no scenery, vertical." },
+    { "id": "jaina", "filename": "jaina.png", "category": "heroes", "aspect": "3:4", "transparent": true,
+      "prompt": "Jaina Proudmoore the Archmage, a regal human sorceress with fair skin and long platinum-blonde hair with a signature white streak, elegant blue-and-white mage robes with gold trim, a tall staff crowned with a radiant blue frost crystal, swirling arcane frost and snowflakes, full body, three-quarter front view, isolated full-body cutout, no ground, no scenery, vertical." },
+    { "id": "rexxar", "filename": "rexxar.png", "category": "heroes", "aspect": "3:4", "transparent": true,
+      "prompt": "Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with broad green-brown muscle, a fanged beast-skull mask helm, heavy fur-and-bone armor with animal pelts, wielding twin heavy axes, weathered and wild, full body, three-quarter front view, heroic idle stance, isolated full-body cutout, no ground, no scenery, vertical." }
+  ]
+}

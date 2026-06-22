@@ -607,11 +607,11 @@ function groundTexture(base, a, b){
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
   t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(2,2); return t;
 }
-// ---- authored terrain/backdrop art (drop PNGs in assets/terrain/, set the paths) ----
-const TERRAIN_ART = { alliance:'assets/terrain/alliance.png', horde:'assets/terrain/horde.png' };
-const BACKDROP_ART = 'assets/terrain/backdrop.png';
+// ---- authored terrain/backdrop art (generated into public/assets/ by scripts/generate-assets.mjs) ----
+const TERRAIN_ART = { alliance:'public/assets/tiles/alliance.png', horde:'public/assets/tiles/horde.png' };
+const BACKDROP_ART = 'public/assets/backdrops/backdrop.png';
 // painted billboard structures (Alliance keep / Horde fortress) — drop PNGs, set paths
-const STRUCT_ART = { alliance:null, horde:null };   // e.g. 'assets/terrain/alliance_keep.png'
+const STRUCT_ART = { alliance:null, horde:null };   // e.g. 'public/assets/structures/alliance_keep.png' (set once generated)
 const STRUCT_ASPECT = { alliance:0.82, horde:0.82 };
 function tiledTexture(url, rx, ry){
   const t=new THREE.TextureLoader().load(url);
@@ -1209,7 +1209,7 @@ function buildSpaulder(s, color){
 // Heroes listed here render as a flat, camera-facing illustrated sprite instead of
 // the procedural primitive model. Drop a transparent PNG at the path and add the id.
 const HERO_ART = {
-  illidan:'assets/heroes/illidan.png',
+  illidan:'public/assets/heroes/illidan.png',
 };
 const HERO_ART_ASPECT = { illidan:0.826 };   // width/height per hero (default 0.72)
 const _heroTex = {};
