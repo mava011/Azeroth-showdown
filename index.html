@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.66';
+const BUILD = 'v0.67';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -608,8 +608,8 @@ function groundTexture(base, a, b){
   t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(2,2); return t;
 }
 // ---- authored terrain/backdrop art (drop PNGs in assets/terrain/, set the paths) ----
-const TERRAIN_ART = { alliance:null, horde:null };   // e.g. 'assets/terrain/alliance.png'
-const BACKDROP_ART = null;                            // e.g. 'assets/terrain/backdrop.png'
+const TERRAIN_ART = { alliance:'assets/terrain/alliance.png', horde:'assets/terrain/horde.png' };
+const BACKDROP_ART = 'assets/terrain/backdrop.png';
 function tiledTexture(url, rx, ry){
   const t=new THREE.TextureLoader().load(url);
   t.colorSpace=THREE.SRGBColorSpace; t.wrapS=t.wrapT=THREE.RepeatWrapping;
