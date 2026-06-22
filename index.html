@@ -366,7 +366,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.74';
+const BUILD = 'v0.75';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1713,6 +1713,15 @@ function roar(pos){
     m.rotation.x=-Math.PI/2; m.position.set(pos.x,0.1+i*0.15,pos.z);
     let t=-i*0.12; addVfx(m,(dt)=>{ t+=dt; if(t<0)return true; const k=t/0.5; m.scale.setScalar(1+k*4); m.material.opacity=Math.max(0,0.8*(1-k)); return k<1; }); }
 }
+// a glowing bond tether between Rexxar and his beast (shown when Bestial Wrath fires)
+function bondBeam(a, b, color){
+  const A=a.clone(); A.y+=1.0; const B=b.clone(); B.y+=0.8;
+  const len=A.distanceTo(B);
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,len,7),
+    new THREE.MeshBasicMaterial({color, transparent:true, opacity:0.85, toneMapped:false, blending:THREE.AdditiveBlending, depthWrite:false}));
+  m.position.copy(A).lerp(B,0.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), B.clone().sub(A).normalize());
+  let t=0; addVfx(m,(dt)=>{ t+=dt; const k=t/0.5; m.scale.set((1-k),1,(1-k)); m.material.opacity=0.85*(1-k); return k<1; });
+}
 
 /* =========================================================================
    GAME / BATTLE STATE
@@ -2030,6 +2039,12 @@ function killUnit(u){
   const p=u.group.position.clone(); p.y=0.12; ringBurst(p, 0xffffff, 0.2, 1.0, 0.3);
   sparks(u.group.position, dc, 14);
   screenShake(0.4); hitStop(0.07); sfx(u.team===0?160:140,0.12,'triangle');
+  // a fallen beast lets out a dying howl; its master flinches in grief
+  if(u.hero.companion){
+    sfx(90,0.5,'sawtooth'); setTimeout(()=>sfx(70,0.4,'sawtooth'),120);
+    const owner=G.units.find(o=>!o.dead && o.team===u.team && o.hero.id==='rexxar');
+    if(owner){ owner.flash=Math.max(owner.flash,0.16); ringBurst(owner.group.position.clone().setY(0.12),0xff7a3a,0.3,1.6,0.5); }
+  }
 }
 
 /* ----------------------------- Abilities ---------------------------------- */
@@ -2112,7 +2127,8 @@ function triggerAbility(u){
       // Rexxar enrages himself and his beast companion(s): a roar, +dmg & speed
       u.buffT=Math.max(u.buffT,5); u.dmgMul=1.6; u.spdMul=1.5;
       const beasts=allies.filter(a=>a!==u && a.hero.companion);
-      beasts.forEach(b=>{ b.buffT=Math.max(b.buffT,5); b.dmgMul=1.6; b.spdMul=1.5; ringBurst(b.group.position,0xff7a3a,0.4,1.8,0.45); });
+      beasts.forEach(b=>{ b.buffT=Math.max(b.buffT,5); b.dmgMul=1.6; b.spdMul=1.5; ringBurst(b.group.position,0xff7a3a,0.4,1.8,0.45);
+        bondBeam(u.group.position, b.group.position, 0xffb060); });   // bond tether Rexxar -> beast
       ringBurst(p,0xff7a3a,0.5,2.4,0.5); glowParticles(p,0xffb060,10,1.6,1.0);
       roar(p); sfx(120,0.16,'sawtooth'); screenShake(0.3); return true;
     }
@@ -2174,6 +2190,10 @@ function castAura(u){
   const tints={ chain_lightning:0x9be7ff, frost_blast:0xbfe9ff, multishot:0xb27bff, berserk:0x39ff14,
     heal:0xfff2a0, whirlwind:0xff7b4d, starfall:0xfff2a0, root:0x6bd06a, summon:0x8be07a, bestial_wrath:0xff7a3a };
   const c=tints[u.hero.ability]||u.hero.gem;
+  // cast impact: heavy "ultimate" abilities punch the screen (tinted flash + shake + a beat of hit-stop)
+  const heavy=({berserk:1,frost_blast:1,starfall:1,bestial_wrath:1,whirlwind:1})[u.hero.ability]||0;
+  if(heavy){ flash('#'+c.toString(16).padStart(6,'0'), 0.15); screenShake(0.34); hitStop(0.05); }
+  else screenShake(0.12);
   const p=u.group.position.clone(); p.y=0.12; ringBurst(p,c,0.3,1.4,0.45);
   const col=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,3.0,16,1,true),
     new THREE.MeshBasicMaterial({color:c, transparent:true, opacity:0.5, side:THREE.DoubleSide}));
