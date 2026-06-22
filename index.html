@@ -150,8 +150,21 @@
   .ab button .an{font-size:13px; font-weight:800; color:#ffe39a;}
   .ab button .ad{font-size:11px; color:#bcd; margin-top:2px;}
   /* result */
-  #result h2{font-size:40px; margin:10px 0; font-weight:900; -webkit-text-stroke:1.5px #1a1300;}
-  #result .win{color:#ffe07a;} #result .lose{color:#ff9d97;}
+  #result h2{font-size:44px; margin:10px 0; font-weight:900; -webkit-text-stroke:1.5px #1a1300;
+    animation:resultIn .55s cubic-bezier(.2,1.5,.4,1) both;}
+  @keyframes resultIn{from{opacity:0; transform:scale(.4) translateY(10px);} to{opacity:1; transform:none;}}
+  #result .win{color:#ffe07a; animation:resultIn .55s cubic-bezier(.2,1.5,.4,1) both, winGlow 1.7s ease-in-out .5s infinite;}
+  #result .lose{color:#ff9d97;}
+  @keyframes winGlow{0%,100%{filter:drop-shadow(0 0 8px rgba(255,224,122,.5));} 50%{filter:drop-shadow(0 0 24px rgba(255,224,122,.95));}}
+  #result.won{background:
+    radial-gradient(120% 75% at 50% 36%, rgba(255,196,70,.14), rgba(8,12,28,0) 55%),
+    linear-gradient(180deg, #14110a, #0a0f20);}
+  #result.lost{background:
+    radial-gradient(120% 75% at 50% 36%, rgba(180,40,40,.14), rgba(8,12,28,0) 55%),
+    linear-gradient(180deg, #160c0c, #0a0f20);}
+  #confetti{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:3;}
+  #confetti i{position:absolute; top:-16px; width:10px; height:16px; border-radius:2px; opacity:.95;}
+  @keyframes confFall{from{transform:translateY(0) rotate(0deg);} to{transform:translateY(112vh) rotate(720deg); opacity:.7;}}
   /* loading */
   #boot{position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
     background:#0b1020; color:#9fb0d6; font-weight:800; letter-spacing:1px;}
@@ -318,6 +331,7 @@
 
   <!-- Result -->
   <div id="result" class="screen overlaybg hidden">
+    <div id="confetti"></div>
     <div style="flex:1"></div>
     <h2 id="resultTitle" class="win">VICTORY!</h2>
     <div class="muted" id="resultSub" style="margin-bottom:10px"></div>
@@ -371,7 +385,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.81';
+const BUILD = 'v0.82';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -2424,9 +2438,24 @@ function endMatch(playerWon){
   $('#resultSub').textContent = playerWon
     ? 'Azeroth is yours, commander.'
     : 'Your rival prevailed… draft sharper next time.';
+  const r=$('#result'); r.classList.toggle('won',playerWon); r.classList.toggle('lost',!playerWon);
   hideAllScreens(); show('result');
-  sfx(playerWon?880:160,0.3, playerWon?'square':'sawtooth');
+  if(playerWon){ confetti(); fanfare(); } else { sfx(160,0.3,'sawtooth'); sfx(120,0.4,'sawtooth'); }
 }
+// celebratory falling confetti on the result screen
+function confetti(){
+  const box=$('#confetti'); if(!box) return; box.innerHTML='';
+  const cols=['#ffd24a','#5fd873','#6fa8ff','#ff6a5e','#b27bff','#fff2b0'];
+  for(let i=0;i<60;i++){ const p=document.createElement('i');
+    p.style.left=(Math.random()*100)+'%';
+    p.style.background=cols[(Math.random()*cols.length)|0];
+    p.style.animation='confFall '+(3.0+Math.random()*2.6).toFixed(2)+'s linear '+(Math.random()*0.5).toFixed(2)+'s forwards';
+    box.appendChild(p);
+  }
+  setTimeout(()=>{ if(box) box.innerHTML=''; }, 6500);
+}
+// a short rising victory fanfare (three notes)
+function fanfare(){ const ns=[523,659,784,1046]; ns.forEach((f,i)=>setTimeout(()=>tone(f,0.32,'square',{gain:0.05}),i*130)); }
 
 /* ----------------------------- HUD render --------------------------------- */
 function renderPips(){
@@ -2953,6 +2982,7 @@ try{ const q=new URLSearchParams(location.search); const mode=q.get('az');
   else if(mode==='battle') AZ.battle((q.get('me')||'illidan').split(','), (q.get('foe')||'thrall,jaina').split(','));
   else if(mode==='heroes'){ hideAllScreens(); show('heroes'); renderRoster(); }
   else if(mode==='draft'){ startMatch(); }
+  else if(mode==='result'){ endMatch(q.get('win')!=='0'); }
 }catch(e){ console.warn('az test hook',e); }
 })();
 </script>
