@@ -359,7 +359,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.67';
+const BUILD = 'v0.68';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -611,8 +611,8 @@ function groundTexture(base, a, b){
 const TERRAIN_ART = { alliance:'public/assets/tiles/alliance.png', horde:'public/assets/tiles/horde.png' };
 const BACKDROP_ART = 'public/assets/backdrops/backdrop.png';
 // painted billboard structures (Alliance keep / Horde fortress) — drop PNGs, set paths
-const STRUCT_ART = { alliance:null, horde:null };   // e.g. 'public/assets/structures/alliance_keep.png' (set once generated)
-const STRUCT_ASPECT = { alliance:0.82, horde:0.82 };
+const STRUCT_ART = { alliance:'public/assets/structures/alliance_keep.png', horde:'public/assets/structures/horde_fortress.png' };
+const STRUCT_ASPECT = { alliance:0.542, horde:0.621 };
 function tiledTexture(url, rx, ry){
   const t=new THREE.TextureLoader().load(url);
   t.colorSpace=THREE.SRGBColorSpace; t.wrapS=t.wrapT=THREE.RepeatWrapping;
@@ -703,6 +703,17 @@ function buildBrazier(team){
   const flame=new THREE.Mesh(new THREE.ConeGeometry(0.15,0.36,7),
     new THREE.MeshBasicMaterial({color:team===0?0x6fc4ff:0xff8a4d, toneMapped:false}));
   flame.position.y=0.96; g.add(flame); g.userData={flame}; BRAZIERS.push(flame); return g;
+}
+// shared painted-billboard texture loader/cache — used by both the structure keeps
+// (buildTower, below) and the hero sprites (buildSpriteModel). Declared here, above
+// buildArena(), so the towers can load their art at scene-construction time.
+const _heroTex = {};
+function heroTexture(url){
+  if(_heroTex[url]) return _heroTex[url];
+  const t = new THREE.TextureLoader().load(url);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
+  _heroTex[url] = t; return t;
 }
 function buildTower(x,z,team){
   const t=new THREE.Group(); const f=teamFac(team);
@@ -1210,16 +1221,21 @@ function buildSpaulder(s, color){
 // the procedural primitive model. Drop a transparent PNG at the path and add the id.
 const HERO_ART = {
   illidan:'public/assets/heroes/illidan.png',
+  arthas:'public/assets/heroes/arthas.png',
+  sylvanas:'public/assets/heroes/sylvanas.png',
+  uther:'public/assets/heroes/uther.png',
+  grommash:'public/assets/heroes/grommash.png',
+  malfurion:'public/assets/heroes/malfurion.png',
+  thrall:'public/assets/heroes/thrall.png',
+  tyrande:'public/assets/heroes/tyrande.png',
+  jaina:'public/assets/heroes/jaina.png',
+  rexxar:'public/assets/heroes/rexxar.png',
 };
-const HERO_ART_ASPECT = { illidan:0.826 };   // width/height per hero (default 0.72)
-const _heroTex = {};
-function heroTexture(url){
-  if(_heroTex[url]) return _heroTex[url];
-  const t = new THREE.TextureLoader().load(url);
-  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
-  t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
-  _heroTex[url] = t; return t;
-}
+// width/height of each painted cutout (drives the billboard quad's proportions). Default 0.72.
+const HERO_ART_ASPECT = {
+  illidan:0.826, arthas:0.582, sylvanas:0.632, uther:0.586, grommash:0.678,
+  malfurion:0.650, thrall:0.680, tyrande:0.639, jaina:0.642, rexxar:0.661,
+};
 // a camera-facing textured quad sized to read like the other heroes; pivot at the feet
 function buildSpriteModel(hero, team){
   const g = new THREE.Group();
