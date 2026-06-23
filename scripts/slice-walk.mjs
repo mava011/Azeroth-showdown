@@ -20,14 +20,15 @@ if (!file) { console.error('usage: node scripts/slice-walk.mjs <sheet.png>'); pr
 const arg=(k,d)=>{ const a=process.argv.find(x=>x.startsWith('--'+k+'=')); return a?Number(a.split('=')[1]):d; };
 const FRAME_H=arg('h',620);                    // FRAME_W is derived per-sheet from the figures
 const FIG_H_FRAC=0.98, BASE_FRAC=0.992;        // fill the height & sit feet on the floor, like the static art
+const ALPHA = process.argv.includes('--alpha');  // sheet is already transparent (skip the green key/despill)
 
 const png = PNG.sync.read(fs.readFileSync(file));
 const { width: W, height: H, data } = png;
 const A=(x,y)=>data[(y*W+x)*4+3];
 
-// 1. green-key
+// 1. green-key (unless the sheet is already alpha-cut, e.g. a green-weapon hero on transparent bg)
 const isGreen=(i)=>{ const r=data[i],g=data[i+1],b=data[i+2]; return g>=135 && r<=145 && b<=145 && (g-r)>=42 && (g-b)>=42; };
-for (let p=0;p<W*H;p++){ const i=p*4; if(isGreen(i)) data[i+3]=0; }
+if (!ALPHA) for (let p=0;p<W*H;p++){ const i=p*4; if(isGreen(i)) data[i+3]=0; }
 
 // 2. find figures from the column-coverage profile (a body column is opaque ≥1/3 the height)
 const colCov = new Float32Array(W);
@@ -41,13 +42,16 @@ for (let x=0;x<W;x++){
   else if (sm[x]<=T && inRun){ inRun=false; runs.push([s0,x-1]); }
 }
 if (inRun) runs.push([s0,W-1]);
+runs = runs.filter(r=> (r[1]-r[0]+1) >= Math.max(40, W*0.03));   // drop slivers (a figure cut off at the sheet edge leaves a thin stub)
 if (!runs.length){ console.error('no body columns over threshold'); process.exit(1); }
-// merge runs separated by only a sliver (a raised arm can briefly dip a column under T)
-const widths = runs.map(r=>r[1]-r[0]+1).sort((a,b)=>a-b);
-const medW = widths[widths.length>>1];
+// rejoin a SINGLE figure that an arm/weapon briefly dipped under T — but never fuse two
+// separate figures: only merge when the gap is a sliver, or stays FILLED across it (an
+// internal dip), not the near-empty space between neighbours.
 const merged=[runs[0].slice()];
 for (let i=1;i<runs.length;i++){ const prev=merged[merged.length-1];
-  if (runs[i][0]-prev[1] < medW*0.4) prev[1]=runs[i][1]; else merged.push(runs[i].slice()); }
+  const gapW = runs[i][0]-prev[1];
+  let gapMin=Infinity; for(let x=prev[1]+1;x<runs[i][0];x++) gapMin=Math.min(gapMin,sm[x]);
+  if (gapW<30 || gapMin>0.45*T) prev[1]=runs[i][1]; else merged.push(runs[i].slice()); }
 
 // 3. each figure gets a window, split at the emptiest column (coverage valley) in each gap
 // — not the midpoint, so a neighbour's blade reaching into the gap stays on its own side.
@@ -103,8 +107,8 @@ kept.forEach((f)=>{
   for (let y=0;y<FRAME_H;y++) for (let x=cb0;x<cb1;x++){ const l=lab[y*FRAME_W+x]; if(l) band[l]++; }
   let B=0,bbest=-1; for (let l=1;l<=lc;l++){ if(band[l]>bbest){ bbest=band[l]; B=l; } }
   if (B) for (let p=0;p<FRAME_W*FRAME_H;p++){ const l=lab[p]; if(l && l!==B) out.data[p*4+3]=0; }
-  // despill green fringe
-  for (let p=0;p<FRAME_W*FRAME_H;p++){ const i=p*4; if(out.data[i+3]===0) continue;
+  // despill green fringe (skip for already-transparent sheets — no green to spill)
+  if (!ALPHA) for (let p=0;p<FRAME_W*FRAME_H;p++){ const i=p*4; if(out.data[i+3]===0) continue;
     const cap=((out.data[i]+out.data[i+2])>>1)+30; if(out.data[i+1]>cap) out.data[i+1]=cap; }
   fs.writeFileSync(base+written+'.png', PNG.sync.write(out));
   written++;
