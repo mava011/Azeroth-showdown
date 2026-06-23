@@ -385,7 +385,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.86';
+const BUILD = 'v0.87';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -706,6 +706,32 @@ function heroTexture(url){
   t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
   _heroTex[url] = t; return t;
 }
+// Cross-fade sprite material: a normal MeshBasicMaterial (so colour-space, tone-mapping,
+// alpha-cut, tint and opacity all behave exactly as before) with a SECOND frame texture
+// injected so the walk cycle can blend mapB over map by mixAB — interpolating the legs like
+// skeletal animation instead of hard-popping between 3 frames. Set bodyMat.map = frame A,
+// bodyMat.userData.mapB.value = frame B, bodyMat.userData.mixAB.value = 0..1.
+function spriteMaterial(tex){
+  const m = new THREE.MeshBasicMaterial({ map:tex, transparent:true, alphaTest:0.3,
+    depthWrite:true, toneMapped:false, side:THREE.DoubleSide });
+  m.userData.mapB  = { value:tex };
+  m.userData.mixAB = { value:0 };
+  m.onBeforeCompile = (shader)=>{
+    shader.uniforms.mapB  = m.userData.mapB;
+    shader.uniforms.mixAB = m.userData.mixAB;
+    shader.fragmentShader = 'uniform sampler2D mapB;\nuniform float mixAB;\n' +
+      shader.fragmentShader.replace('#include <map_fragment>', `
+        #ifdef USE_MAP
+          vec4 texA = texture2D( map, vMapUv );
+          vec4 texB = texture2D( mapB, vMapUv );
+          vec4 sampledDiffuseColor = mix( texA, texB, mixAB );
+          diffuseColor *= sampledDiffuseColor;
+        #endif
+      `);
+  };
+  return m;
+}
+
 function buildTower(x,z,team){
   const t=new THREE.Group(); const f=teamFac(team);
   const sUrl = STRUCT_ART[team===0?'alliance':'horde'];
@@ -1282,8 +1308,7 @@ function buildSpriteModel(hero, team){
   const walkAspect = HERO_WALK_ASPECT[hero.id] || backAspect;
   const H = 3.9, W = H*frontAspect;   // taller billboards so the painted heroes are the focus
   const geo = new THREE.PlaneGeometry(W, H); geo.translate(0, H/2, 0);   // feet at y=0
-  const mat = new THREE.MeshBasicMaterial({ map:tex, transparent:true, alphaTest:0.3,
-    depthWrite:true, toneMapped:false, side:THREE.DoubleSide });
+  const mat = spriteMaterial(tex);
   const plane = new THREE.Mesh(geo, mat);
   g.add(plane);
   g.userData = { isSprite:true, sprite:plane, body:plane, bodyMat:mat, hero,
@@ -2281,29 +2306,69 @@ function starFall(from){
 
 /* ----------------------------- Projectiles -------------------------------- */
 const projectiles=[];
+// per-hero projectile identity (WoW-flavoured): kind → mesh, trail → streak, impact burst
+const PROJ = {
+  sylvanas: {kind:'arrow', color:0x9d6bff, speed:20, trail:'shadow'},   // Dark Ranger's black arrow
+  tyrande:  {kind:'arrow', color:0xdbe8ff, speed:20, trail:'moon'},     // moon-blessed arrow
+  jaina:    {kind:'shard', color:0xbfe9ff, speed:16, trail:'frost'},    // Frostbolt
+  thrall:   {kind:'bolt',  color:0xa6ecff, speed:26, trail:'spark'},    // Lightning Bolt
+  malfurion:{kind:'orb',   color:0xc6ef93, speed:15, trail:'nature'},   // Wrath
+};
 function fireProjectile(owner, target, dmg, color){
-  const col=color||0xffffff;
-  const m=new THREE.Group();
-  if(owner.hero.weapon==='bow'){
-    const shaft=fxToon(new THREE.CylinderGeometry(0.025,0.025,0.5,5), 0x6b4a2a); shaft.rotation.x=Math.PI/2; m.add(shaft);
-    const tip=fxToon(new THREE.ConeGeometry(0.06,0.16,6), mix(col,0xffffff,0.3)); tip.rotation.x=Math.PI/2; tip.position.z=0.3; m.add(tip);
-  }else{
-    const core=new THREE.Mesh(new THREE.SphereGeometry(0.1,10,8), new THREE.MeshBasicMaterial({color:col,toneMapped:false})); m.add(core);
+  const def = PROJ[owner.hero.id] || {kind:(owner.hero.weapon==='bow'?'arrow':'orb'), color:color||0xffffff, speed:16, trail:'spark'};
+  const col = def.color, m=new THREE.Group();
+  if(def.kind==='arrow'){
+    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(0.017,0.017,0.5,5), new THREE.MeshBasicMaterial({color:0x241d28,toneMapped:false})); shaft.rotation.x=Math.PI/2; m.add(shaft);
+    const head=new THREE.Mesh(new THREE.ConeGeometry(0.055,0.18,7), new THREE.MeshBasicMaterial({color:mix(col,0xffffff,0.4),toneMapped:false})); head.rotation.x=Math.PI/2; head.position.z=0.32; m.add(head);
+    for(const s of [-1,1]){ const v=new THREE.Mesh(new THREE.PlaneGeometry(0.13,0.1), new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.8,side:THREE.DoubleSide,toneMapped:false}));
+      v.position.set(0,s*0.035,-0.2); v.rotation.set(s*0.5,0,0); m.add(v); }
+  } else if(def.kind==='shard'){               // frostbolt — a glinting ice shard
+    const core=new THREE.Mesh(new THREE.OctahedronGeometry(0.13,0), new THREE.MeshBasicMaterial({color:col,toneMapped:false})); core.scale.z=2.1; m.add(core);
+    const ice=new THREE.Mesh(new THREE.OctahedronGeometry(0.2,0), new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.35,toneMapped:false})); ice.scale.z=2.5; m.add(ice);
+  } else if(def.kind==='bolt'){                 // lightning — a blinding white core
+    m.add(new THREE.Mesh(new THREE.SphereGeometry(0.1,8,6), new THREE.MeshBasicMaterial({color:0xffffff,toneMapped:false})));
+  } else {                                      // wrath / generic energy orb
+    m.add(new THREE.Mesh(new THREE.SphereGeometry(0.12,10,8), new THREE.MeshBasicMaterial({color:col,toneMapped:false})));
   }
-  const halo=new THREE.Sprite(glowSpriteMat(col)); halo.scale.set(0.5,0.5,1); m.add(halo);
-  m.position.copy(owner.group.position); m.position.y=1.0;
+  const halo=new THREE.Sprite(glowSpriteMat(col)); const hs=def.kind==='bolt'?0.9:0.6; halo.scale.set(hs,hs,1); m.add(halo);
+  const sp=owner.group.position, fs=owner.group.userData.faceSign||1;
+  m.position.set(sp.x+fs*0.28, 1.45, sp.z+0.05);            // launch from the hand/weapon height
   scene.add(m);
-  projectiles.push({mesh:m, owner, target, dmg, color:col, speed:12, trail:0});
+  projectiles.push({mesh:m, owner, target, dmg, color:col, speed:def.speed, trail:0, trailKind:def.trail, kind:def.kind, halo});
 }
+// per-kind impact burst when a projectile lands
+function projImpact(pos, trailKind, color){
+  const P=pos.clone();
+  if(trailKind==='frost'){ ringBurst(P,0xbfe9ff,0.1,0.75,0.36); sparks(P,0xe6f6ff,7); }
+  else if(trailKind==='shadow'){ ringBurst(P,0x9d6bff,0.1,0.65,0.32); sparks(P,0xb98cff,6); }
+  else if(trailKind==='moon'){ ringBurst(P,0xdbe8ff,0.1,0.65,0.32); sparks(P,0xffffff,7); }
+  else if(trailKind==='spark'){ ringBurst(P,0xa6ecff,0.1,0.85,0.26); sparks(P,0xdffaff,8);
+    lightningArc(P.clone().add(new THREE.Vector3((Math.random()-0.5)*0.6,0.5,0)),P,0xa6ecff); }
+  else if(trailKind==='nature'){ ringBurst(P,0xc6ef93,0.1,0.75,0.36); sparks(P,0xd8f4a0,6); }
+  else sparks(P,color,5);
+}
+// Begin an attack: set up the wind-up→strike→recovery animation. The actual hit (melee
+// damage or projectile launch) lands mid-swing at the STRIKE moment, fired by resolveStrike.
 function basicAttackVisual(u, target){
-  u.lunge=0.22;                              // drives the swing/draw animation
+  u.atkDur = u.hero.kind==='ranged' ? 0.44 : 0.34;   // ranged draws a touch longer
+  u.lunge  = u.atkDur;                                // animation clock (counts down)
+  u.atkStruck = false;
+  u.atkTgt = target;
+}
+// Land the blow at the strike point of the swing.
+function resolveStrike(u){
+  const t=u.atkTgt; if(!t || t.dead) return;
   if(u.hero.kind==='ranged'){
-    const col = u.hero.ability==='frost_blast'?0xbfe9ff : u.hero.gem;
-    fireProjectile(u, target, u.hero.dmg*u.dmgMul, col);
+    fireProjectile(u, t, u.hero.dmg*u.dmgMul, projColor(u.hero));
   }else{
-    slashArc(u, target);                     // weapon trail at the moment of impact
-    dealDamage(u, target, u.hero.dmg*u.dmgMul, '#fff');
+    slashArc(u, t);                                  // weapon trail at the moment of impact
+    dealDamage(u, t, u.hero.dmg*u.dmgMul, '#fff');
+    sfx(u.team===0?172:158, 0.05, 'square');         // a meatier impact thud
   }
+}
+// projectile tint per ranged hero (WoW-accurate); falls back to the gem colour
+function projColor(hero){
+  return ({ jaina:0xbfe9ff, sylvanas:0x9d6bff, tyrande:0xcfe6ff, thrall:0x8fe9ff, malfurion:0xbfe89a })[hero.id] || hero.gem;
 }
 // a quick crescent weapon-trail from attacker toward the target
 function slashArc(u, target){
@@ -2311,14 +2376,16 @@ function slashArc(u, target){
   const col = u.hero.weapon==='glaive'? (u.hero.id==='illidan'?0x9bff7a:u.hero.gem)
             : u.hero.weapon==='sword' && u.hero.id==='arthas' ? 0x8fe3ff : 0xffffff;
   const ang = Math.atan2(target.z-u.z, target.x-u.x);
-  const span = kind==='slash'?Math.PI*0.9:Math.PI*0.7;
-  const m=new THREE.Mesh(new THREE.RingGeometry(0.55,0.78,18,1,-span/2,span),
-    new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:0.9, side:THREE.DoubleSide}));
-  m.position.set(u.group.position.x, 1.1, u.group.position.z);
+  const span = kind==='slash'?Math.PI*0.95:Math.PI*0.7;
+  // sweep the crescent out in FRONT of the attacker, reaching toward the target
+  const px=u.group.position.x + Math.cos(ang)*0.55, pz=u.group.position.z + Math.sin(ang)*0.55;
+  const m=new THREE.Mesh(new THREE.RingGeometry(0.5,0.86,22,1,-span/2,span),
+    new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:0.95, side:THREE.DoubleSide, toneMapped:false, blending:THREE.AdditiveBlending, depthWrite:false}));
+  m.position.set(px, 1.25, pz);
   // orient the flat ring to sweep in the attack direction, tilted for a 3D feel
   m.rotation.y = -ang; m.rotation.x = kind==='chop'? 1.2 : 0.5;
-  let t=0; addVfx(m,(dt)=>{ t+=dt; const k=t/0.16; m.scale.setScalar(1+k*0.6);
-    m.material.opacity=0.9*(1-k); return k<1; });
+  let t=0; addVfx(m,(dt)=>{ t+=dt; const k=t/0.18; m.scale.setScalar(0.9+k*0.8);
+    m.material.opacity=0.95*(1-k); return k<1; });
 }
 // signature aura that flashes at a caster when an ability fires
 function castAura(u){
@@ -2354,7 +2421,9 @@ function updateBattle(dt){
     if(u.poisonT>0){ u.poisonT-=dt; u.pAcc=(u.pAcc||0)+dt;
       if(u.pAcc>=0.4){ u.pAcc=0; dealDamage(u.poisonSrc||null, u, (u.poisonDmg||4), '#9be07a'); } }
     if(u.flash>0) u.flash-=dt;
-    if(u.lunge>0) u.lunge-=dt;
+    if(u.lunge>0){ u.lunge-=dt;                       // attack swing clock
+      // land the blow at the strike point (after the wind-up, ~45% through the swing)
+      if(!u.atkStruck && u.lunge <= (u.atkDur||0.34)*0.55){ u.atkStruck=true; resolveStrike(u); } }
     if(u.castT>0) u.castT-=dt;
     if(u.spin>0) u.spin-=dt;
     u.atkT-=dt; u.abilT-=dt;
@@ -2562,27 +2631,42 @@ function tick(){
       continue;
     }
     ud.t += dt;
-    // ---- gait: a bouncy march hop (with footfall dust) vs a calm idle breathe ----
-    let bob, gaitRock=0, gaitFoot=0;
+    // ---- gait: a smooth, weighted march (eased in/out) vs. a calm idle breathe ----
+    let bob=0, gaitRock=0, gaitFoot=0, sway=0;
     const moving = u.state==='march' && u.frozenT<=0 && u.stunT<=0 && u.rootT<=0;
     if(ud.isSprite){
-      if(moving){
-        ud.gaitPhase += dt*8.5*(u.spdMul||1);
-        const hop=Math.abs(Math.sin(ud.gaitPhase));        // 0 at footfall, 1 at apex
-        bob=hop*0.17; gaitRock=Math.cos(ud.gaitPhase)*0.07; gaitFoot=1-hop;   // squash near the ground
-        const foot=Math.floor(ud.gaitPhase/Math.PI);
-        if(foot!==ud.lastFoot){ ud.lastFoot=foot; footDust(g.position.x, g.position.z); }
-      } else { bob=Math.sin(ud.t*2.4)*0.025; ud.gaitPhase=0; }
+      // ease the gait amplitude in/out so starting & stopping doesn't snap on (weight)
+      ud.moveAmt = (ud.moveAmt||0) + ((moving?1:0)-(ud.moveAmt||0))*Math.min(1,dt*9);
+      const ma=ud.moveAmt;
+      if(ma>0.01){
+        ud.gaitPhase += dt*7.2*(0.55+0.45*(u.spdMul||1));     // stride cadence (scales a bit with speed)
+        const gp=ud.gaitPhase, s=Math.abs(Math.sin(gp));
+        bob = s*0.105*ma;                                     // body rises at mid-step, dips at contact
+        gaitFoot = (1-s)*ma;                                  // squash a touch as a foot plants
+        gaitRock = Math.cos(gp)*0.045*ma;                     // subtle roll
+        sway = Math.sin(gp*0.5)*0.05*ma;                      // weight shift side-to-side, once per stride
+        const foot=Math.floor(gp/Math.PI);
+        if(foot!==ud.lastFoot){ ud.lastFoot=foot; if(ma>0.55) footDust(g.position.x, g.position.z); }
+      }
+      bob += Math.sin(ud.t*2.2)*0.02*(1-ma);                  // idle breathing, fades as the march takes over
     } else {
       bob=Math.sin(ud.t*(u.state==='march'?9:3))*(u.state==='march'?0.06:0.03);
     }
     g.position.y = bob;
     if(ud.legL){ const sw=Math.sin(ud.t*9)*(u.state==='march'?0.5:0.05);
       ud.legL.rotation.x=sw; ud.legR.rotation.x=-sw; }
-    // ---- weapon swing: progress 0..1 over the lunge window, shaped per weapon ----
-    const p = u.lunge>0 ? 1-(u.lunge/0.22) : -1;   // -1 = idle
+    // ---- weapon swing: progress 0..1 over the swing window, shaped per weapon ----
+    const p = u.lunge>0 ? 1-(u.lunge/(u.atkDur||0.22)) : -1;   // -1 = idle
     const lk = u.lunge>0 ? Math.sin(Math.max(0,p)*Math.PI) : 0;
     const kind = ud.weaponKind||'chop';
+    // sprite attack motion: anticipation (pull back) → strike (snap toward target + stretch) → recover
+    let atkPush=0, atkStretch=0, atkLean=0;
+    if(ud.isSprite && p>=0){
+      const FW=(u.hero.kind==='ranged')?0.14:0.46;            // strike reach: archers flick, melee lunge
+      if(p<0.45){ const w=p/0.45; atkPush=-0.15*w*w; atkLean=-0.55*w; atkStretch=-0.04*w; }                       // wind up (pull back, crouch)
+      else if(p<0.60){ const s=(p-0.45)/0.15; atkPush=-0.15+(0.15+FW)*s*s; atkLean=-0.55+1.4*s; atkStretch=0.19*Math.sin(s*Math.PI); } // STRIKE (snap)
+      else { const r=(p-0.60)/0.40, e=1-(1-r)*(1-r); atkPush=FW*(1-e); atkLean=0.85*(1-e); }                      // follow through
+    }
     let armRx=-0.1, armRz=0, armLx=Math.sin(ud.t*9)*(u.state==='march'?0.4:0.1), wRoll=0;
     if(u.lunge>0){
       if(kind==='chop'){            // overhead: wind up high, smash down
@@ -2605,7 +2689,7 @@ function tick(){
     // squash & stretch: stretch tall on attack, squash flat on getting hit
     const bb=ud.bodyBase||{x:1,y:1,z:1};
     let bx=bb.x,by=bb.y,bz=bb.z;
-    if(lk>0){ by+=0.14*lk; bx-=0.07*lk*bb.x; bz-=0.07*lk*bb.z; }
+    if(lk>0 && !ud.isSprite){ by+=0.14*lk; bx-=0.07*lk*bb.x; bz-=0.07*lk*bb.z; }   // sprites use atkStretch instead
     if(u.flash>0){ const f=u.flash/0.16; by-=0.20*f; bx+=0.17*f*bb.x; bz+=0.17*f*bb.z; }
     if(u.castT>0){ const c=Math.sin((u.castT/0.45)*Math.PI); by+=0.1*c; }
     if(ud.isSprite){
@@ -2626,16 +2710,25 @@ function tick(){
           if(ud.turnT<=0.11 && ud.view!==ud.turnTo){ ud.view=ud.turnTo; ud.showingBack=(ud.view==='back'); }
           bx*=Math.max(0.06, Math.abs(ud.turnT-0.11)/0.11); }
         // texture + aspect for the current view; cycle the rear walk frames while marching away
-        let viewTex=ud.texFront, viewAspect=ud.frontAspect;
+        let viewTex=ud.texFront, viewAspect=ud.frontAspect, blendTex=null, blend=0;
         if(ud.view==='back'){ viewTex=ud.texBack||ud.texFront; viewAspect=ud.backAspect;
-          if(moving && ud.walkFrames.length){ const idx=Math.floor(ud.gaitPhase*0.9)%ud.walkFrames.length;
-            viewTex=ud.walkFrames[idx]; viewAspect=ud.walkAspect; }
+          const n=ud.walkFrames.length;
+          if(ud.moveAmt>0.02 && n){
+            // ping-pong contact→pass→contact through the frames and CROSS-FADE between them,
+            // so the legs interpolate continuously instead of popping (the Clash-style smoothness)
+            const ph=(ud.gaitPhase/(Math.PI*2))%1, tri=ph<0.5?ph*2:(1-ph)*2;    // 0→1→0 per stride
+            const ff=tri*(n-1), idx=Math.min(n-1,Math.floor(ff));
+            viewTex=ud.walkFrames[idx]; blendTex=ud.walkFrames[Math.min(n-1,idx+1)]; blend=ff-idx; viewAspect=ud.walkAspect;
+          }
         } else if(ud.view==='side'){ viewTex=ud.texSide||ud.texFront; viewAspect=ud.sideAspect; }
-        if(ud.bodyMat.map!==viewTex){ ud.bodyMat.map=viewTex; ud.bodyMat.needsUpdate=true; }
+        if(ud.bodyMat.map!==viewTex) ud.bodyMat.map=viewTex;
+        ud.bodyMat.userData.mapB.value = blendTex||viewTex;
+        ud.bodyMat.userData.mixAB.value = blendTex?blend:0;
         bx*=(viewAspect/ud.frontAspect);
       }
-      ud.sprite.rotation.z = gaitRock + (lk>0 ? -fs*0.18*lk : 0);  // rock while walking, lean on lunge
-      ud.sprite.position.x = (lk>0 ? fs*0.12*lk : 0);
+      ud.sprite.rotation.z = gaitRock - fs*atkLean*0.16;          // roll while walking, lean into the strike
+      ud.sprite.position.x = sway*fs + fs*atkPush;                // weight-shift waddle + attack lunge
+      by += atkStretch; bx *= (1 - atkStretch*0.4);               // stretch on the strike, crouch on wind-up
       updateHeroFX(g, dt, fs);                                   // animate signature effects
     }
     ud.body.scale.set(bx,by,bz);
@@ -2697,13 +2790,22 @@ function tick(){
     const dx=tp.x-p.mesh.position.x, dy=(tp.y+0.9)-p.mesh.position.y, dz=tp.z-p.mesh.position.z;
     const len=Math.hypot(dx,dy,dz);
     if(len<0.4){
+      projImpact(p.mesh.position, p.trailKind, p.color);
       dealDamage(p.owner, p.target, p.dmg, '#'+(p.color?p.color.toString(16).padStart(6,'0'):'ffffff'));
       scene.remove(p.mesh); projectiles.splice(i,1); continue;
     }
+    const prev=p.mesh.position.clone();
     const s=Math.min(len, p.speed*dt);
     p.mesh.position.x+=dx/len*s; p.mesh.position.y+=dy/len*s; p.mesh.position.z+=dz/len*s;
-    p.mesh.lookAt(tp.x, tp.y+0.9, tp.z);   // orient arrows toward the target
-    p.trail+=dt; if(p.trail>0.03){ p.trail=0; glowPuff(p.mesh.position.clone(), p.color, 0.22, 0.22, {x:0,y:0,z:0}); }
+    p.mesh.lookAt(tp.x, tp.y+0.9, tp.z);   // orient toward the target
+    if(p.halo) p.halo.material.rotation += dt*9;
+    // streaking trail, tuned per projectile flavour
+    p.trail+=dt; const tr=p.trailKind;
+    if(tr==='spark'){ if(p.trail>0.018){ p.trail=0; lightningArc(prev, p.mesh.position, p.color); glowPuff(p.mesh.position.clone(), p.color, 0.18, 0.12, {x:0,y:0,z:0}); } }
+    else if(p.trail>0.022){ p.trail=0;
+      const c = tr==='frost'?0xdaf2ff : tr==='shadow'?0x6b3fa0 : tr==='moon'?0xcfe0ff : tr==='nature'?0xbfe89a : p.color;
+      const sz = tr==='frost'?0.2 : 0.22;
+      glowPuff(p.mesh.position.clone(), c, sz, tr==='frost'?0.3:0.24, {x:(Math.random()-0.5)*0.2,y:(Math.random()-0.5)*0.2,z:0}); }
   }
 
   // damage sprites
@@ -3024,6 +3126,8 @@ tick();
 /* ---- test/automation hooks (used by tools/shoot.mjs; harmless in normal play) ---- */
 window.AZ = {
   ready:true,
+  dbg:()=>({ ended:!!G.ended, proj:projectiles.length,
+    units:G.units.map(u=>({id:u.hero.id, team:u.team, hp:Math.round(u.hp), dead:!!u.dead, st:u.state})) }),
   roster:()=>roster.map(h=>h.id),
   preview(id){ const i=roster.findIndex(h=>h.id===id); if(i<0) return false; hideAllScreens(); show('heroes'); showPreview(i); if(PV){ PV.spin=false; PV.rot=0; PV.manualRot=0; } return true; },
   battle(meIds, foeIds){
@@ -3034,28 +3138,39 @@ window.AZ = {
     return true;
   },
   // close-up of one hero in all three views (front / side / back-walking) for art QA
-  viewtest(id){
+  viewtest(id, solo){
     const find=x=>roster.find(h=>h.id===x)||PRESETS.find(h=>h.id===x);
     const h=find(id); if(!h) return false;
     hideAllScreens();
     for(const u of (G.units||[])) if(u.group) scene.remove(u.group);
     G.units=[]; G.phase='battle'; G.ended=true;        // ended so round-end never fires
-    [['front',0,30],['side',30,0],['back',0,-30]].forEach(([v,tx,tz],i)=>{
-      const x=(i-1)*3.1, z=0;                            // fan out across x at one depth (fair size compare)
-      const g=buildSpriteModel(h,0); g.position.set(x,0,z); scene.add(g);
-      g.userData.gaitPhase=i*1.9;                        // each copy on a different walk frame
-      G.units.push({ hero:h, team:0, x, z, group:g, state:'march', spdMul:1,
-        frozenT:0,burnT:0,poisonT:0,stunT:0,rootT:0,buffT:0, lunge:0,flash:0,castT:0,spin:0,
-        atkT:0, abilT:99, hp:100, maxhp:100, dead:false, dmgMul:1, kbX:0, kbZ:0,
-        target:{x:x+tx, z:z+tz} });
-    });
-    CAM.target.set(0,1.7,0); CAM.base.set(0,4.4,13.5); camera.position.copy(CAM.base); camera.lookAt(CAM.target);
+    const mk=(hero,team,x,z,tgt)=>{ const g=buildSpriteModel(hero,team); g.position.set(x,0,z); scene.add(g);
+      const u={ hero, team, x, z, group:g, state:'march', spdMul:1, frozenT:0,burnT:0,poisonT:0,stunT:0,rootT:0,buffT:0,
+        lunge:0,flash:0,castT:0,spin:0, atkT:0, abilT:99, hp:9e9, maxhp:9e9, dead:false, dmgMul:1, kbX:0, kbZ:0, target:tgt };
+      G.units.push(u); return u; };
+    if(solo===2){            // attack demo: the hero trades blows with a dummy in front of camera
+      const dummy=mk(PRESETS.find(x=>x.id==='grommash')||h, 1, 1.0, 1.6, null);
+      const hh=mk(h, 0, -0.6, 0.2, dummy); dummy.target=hh;
+      CAM.target.set(0.2,1.6,0.9); CAM.base.set(0.2,2.7,7.2);
+    } else if(solo){         // single back-walking hero, zoomed (smoothness QA)
+      const g=buildSpriteModel(h,0); g.position.set(0,0,0); scene.add(g);
+      G.units.push({ hero:h, team:0, x:0, z:0, group:g, state:'march', spdMul:1, frozenT:0,burnT:0,poisonT:0,stunT:0,rootT:0,buffT:0,
+        lunge:0,flash:0,castT:0,spin:0, atkT:0, abilT:99, hp:100, maxhp:100, dead:false, dmgMul:1, kbX:0, kbZ:0, target:{x:0,z:-30} });
+      CAM.target.set(0,1.95,0); CAM.base.set(0,2.6,6.2);
+    } else {                 // front / side / back side-by-side
+      [['front',0,30],['side',30,0],['back',0,-30]].forEach(([v,tx,tz],i)=>{
+        const g=buildSpriteModel(h,0); g.position.set((i-1)*3.1,0,0); scene.add(g); g.userData.gaitPhase=i*1.9;
+        G.units.push({ hero:h, team:0, x:(i-1)*3.1, z:0, group:g, state:'march', spdMul:1, frozenT:0,burnT:0,poisonT:0,stunT:0,rootT:0,buffT:0,
+          lunge:0,flash:0,castT:0,spin:0, atkT:0, abilT:99, hp:100, maxhp:100, dead:false, dmgMul:1, kbX:0, kbZ:0, target:{x:(i-1)*3.1+tx, z:tz} }); });
+      CAM.target.set(0,1.7,0); CAM.base.set(0,4.4,13.5);
+    }
+    camera.position.copy(CAM.base); camera.lookAt(CAM.target);
     return true;
   }
 };
 try{ const q=new URLSearchParams(location.search); const mode=q.get('az');
   if(mode==='preview') AZ.preview(q.get('hero')||'illidan');
-  else if(mode==='viewtest') AZ.viewtest(q.get('hero')||'illidan');
+  else if(mode==='viewtest') AZ.viewtest(q.get('hero')||'illidan', q.get('solo')?+q.get('solo'):0);
   else if(mode==='battle') AZ.battle((q.get('me')||'illidan').split(','), (q.get('foe')||'thrall,jaina').split(','));
   else if(mode==='heroes'){ hideAllScreens(); show('heroes'); renderRoster(); }
   else if(mode==='draft'){ startMatch(); }
