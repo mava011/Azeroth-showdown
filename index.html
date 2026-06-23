@@ -385,7 +385,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.83';
+const BUILD = 'v0.85';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1224,7 +1224,7 @@ const HERO_ART = {
 };
 // width/height of each painted cutout (drives the billboard quad's proportions). Default 0.72.
 const HERO_ART_ASPECT = {
-  illidan:0.667, arthas:0.582, sylvanas:0.632, uther:0.586, grommash:0.678,
+  illidan:0.690, arthas:0.582, sylvanas:0.632, uther:0.586, grommash:0.678,
   malfurion:0.650, thrall:0.680, tyrande:0.639, jaina:0.642, rexxar:0.661,
   misha:1.042, treant:0.640,
 };
@@ -1238,8 +1238,32 @@ const HERO_ART_BACK = {
   jaina:'public/assets/heroes/jaina_back.png', rexxar:'public/assets/heroes/rexxar_back.png',
 };
 const HERO_ART_BACK_ASPECT = {   // from the keyed rear-view PNGs; falls back to the front aspect
-  illidan:0.722, arthas:0.612, sylvanas:0.590, uther:0.585, grommash:0.679,
+  illidan:0.659, arthas:0.612, sylvanas:0.590, uther:0.585, grommash:0.679,
   malfurion:0.578, thrall:0.643, tyrande:0.610, jaina:0.594, rexxar:0.663,
+};
+// side-profile art: shown when a unit faces/moves mostly left↔right (flanking). The painting
+// faces right; the existing faceSign flip mirrors it to face left.
+const HERO_ART_SIDE = {
+  illidan:'public/assets/heroes/illidan_side.png', arthas:'public/assets/heroes/arthas_side.png',
+  sylvanas:'public/assets/heroes/sylvanas_side.png', uther:'public/assets/heroes/uther_side.png',
+  grommash:'public/assets/heroes/grommash_side.png', malfurion:'public/assets/heroes/malfurion_side.png',
+  thrall:'public/assets/heroes/thrall_side.png', tyrande:'public/assets/heroes/tyrande_side.png',
+  jaina:'public/assets/heroes/jaina_side.png', rexxar:'public/assets/heroes/rexxar_side.png',
+};
+const HERO_ART_SIDE_ASPECT = {   // tight-bbox aspect of each keyed side cutout
+  illidan:0.646, arthas:0.657, sylvanas:0.659, uther:0.683, grommash:0.647,
+  malfurion:0.621, thrall:0.631, tyrande:0.643, jaina:0.637, rexxar:0.685,
+};
+// rear-view WALK CYCLE: frames sliced by scripts/slice-walk.mjs (<id>_walk0.png …). Cycled
+// while a unit marches AWAY from the camera so the legs actually stride, Clash-Royale style.
+// Value = frame count; every sliced frame shares WALK_ASPECT.
+const HERO_WALK = {
+  illidan:3, arthas:3, sylvanas:3, uther:2, grommash:2,
+  malfurion:3, thrall:3, tyrande:3, jaina:3, rexxar:3,
+};
+const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced walk frames (per hero)
+  illidan:0.534, arthas:0.500, sylvanas:0.561, uther:0.473, grommash:0.484,
+  malfurion:0.502, thrall:0.626, tyrande:0.502, jaina:0.434, rexxar:0.550,
 };
 // a camera-facing textured quad sized to read like the other heroes; pivot at the feet
 function buildSpriteModel(hero, team){
@@ -1249,6 +1273,13 @@ function buildSpriteModel(hero, team){
   const backUrl = HERO_ART_BACK[hero.id];
   const texBack = backUrl ? heroTexture(backUrl) : null;
   const backAspect = HERO_ART_BACK_ASPECT[hero.id] || frontAspect;
+  const sideUrl = HERO_ART_SIDE[hero.id];
+  const texSide = sideUrl ? heroTexture(sideUrl) : null;
+  const sideAspect = HERO_ART_SIDE_ASPECT[hero.id] || frontAspect;
+  const walkN = HERO_WALK[hero.id] || 0;          // rear-view walk-cycle frames
+  const walkFrames = [];
+  for(let i=0;i<walkN;i++) walkFrames.push(heroTexture('public/assets/heroes/'+hero.id+'_walk'+i+'.png'));
+  const walkAspect = HERO_WALK_ASPECT[hero.id] || backAspect;
   const H = 3.9, W = H*frontAspect;   // taller billboards so the painted heroes are the focus
   const geo = new THREE.PlaneGeometry(W, H); geo.translate(0, H/2, 0);   // feet at y=0
   const mat = new THREE.MeshBasicMaterial({ map:tex, transparent:true, alphaTest:0.3,
@@ -1257,7 +1288,8 @@ function buildSpriteModel(hero, team){
   g.add(plane);
   g.userData = { isSprite:true, sprite:plane, body:plane, bodyMat:mat, hero,
     t:Math.random()*6, bodyBase:{x:1, y:1, z:1}, faceSign:(team===1?-1:1), gaitPhase:Math.random()*6, lastFoot:0,
-    texFront:tex, texBack, frontAspect, backAspect, showingBack:false, turnT:0, turnTo:false };
+    texFront:tex, texBack, texSide, frontAspect, backAspect, sideAspect,
+    walkFrames, walkAspect, view:'front', showingBack:false, turnT:0, turnTo:false };
   attachHeroFX(g, hero);   // animated signature effects (frost swirl, lightning, holy glow…)
   return g;
 }
@@ -2581,15 +2613,26 @@ function tick(){
       bx*=fs;                                                   // face left/right by horizontal flip
       if(gaitFoot){ by-=0.05*gaitFoot; bx+=0.04*gaitFoot*fs; }  // squash a touch on footfall
       if(u.spin>0) bx = bb.x*fs*Math.cos(ud.t*26);              // whirlwind: fake spin by flipping
-      // front/back facing: show the rear view while charging the far side, masked by a quick turn-squash
-      if(ud.texBack){
-        const faceAway = !!(u.target && u.target.z < u.z - 0.3);
-        if(faceAway!==ud.showingBack && ud.turnT<=0) { ud.turnT=0.22; ud.turnTo=faceAway; }
+      // view selection — back while charging the far side (legs stride via the walk cycle),
+      // front while advancing toward camera, side when flanking mostly left↔right. A quick
+      // turn-squash masks each swap; the texture flips at the squash midpoint.
+      {
+        let want='front';
+        if(u.target){ const tdx=u.target.x-u.x, tdz=u.target.z-u.z;
+          if(ud.texSide && Math.abs(tdx) > Math.abs(tdz)*1.15 + 0.5) want='side';
+          else if(tdz < -0.3 && ud.texBack) want='back'; }
+        if(want!==ud.view && ud.turnT<=0){ ud.turnT=0.22; ud.turnTo=want; }
         if(ud.turnT>0){ ud.turnT-=dt;
-          if(ud.turnT<=0.11 && ud.showingBack!==ud.turnTo){ ud.showingBack=ud.turnTo;
-            ud.bodyMat.map=ud.showingBack?ud.texBack:ud.texFront; ud.bodyMat.needsUpdate=true; }
+          if(ud.turnT<=0.11 && ud.view!==ud.turnTo){ ud.view=ud.turnTo; ud.showingBack=(ud.view==='back'); }
           bx*=Math.max(0.06, Math.abs(ud.turnT-0.11)/0.11); }
-        if(ud.showingBack) bx*=(ud.backAspect/ud.frontAspect);
+        // texture + aspect for the current view; cycle the rear walk frames while marching away
+        let viewTex=ud.texFront, viewAspect=ud.frontAspect;
+        if(ud.view==='back'){ viewTex=ud.texBack||ud.texFront; viewAspect=ud.backAspect;
+          if(moving && ud.walkFrames.length){ const idx=Math.floor(ud.gaitPhase*0.9)%ud.walkFrames.length;
+            viewTex=ud.walkFrames[idx]; viewAspect=ud.walkAspect; }
+        } else if(ud.view==='side'){ viewTex=ud.texSide||ud.texFront; viewAspect=ud.sideAspect; }
+        if(ud.bodyMat.map!==viewTex){ ud.bodyMat.map=viewTex; ud.bodyMat.needsUpdate=true; }
+        bx*=(viewAspect/ud.frontAspect);
       }
       ud.sprite.rotation.z = gaitRock + (lk>0 ? -fs*0.18*lk : 0);  // rock while walking, lean on lunge
       ud.sprite.position.x = (lk>0 ? fs*0.12*lk : 0);
@@ -2989,10 +3032,30 @@ window.AZ = {
     if(foeIds&&foeIds.length) aiDraft=()=>foeIds.map(find).filter(Boolean);
     G.round=1; try{ startBattle(); }catch(e){ console.warn('battle hook',e); }
     return true;
+  },
+  // close-up of one hero in all three views (front / side / back-walking) for art QA
+  viewtest(id){
+    const find=x=>roster.find(h=>h.id===x)||PRESETS.find(h=>h.id===x);
+    const h=find(id); if(!h) return false;
+    hideAllScreens();
+    for(const u of (G.units||[])) if(u.group) scene.remove(u.group);
+    G.units=[]; G.phase='battle'; G.ended=true;        // ended so round-end never fires
+    [['front',0,30],['side',30,0],['back',0,-30]].forEach(([v,tx,tz],i)=>{
+      const x=(i-1)*3.1, z=0;                            // fan out across x at one depth (fair size compare)
+      const g=buildSpriteModel(h,0); g.position.set(x,0,z); scene.add(g);
+      g.userData.gaitPhase=i*1.9;                        // each copy on a different walk frame
+      G.units.push({ hero:h, team:0, x, z, group:g, state:'march', spdMul:1,
+        frozenT:0,burnT:0,poisonT:0,stunT:0,rootT:0,buffT:0, lunge:0,flash:0,castT:0,spin:0,
+        atkT:0, abilT:99, hp:100, maxhp:100, dead:false, dmgMul:1, kbX:0, kbZ:0,
+        target:{x:x+tx, z:z+tz} });
+    });
+    CAM.target.set(0,1.7,0); CAM.base.set(0,4.4,13.5); camera.position.copy(CAM.base); camera.lookAt(CAM.target);
+    return true;
   }
 };
 try{ const q=new URLSearchParams(location.search); const mode=q.get('az');
   if(mode==='preview') AZ.preview(q.get('hero')||'illidan');
+  else if(mode==='viewtest') AZ.viewtest(q.get('hero')||'illidan');
   else if(mode==='battle') AZ.battle((q.get('me')||'illidan').split(','), (q.get('foe')||'thrall,jaina').split(','));
   else if(mode==='heroes'){ hideAllScreens(); show('heroes'); renderRoster(); }
   else if(mode==='draft'){ startMatch(); }
