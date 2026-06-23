@@ -55,7 +55,7 @@
       "category": "heroes",
       "aspect": "3:4",
       "transparent": true,
-      "prompt": "BACK VIEW seen from directly behind: Illidan Stormrage the Betrayer, a tall muscular night-elf demon hunter with lavender-purple skin, huge backswept horns seen from behind, long black hair down his back, bare back covered in glowing fel-green tattoos, massive leathery demon wings spread from his shoulder blades, dual-wielding the twin Warglaives of Azzinoth held at his sides — each a fist-gripped DOUBLE-BLADED warglaive with a curved glowing fel-green blade jutting from BOTH ends of the grip (pointed at top and bottom), one in each hand, loincloth, clawed hooves, facing away from viewer, full body rear view, heroic stance, isolated full-body cutout, no ground, no scenery, vertical."
+      "prompt": "THREE-QUARTER REAR VIEW, from behind and turned about 35 degrees to the side so both legs are clearly visible: Illidan Stormrage the Betrayer, a tall muscular night-elf demon hunter with lavender-purple skin, huge backswept horns seen from behind at a three-quarter angle, long black hair down his back, bare back covered in glowing fel-green tattoos, massive leathery demon wings spread from his shoulder blades, dual-wielding the twin Warglaives of Azzinoth held at his sides — each a fist-gripped DOUBLE-BLADED warglaive with a curved glowing fel-green blade jutting from BOTH ends of the grip (pointed at top and bottom), one in each hand, loincloth, clawed hooves, facing away from the viewer at a three-quarter angle, full body three-quarter rear view, both legs visible, heroic stance, isolated full-body cutout, no ground, no scenery, vertical."
     },
     {
       "id": "illidan_side",
@@ -71,7 +71,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk-cycle, each frame the SAME character Illidan Stormrage the demon hunter (lavender skin, backswept horns, folded demon wings, dual-wielding two DOUBLE-BLADED fel-green warglaives — each with a curved glowing blade jutting from both ends of the fist-grip, one in each hand) seen from BEHIND walking away, the COMPLETE figure head-to-hooves fully visible in every frame with clear empty margin above the horns and below the feet so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive leg positions of a walk cycle, large clear gaps separating the frames, no text, no borders, no frame numbers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk-cycle, each frame the SAME character Illidan Stormrage the demon hunter (lavender skin, backswept horns, folded demon wings, dual-wielding two DOUBLE-BLADED fel-green warglaives — each with a curved glowing blade jutting from both ends of the fist-grip, one in each hand) seen from a THREE-QUARTER REAR angle (from behind and turned about 35 degrees to the side so we clearly see the back AND one side AND both legs, the legs plainly visible doing the stepping with one foot forward and the other pushing back), walking away, the COMPLETE figure head-to-hooves fully visible in every frame with clear empty margin above the horns and below the feet so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive leg positions of a walk cycle, large clear gaps separating the frames, no text, no borders, no frame numbers."
     },
     {
       "id": "arthas",
@@ -167,7 +167,7 @@
       "category": "heroes",
       "aspect": "3:4",
       "transparent": true,
-      "prompt": "BACK VIEW seen from directly behind: Arthas the Lich King, a towering undead death knight in black spiked plate armor with large spiked pauldrons and the horned Helm of Domination seen from behind, a long tattered dark cape down his back, gripping the runeblade Frostmourne with an icy-blue glow at his side, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical."
+      "prompt": "THREE-QUARTER REAR VIEW, from behind and turned about 35 degrees to the side so both legs are clearly visible: Arthas the Lich King, a towering undead death knight in black spiked plate armor with large spiked pauldrons and the horned Helm of Domination seen from behind at a three-quarter angle, a long tattered dark cape down his back, gripping the runeblade Frostmourne with an icy-blue glow at his side, facing away from the viewer at a three-quarter angle, full body three-quarter rear view, both legs visible, isolated full-body cutout, no ground, no scenery, vertical."
     },
     {
       "id": "sylvanas_back",
@@ -175,7 +175,7 @@
       "category": "heroes",
       "aspect": "3:4",
       "transparent": true,
-      "prompt": "BACK VIEW seen from directly behind: Sylvanas Windrunner the Banshee Queen, an undead high-elf dark ranger with pale skin and long raven hair down her back, a hood and a black feathered shoulder mantle, black-and-violet leather armor, a quiver and an ornate dark longbow wreathed in red energy on her back, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical."
+      "prompt": "THREE-QUARTER REAR VIEW, from behind and turned about 35 degrees to the side so both legs are clearly visible: Sylvanas Windrunner the Banshee Queen, an undead high-elf dark ranger with pale skin and long raven hair down her back, a hood and a black feathered shoulder mantle, black-and-violet leather armor, a quiver and an ornate dark longbow wreathed in red energy on her back, facing away from the viewer at a three-quarter angle, full body three-quarter rear view, both legs visible, isolated full-body cutout, no ground, no scenery, vertical."
     },
     {
       "id": "uther_back",
@@ -183,7 +183,7 @@
       "category": "heroes",
       "aspect": "3:4",
       "transparent": true,
-      "prompt": "BACK VIEW seen from directly behind: Uther the Lightbringer, a stalwart human paladin in ornate golden plate armor with silver filigree and large pauldrons, a long crimson cape down his back, holding a great two-handed warhammer of the Light glowing over his shoulder, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical."
+      "prompt": "THREE-QUARTER REAR VIEW, from behind and turned about 35 degrees to the side so both legs are clearly visible: Uther the Lightbringer, a stalwart human paladin in ornate golden plate armor with silver filigree and large pauldrons, a long crimson cape down his back, holding a great two-handed warhammer of the Light glowing over his shoulder, facing away from the viewer at a three-quarter angle, full body three-quarter rear view, both legs visible, isolated full-body cutout, no ground, no scenery, vertical."
     },
     {
       "id": "grommash_back",
@@ -191,7 +191,7 @@
       "category": "heroes",
       "aspect": "3:4",
       "transparent": true,
-      "prompt": "BACK VIEW seen from directly behind: Grommash Hellscream, a hulking brown-skinned orc warchief with huge muscular back, a long black topknot down his back, iron-and-leather shoulder armor, hefting the gigantic notched axe Gorehowl, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical."
+      "prompt": "THREE-QUARTER REAR VIEW, seen from behind and turned about 35 degrees to the side so the viewer sees his back AND one side and both legs: Grommash Hellscream, a hulking brown-skinned orc warchief with huge muscular back, two lower tusks, a long black topknot, red war paint, iron-and-leather shoulder armor, hefting the gigantic notched double-bladed axe Gorehowl, facing away from the viewer at a three-quarter angle, full body with both legs clearly visible, isolated full-body cutout, no ground, no scenery, vertical."
     },
     {
       "id": "malfurion_back",
@@ -199,7 +199,7 @@
       "category": "heroes",
       "aspect": "3:4",
       "transparent": true,
-      "prompt": "BACK VIEW seen from directly behind: Malfurion Stormrage the Archdruid, a night-elf druid with teal-green skin and towering branching stag antlers seen from behind, long green-blue hair, druidic leaf-and-vine robes with a leafy cloak down his back, a gnarled glowing nature staff at his side, facing away from viewer, complete head-to-feet full body rear view, isolated full-body cutout, no ground, no scenery, vertical."
+      "prompt": "THREE-QUARTER REAR VIEW, from behind and turned about 35 degrees to the side so both legs are clearly visible: Malfurion Stormrage the Archdruid, a night-elf druid with teal-green skin and towering branching stag antlers seen from behind at a three-quarter angle, long green-blue hair, druidic leaf-and-vine robes with a leafy cloak down his back, a gnarled glowing nature staff at his side, facing away from the viewer at a three-quarter angle, complete head-to-feet full body three-quarter rear view, both legs visible, isolated full-body cutout, no ground, no scenery, vertical."
     },
     {
       "id": "thrall_back",
@@ -207,7 +207,7 @@
       "category": "heroes",
       "aspect": "3:4",
       "transparent": true,
-      "prompt": "BACK VIEW seen from directly behind: Thrall the Worldshaman, a mighty green-skinned orc shaman with a muscular back and a long black braided topknot down his back, layered leather-fur-and-bone shaman armor with hanging totems, gripping the Doomhammer crackling with blue lightning at his side, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical."
+      "prompt": "THREE-QUARTER REAR VIEW, from behind and turned about 35 degrees to the side so both legs are clearly visible: Thrall the Worldshaman, a mighty green-skinned orc shaman with a muscular back and a long black braided topknot down his back, layered leather-fur-and-bone shaman armor with hanging totems, gripping the Doomhammer crackling with blue lightning at his side, facing away from the viewer at a three-quarter angle, full body three-quarter rear view, both legs visible, isolated full-body cutout, no ground, no scenery, vertical."
     },
     {
       "id": "tyrande_back",
@@ -215,7 +215,7 @@
       "category": "heroes",
       "aspect": "3:4",
       "transparent": true,
-      "prompt": "BACK VIEW seen from directly behind: Tyrande Whisperwind High Priestess of Elune, a graceful night-elf priestess with long teal-blue hair down her back, silvered moon-themed armor with a crescent-moon headdress and a flowing dark cape, holding a luminous moonlight bow, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical."
+      "prompt": "THREE-QUARTER REAR VIEW, from behind and turned about 35 degrees to the side so both legs are clearly visible: Tyrande Whisperwind High Priestess of Elune, a graceful night-elf priestess with long teal-blue hair down her back, silvered moon-themed armor with a crescent-moon headdress and a flowing dark cape, holding a luminous moonlight bow, facing away from the viewer at a three-quarter angle, full body three-quarter rear view, both legs visible, isolated full-body cutout, no ground, no scenery, vertical."
     },
     {
       "id": "jaina_back",
@@ -223,7 +223,7 @@
       "category": "heroes",
       "aspect": "3:4",
       "transparent": true,
-      "prompt": "BACK VIEW seen from directly behind: Jaina Proudmoore the Archmage, a regal human sorceress with long platinum-blonde hair with a white streak down her back, elegant blue-and-white mage robes with gold trim and a flowing cape, holding a tall staff with a glowing blue frost crystal, swirling frost, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical."
+      "prompt": "THREE-QUARTER REAR VIEW, from behind and turned about 35 degrees to the side so both legs are clearly visible: Jaina Proudmoore the Archmage, a regal human sorceress with long platinum-blonde hair with a white streak down her back, elegant blue-and-white mage robes with gold trim and a flowing cape, holding a tall staff with a glowing blue frost crystal, swirling frost, facing away from the viewer at a three-quarter angle, full body three-quarter rear view, both legs visible, isolated full-body cutout, no ground, no scenery, vertical."
     },
     {
       "id": "rexxar_back",
@@ -231,7 +231,7 @@
       "category": "heroes",
       "aspect": "3:4",
       "transparent": true,
-      "prompt": "BACK VIEW seen from directly behind: Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with a broad muscular back, a fanged beast-skull mask helm seen from behind, heavy fur-and-bone armor with animal pelts and a fur cloak down his back, twin axes at his sides, facing away from viewer, full body rear view, isolated full-body cutout, no ground, no scenery, vertical."
+      "prompt": "THREE-QUARTER REAR VIEW, from behind and turned about 35 degrees to the side so both legs are clearly visible: Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with a broad muscular back, a fanged beast-skull mask helm seen from behind at a three-quarter angle, heavy fur-and-bone armor with animal pelts and a fur cloak down his back, twin axes at his sides, facing away from the viewer at a three-quarter angle, full body three-quarter rear view, both legs visible, isolated full-body cutout, no ground, no scenery, vertical."
     },
     {
       "id": "arthas_side",
@@ -247,7 +247,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Arthas the Lich King, a towering undead death knight in black spiked plate armor and the horned Helm of Domination with pale-blue glowing eyes, a tattered dark cape, gripping the runeblade Frostmourne with a glowing icy-blue rune channel and a skull crossguard, swirling frost, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Arthas the Lich King, a towering undead death knight in black spiked plate armor and the horned Helm of Domination with pale-blue glowing eyes, a tattered dark cape, gripping the runeblade Frostmourne with a glowing icy-blue rune channel and a skull crossguard, swirling frost, seen from a THREE-QUARTER REAR angle (from behind and turned about 35 degrees to the side so we clearly see the back AND one side AND both legs, the legs plainly visible doing the stepping with one foot forward and the other pushing back), walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers."
     },
     {
       "id": "sylvanas_side",
@@ -263,7 +263,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Sylvanas Windrunner the Banshee Queen, an undead high-elf ranger with pale blue-grey skin, long raven hair, glowing crimson eyes, hooded dark ranger cloak with a black feathered shoulder mantle, black-and-violet leather armor, an ornate dark longbow wreathed in red energy, agile stance, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Sylvanas Windrunner the Banshee Queen, an undead high-elf ranger with pale blue-grey skin, long raven hair, glowing crimson eyes, hooded dark ranger cloak with a black feathered shoulder mantle, black-and-violet leather armor, an ornate dark longbow wreathed in red energy, agile stance, seen from a THREE-QUARTER REAR angle (from behind and turned about 35 degrees to the side so we clearly see the back AND one side AND both legs, the legs plainly visible doing the stepping with one foot forward and the other pushing back), walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers."
     },
     {
       "id": "uther_side",
@@ -279,7 +279,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Uther the Lightbringer, a stalwart older human paladin in ornate golden plate armor with silver filigree, white-blond beard, crimson tabard, radiant golden holy light, raising a great two-handed warhammer of the Light haloed in holy radiance, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Uther the Lightbringer, a stalwart older human paladin in ornate golden plate armor with silver filigree, white-blond beard, crimson tabard, radiant golden holy light, raising a great two-handed warhammer of the Light haloed in holy radiance, seen from a THREE-QUARTER REAR angle (from behind and turned about 35 degrees to the side so we clearly see the back AND one side AND both legs, the legs plainly visible doing the stepping with one foot forward and the other pushing back), walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers."
     },
     {
       "id": "grommash_side",
@@ -295,7 +295,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Grommash Hellscream, a hulking brown-skinned orc warchief with huge muscles, two lower tusks, a long black topknot, red war paint, iron-and-leather shoulder armor, hefting the gigantic notched double-bladed axe Gorehowl, ferocious, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Grommash Hellscream, a hulking brown-skinned orc warchief with huge muscles, two lower tusks, a long black topknot, red war paint, iron-and-leather shoulder armor, hefting the gigantic notched double-bladed axe Gorehowl, ferocious, seen from a THREE-QUARTER REAR angle (from behind and turned about 35 degrees to the side so we clearly see his back AND one side AND both legs), walking away from the viewer with an obvious walking stride — in each successive frame one leg steps forward and the other pushes back, the knees and feet plainly visible doing the stepping — the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, no text, no borders, no numbers, no frame dividers."
     },
     {
       "id": "malfurion_side",
@@ -311,7 +311,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Malfurion Stormrage the Archdruid, a night-elf druid with teal-green skin, towering branching stag antlers, glowing amber eyes, long green-blue beard, druidic robes with leaves and vines, a gnarled living wooden staff glowing with green nature energy, a few drifting leaves, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Malfurion Stormrage the Archdruid, a night-elf druid with teal-green skin, towering branching stag antlers, glowing amber eyes, long green-blue beard, druidic robes with leaves and vines, a gnarled living wooden staff held UPRIGHT and close against his body so his outline stays slim and tall (NOT extended out to the side), seen from a THREE-QUARTER REAR angle (from behind and turned about 35 degrees to the side so we clearly see the back AND one side AND both legs, the legs plainly visible doing the stepping with one foot forward and the other pushing back), walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers."
     },
     {
       "id": "thrall_side",
@@ -327,7 +327,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Thrall the Worldshaman, a mighty green-skinned orc shaman with two tusks and a long black braided topknot, layered leather-fur-and-bone shaman armor with glowing-rune totems, gripping the Doomhammer crackling with blue lightning, elemental storm energy, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Thrall the Worldshaman, a mighty green-skinned orc shaman with two tusks and a long black braided topknot, layered leather-fur-and-bone shaman armor with glowing-rune totems, gripping the Doomhammer crackling with blue lightning, elemental storm energy, seen from a THREE-QUARTER REAR angle (from behind and turned about 35 degrees to the side so we clearly see the back AND one side AND both legs, the legs plainly visible doing the stepping with one foot forward and the other pushing back), walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers."
     },
     {
       "id": "tyrande_side",
@@ -343,7 +343,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Tyrande Whisperwind High Priestess of Elune, a graceful night-elf priestess with soft lavender skin, glowing white eyes, long teal-blue hair, silvered moon-themed armor with a crescent-moon headdress, drawing a luminous moonlight bow with a glowing silver arrow, serene moonlit glow, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Tyrande Whisperwind High Priestess of Elune, a graceful night-elf priestess with soft lavender skin, glowing white eyes, long teal-blue hair, silvered moon-themed armor with a crescent-moon headdress, drawing a luminous moonlight bow with a glowing silver arrow, serene moonlit glow, seen from a THREE-QUARTER REAR angle (from behind and turned about 35 degrees to the side so we clearly see the back AND one side AND both legs, the legs plainly visible doing the stepping with one foot forward and the other pushing back), walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers."
     },
     {
       "id": "jaina_side",
@@ -359,7 +359,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Jaina Proudmoore the Archmage, a regal human sorceress with fair skin and long platinum-blonde hair with a signature white streak, elegant blue-and-white mage robes with gold trim, a tall staff crowned with a radiant blue frost crystal, swirling arcane frost and snowflakes, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Jaina Proudmoore the Archmage, a regal human sorceress with fair skin and long platinum-blonde hair with a signature white streak, elegant blue-and-white mage robes with gold trim, a tall staff crowned with a radiant blue frost crystal, swirling arcane frost and snowflakes, seen from a THREE-QUARTER REAR angle (from behind and turned about 35 degrees to the side so we clearly see the back AND one side AND both legs, the legs plainly visible doing the stepping with one foot forward and the other pushing back), walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers."
     },
     {
       "id": "rexxar_side",
@@ -375,7 +375,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with broad green-brown muscle, a fanged beast-skull mask helm, heavy fur-and-bone armor with animal pelts, wielding twin heavy axes, weathered and wild, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS between the figures and at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with broad green-brown muscle, a fanged beast-skull mask helm, heavy fur-and-bone armor with animal pelts, wielding twin heavy axes, weathered and wild, seen from a THREE-QUARTER REAR angle (from behind and turned about 35 degrees to the side so we clearly see the back AND one side AND both legs, the legs plainly visible doing the stepping with one foot forward and the other pushing back), walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS between the figures and at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers."
     }
   ]
 }

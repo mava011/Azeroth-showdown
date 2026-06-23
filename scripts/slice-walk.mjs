@@ -44,14 +44,15 @@ for (let x=0;x<W;x++){
 if (inRun) runs.push([s0,W-1]);
 runs = runs.filter(r=> (r[1]-r[0]+1) >= Math.max(40, W*0.03));   // drop slivers (a figure cut off at the sheet edge leaves a thin stub)
 if (!runs.length){ console.error('no body columns over threshold'); process.exit(1); }
-// rejoin a SINGLE figure that an arm/weapon briefly dipped under T — but never fuse two
-// separate figures: only merge when the gap is a sliver, or stays FILLED across it (an
-// internal dip), not the near-empty space between neighbours.
+// rejoin a SINGLE figure that an arm/weapon briefly dipped under T into two runs — but never
+// fuse two separate figures. The discriminator is WIDTH: an internal dip is a narrow sliver,
+// while the space between neighbours is wide (even when a 3/4-view limb/weapon bridges it with
+// some coverage). Merge only across narrow gaps; OR very-narrow-and-still-filled ones.
 const merged=[runs[0].slice()];
 for (let i=1;i<runs.length;i++){ const prev=merged[merged.length-1];
   const gapW = runs[i][0]-prev[1];
   let gapMin=Infinity; for(let x=prev[1]+1;x<runs[i][0];x++) gapMin=Math.min(gapMin,sm[x]);
-  if (gapW<30 || gapMin>0.45*T) prev[1]=runs[i][1]; else merged.push(runs[i].slice()); }
+  if (gapW<42 || (gapW<90 && gapMin>0.6*H)) prev[1]=runs[i][1]; else merged.push(runs[i].slice()); }
 
 // 3. each figure gets a window, split at the emptiest column (coverage valley) in each gap
 // — not the midpoint, so a neighbour's blade reaching into the gap stays on its own side.

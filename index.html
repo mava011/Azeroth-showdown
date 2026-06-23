@@ -385,7 +385,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.89';
+const BUILD = 'v0.90';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1264,7 +1264,7 @@ const HERO_ART_BACK = {
   jaina:'public/assets/heroes/jaina_back.png', rexxar:'public/assets/heroes/rexxar_back.png',
 };
 const HERO_ART_BACK_ASPECT = {   // from the keyed rear-view PNGs; falls back to the front aspect
-  illidan:0.659, arthas:0.612, sylvanas:0.590, uther:0.585, grommash:0.679,
+  illidan:0.659, arthas:0.612, sylvanas:0.590, uther:0.585, grommash:0.685,
   malfurion:0.578, thrall:0.643, tyrande:0.610, jaina:0.594, rexxar:0.663,
 };
 // side-profile art: shown when a unit faces/moves mostly left↔right (flanking). The painting
@@ -1287,67 +1287,10 @@ const HERO_WALK = {
   illidan:3, arthas:3, sylvanas:3, uther:3, grommash:3,
   malfurion:3, thrall:3, tyrande:3, jaina:3, rexxar:3,
 };
-const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced walk frames (per hero)
-  illidan:0.552, arthas:0.500, sylvanas:0.561, uther:0.535, grommash:0.563,
-  malfurion:0.516, thrall:0.618, tyrande:0.505, jaina:0.434, rexxar:0.624,
+const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced 3/4-rear walk frames (per hero)
+  illidan:0.558, arthas:0.585, sylvanas:0.577, uther:0.597, grommash:0.515,
+  malfurion:0.510, thrall:0.644, tyrande:0.527, jaina:0.631, rexxar:0.603,
 };
-// ---- back-view skeletal leg rig (true 2D articulation, Clash-style) ----
-// For legged heroes we cut the rear-view art into upper-body + 2-segment legs (hip+knee) at
-// runtime and redraw the figure into a small canvas each frame with the legs swinging/bending,
-// then use that canvas as the sprite texture. The billboard still handles bob/sway/rock.
-const LEG_RIG = { grommash:{hip:0.50, knee:0.74} };   // expand once proven in-engine
-function buildLegRig(hero){
-  const url = HERO_ART_BACK[hero.id], cfg = LEG_RIG[hero.id];
-  if(!url || !cfg) return null;
-  const rig = { ready:false, cfg, img:new Image() };
-  rig.img.onload = ()=>{
-    const iw=rig.img.naturalWidth, ih=rig.img.naturalHeight;
-    const ac=document.createElement('canvas'); ac.width=iw; ac.height=ih;
-    const ax=ac.getContext('2d'); ax.drawImage(rig.img,0,0);
-    const d=ax.getImageData(0,0,iw,ih).data;
-    let bx0=iw,by0=ih,bx1=0,by1=0;
-    for(let y=0;y<ih;y++)for(let x=0;x<iw;x++){ if(d[(y*iw+x)*4+3]>40){ if(x<bx0)bx0=x; if(x>bx1)bx1=x; if(y<by0)by0=y; if(y>by1)by1=y; } }
-    const fw=bx1-bx0+1, fh=by1-by0+1;
-    const hipY=Math.round(by0+fh*cfg.hip), kneeY=Math.round(by0+fh*cfg.knee);
-    let splitX=Math.round((bx0+bx1)/2), best=1e9;
-    for(let x=Math.round(bx0+fw*0.34);x<=Math.round(bx0+fw*0.66);x++){ let c=0; for(let y=kneeY;y<=by1;y++) if(d[(y*iw+x)*4+3]>40)c++; if(c<best){best=c;splitX=x;} }
-    rig.meta={iw,ih,bx0,by0,bx1,by1,fw,fh,hipY,kneeY,splitX,OV:Math.round(fh*0.07)};
-    rig.figAspect=fw/fh;
-    const CW=224, CH=Math.round(CW/rig.figAspect);
-    rig.canvas=document.createElement('canvas'); rig.canvas.width=CW; rig.canvas.height=CH;
-    rig.ctx=rig.canvas.getContext('2d'); rig.scale=CW/fw;
-    rig.tex=new THREE.CanvasTexture(rig.canvas); rig.tex.colorSpace=THREE.SRGBColorSpace;
-    rig.tex.minFilter=THREE.LinearMipmapLinearFilter; rig.tex.magFilter=THREE.LinearFilter; rig.tex.anisotropy=8;
-    rig.ready=true;
-  };
-  rig.img.src=url;
-  return rig;
-}
-function drawRigPose(rig, gp){
-  const m=rig.meta, ctx=rig.ctx, S=rig.scale, img=rig.img, CW=rig.canvas.width, CH=rig.canvas.height;
-  const toCx=(sx)=>(sx-m.bx0)*S, toCy=(sy)=>(sy-m.by0)*S;
-  const hipCy=toCy(m.hipY), kneeCy=toCy(m.kneeY);
-  const rect=(rx0,ry0,rx1,ry1)=>{ const sw=rx1-rx0+1, sh=ry1-ry0+1; ctx.drawImage(img, rx0,ry0,sw,sh, toCx(rx0),toCy(ry0), sw*S, sh*S); };
-  const leg=(side, sw)=>{
-    const sx0=side<0?m.bx0:m.splitX+1, sx1=side<0?m.splitX:m.bx1;
-    const hipCx=toCx(side<0?(m.bx0+m.splitX)/2:(m.splitX+m.bx1)/2);
-    const lift=Math.max(0,sw)*m.fh*0.055*S, thA=sw*0.2, knA=Math.max(0,sw)*0.62;
-    ctx.save();
-    ctx.translate(0,-lift);
-    ctx.translate(hipCx,hipCy); ctx.rotate(thA); ctx.translate(-hipCx,-hipCy);
-    ctx.save();                                        // shin under thigh (thigh hides the knee seam)
-      ctx.translate(hipCx,kneeCy); ctx.rotate(knA); ctx.translate(-hipCx,-kneeCy);
-      rect(sx0, m.kneeY-m.OV, sx1, m.by1);
-    ctx.restore();
-    rect(sx0, m.hipY-m.OV, sx1, m.kneeY+m.OV);
-    ctx.restore();
-  };
-  ctx.clearRect(0,0,CW,CH);
-  leg(+1, Math.sin(gp));
-  leg(-1, Math.sin(gp+Math.PI));
-  rect(m.bx0, m.by0, m.bx1, m.hipY+m.OV);              // torso over the hips
-  rig.tex.needsUpdate=true;
-}
 // a camera-facing textured quad sized to read like the other heroes; pivot at the feet
 function buildSpriteModel(hero, team){
   const g = new THREE.Group();
@@ -1371,8 +1314,7 @@ function buildSpriteModel(hero, team){
   g.userData = { isSprite:true, sprite:plane, body:plane, bodyMat:mat, hero,
     t:Math.random()*6, bodyBase:{x:1, y:1, z:1}, faceSign:(team===1?-1:1), gaitPhase:Math.random()*6, lastFoot:0,
     texFront:tex, texBack, texSide, frontAspect, backAspect, sideAspect,
-    walkFrames, walkAspect, view:'front', showingBack:false, turnT:0, turnTo:false,
-    rig: buildLegRig(hero) };
+    walkFrames, walkAspect, view:'front', showingBack:false, turnT:0, turnTo:false };
   attachHeroFX(g, hero);   // animated signature effects (frost swirl, lightning, holy glow…)
   return g;
 }
@@ -2774,16 +2716,14 @@ function tick(){
         // texture + aspect for the current view; cycle the rear walk frames while marching away
         let viewTex=ud.texFront, viewAspect=ud.frontAspect, blendTex=null, blend=0;
         if(ud.view==='back'){ viewTex=ud.texBack||ud.texFront; viewAspect=ud.backAspect;
-          if(ud.rig && ud.rig.ready && ud.moveAmt>0.02){
-            // TRUE skeletal legs: redraw the rigged figure (hip+knee bend) into its canvas
-            drawRigPose(ud.rig, ud.gaitPhase); viewTex=ud.rig.tex; viewAspect=ud.rig.figAspect;
-          } else { const n=ud.walkFrames.length;
-            if(ud.moveAmt>0.02 && n){
-              // ping-pong contact→pass→contact through the frames and CROSS-FADE between them
-              const ph=(ud.gaitPhase/(Math.PI*2))%1, tri=ph<0.5?ph*2:(1-ph)*2;  // 0→1→0 per stride
-              const ff=tri*(n-1), idx=Math.min(n-1,Math.floor(ff));
-              viewTex=ud.walkFrames[idx]; blendTex=ud.walkFrames[Math.min(n-1,idx+1)]; blend=ff-idx; viewAspect=ud.walkAspect;
-            } }
+          const n=ud.walkFrames.length;
+          if(ud.moveAmt>0.02 && n){
+            // 3/4-rear walk frames, ping-ponged contact→pass→contact and CROSS-FADED between
+            // them (Supercell-style: few baked frames, interpolated) for a smooth stride
+            const ph=(ud.gaitPhase/(Math.PI*2))%1, tri=ph<0.5?ph*2:(1-ph)*2;    // 0→1→0 per stride
+            const ff=tri*(n-1), idx=Math.min(n-1,Math.floor(ff));
+            viewTex=ud.walkFrames[idx]; blendTex=ud.walkFrames[Math.min(n-1,idx+1)]; blend=ff-idx; viewAspect=ud.walkAspect;
+          }
         } else if(ud.view==='side'){ viewTex=ud.texSide||ud.texFront; viewAspect=ud.sideAspect; }
         if(ud.bodyMat.map!==viewTex) ud.bodyMat.map=viewTex;
         ud.bodyMat.userData.mapB.value = blendTex||viewTex;
