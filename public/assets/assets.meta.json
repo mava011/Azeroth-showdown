@@ -279,11 +279,11 @@
     "category": "heroes",
     "aspect": "16:9",
     "size": "1536x1024",
-    "transparent": false,
-    "flatBg": true,
+    "transparent": true,
+    "flatBg": false,
     "model": "gpt-image-1",
-    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk-cycle, each frame the SAME character Illidan Stormrage the demon hunter (lavender skin, backswept horns, folded demon wings, dual-wielding two DOUBLE-BLADED fel-green warglaives — each with a curved glowing blade jutting from both ends of the fist-grip, one in each hand) seen from BEHIND walking away, the COMPLETE figure head-to-hooves fully visible in every frame with clear empty margin above the horns and below the feet so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive leg positions of a walk cycle, large clear gaps separating the frames, no text, no borders, no frame numbers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed. Place the subject on a perfectly flat solid chroma-key lime-green (#00ff00) background, no gradient, no shadow, for later background removal.",
-    "generatedAt": "2026-06-23T05:02:07.696Z"
+    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk-cycle, each frame the SAME character Illidan Stormrage the demon hunter (lavender skin, backswept horns, folded demon wings, dual-wielding two DOUBLE-BLADED fel-green warglaives — each with a curved glowing blade jutting from both ends of the fist-grip, one in each hand) seen from BEHIND walking away, the COMPLETE figure head-to-hooves fully visible in every frame with clear empty margin above the horns and below the feet so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive leg positions of a walk cycle, large clear gaps separating the frames, no text, no borders, no frame numbers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-23T05:20:47.165Z"
   },
   "arthas_walk": {
     "filename": "arthas_walk.png",
@@ -334,11 +334,11 @@
     "category": "heroes",
     "aspect": "16:9",
     "size": "1536x1024",
-    "transparent": false,
-    "flatBg": true,
+    "transparent": true,
+    "flatBg": false,
     "model": "gpt-image-1",
-    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Uther the Lightbringer, a stalwart older human paladin in ornate golden plate armor with silver filigree, white-blond beard, crimson tabard, radiant golden holy light, raising a great two-handed warhammer of the Light haloed in holy radiance, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed. Place the subject on a perfectly flat solid chroma-key lime-green (#00ff00) background, no gradient, no shadow, for later background removal.",
-    "generatedAt": "2026-06-23T04:20:19.620Z"
+    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Uther the Lightbringer, a stalwart older human paladin in ornate golden plate armor with silver filigree, white-blond beard, crimson tabard, radiant golden holy light, raising a great two-handed warhammer of the Light haloed in holy radiance, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-23T05:23:25.455Z"
   },
   "uther_side": {
     "filename": "uther_side.png",
@@ -356,11 +356,11 @@
     "category": "heroes",
     "aspect": "16:9",
     "size": "1536x1024",
-    "transparent": false,
-    "flatBg": true,
+    "transparent": true,
+    "flatBg": false,
     "model": "gpt-image-1",
-    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Grommash Hellscream, a hulking brown-skinned orc warchief with huge muscles, two lower tusks, a long black topknot, red war paint, iron-and-leather shoulder armor, hefting the gigantic notched double-bladed axe Gorehowl, ferocious, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed. Place the subject on a perfectly flat solid chroma-key lime-green (#00ff00) background, no gradient, no shadow, for later background removal.",
-    "generatedAt": "2026-06-23T04:21:55.791Z"
+    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Grommash Hellscream, a hulking brown-skinned orc warchief with huge muscles, two lower tusks, a long black topknot, red war paint, iron-and-leather shoulder armor, hefting the gigantic notched double-bladed axe Gorehowl, ferocious, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-23T05:24:35.312Z"
   },
   "grommash_side": {
     "filename": "grommash_side.png",
@@ -378,11 +378,11 @@
     "category": "heroes",
     "aspect": "16:9",
     "size": "1536x1024",
-    "transparent": false,
-    "flatBg": true,
+    "transparent": true,
+    "flatBg": false,
     "model": "gpt-image-1",
-    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Malfurion Stormrage the Archdruid, a night-elf druid with teal-green skin, towering branching stag antlers, glowing amber eyes, long green-blue beard, druidic robes with leaves and vines, a gnarled living wooden staff glowing with green nature energy, a few drifting leaves, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed. Place the subject on a perfectly flat solid chroma-key lime-green (#00ff00) background, no gradient, no shadow, for later background removal.",
-    "generatedAt": "2026-06-23T04:23:39.659Z"
+    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Malfurion Stormrage the Archdruid, a night-elf druid with teal-green skin, towering branching stag antlers, glowing amber eyes, long green-blue beard, druidic robes with leaves and vines, a gnarled living wooden staff glowing with green nature energy, a few drifting leaves, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-23T05:27:45.676Z"
   },
   "malfurion_side": {
     "filename": "malfurion_side.png",
@@ -400,11 +400,11 @@
     "category": "heroes",
     "aspect": "16:9",
     "size": "1536x1024",
-    "transparent": false,
-    "flatBg": true,
+    "transparent": true,
+    "flatBg": false,
     "model": "gpt-image-1",
-    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Thrall the Worldshaman, a mighty green-skinned orc shaman with two tusks and a long black braided topknot, layered leather-fur-and-bone shaman armor with glowing-rune totems, gripping the Doomhammer crackling with blue lightning, elemental storm energy, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed. Place the subject on a perfectly flat solid chroma-key lime-green (#00ff00) background, no gradient, no shadow, for later background removal.",
-    "generatedAt": "2026-06-23T04:25:24.151Z"
+    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Thrall the Worldshaman, a mighty green-skinned orc shaman with two tusks and a long black braided topknot, layered leather-fur-and-bone shaman armor with glowing-rune totems, gripping the Doomhammer crackling with blue lightning, elemental storm energy, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-23T05:28:41.865Z"
   },
   "thrall_side": {
     "filename": "thrall_side.png",
@@ -469,8 +469,8 @@
     "transparent": false,
     "flatBg": true,
     "model": "gpt-image-1",
-    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with broad green-brown muscle, a fanged beast-skull mask helm, heavy fur-and-bone armor with animal pelts, wielding twin heavy axes, weathered and wild, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed. Place the subject on a perfectly flat solid chroma-key lime-green (#00ff00) background, no gradient, no shadow, for later background removal.",
-    "generatedAt": "2026-06-23T04:31:08.081Z"
+    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with broad green-brown muscle, a fanged beast-skull mask helm, heavy fur-and-bone armor with animal pelts, wielding twin heavy axes, weathered and wild, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS between the figures and at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed. Place the subject on a perfectly flat solid chroma-key lime-green (#00ff00) background, no gradient, no shadow, for later background removal.",
+    "generatedAt": "2026-06-23T05:36:22.762Z"
   },
   "rexxar_side": {
     "filename": "rexxar_side.png",

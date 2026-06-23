@@ -279,7 +279,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Uther the Lightbringer, a stalwart older human paladin in ornate golden plate armor with silver filigree, white-blond beard, crimson tabard, radiant golden holy light, raising a great two-handed warhammer of the Light haloed in holy radiance, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Uther the Lightbringer, a stalwart older human paladin in ornate golden plate armor with silver filigree, white-blond beard, crimson tabard, radiant golden holy light, raising a great two-handed warhammer of the Light haloed in holy radiance, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers."
     },
     {
       "id": "grommash_side",
@@ -295,7 +295,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Grommash Hellscream, a hulking brown-skinned orc warchief with huge muscles, two lower tusks, a long black topknot, red war paint, iron-and-leather shoulder armor, hefting the gigantic notched double-bladed axe Gorehowl, ferocious, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Grommash Hellscream, a hulking brown-skinned orc warchief with huge muscles, two lower tusks, a long black topknot, red war paint, iron-and-leather shoulder armor, hefting the gigantic notched double-bladed axe Gorehowl, ferocious, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers."
     },
     {
       "id": "malfurion_side",
@@ -375,7 +375,7 @@
       "category": "heroes",
       "aspect": "16:9",
       "transparent": true,
-      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with broad green-brown muscle, a fanged beast-skull mask helm, heavy fur-and-bone armor with animal pelts, wielding twin heavy axes, weathered and wild, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame with clear empty margin above and below so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive walking leg positions, large clear gaps separating the frames, no text, no borders, no numbers."
+      "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk cycle, each frame the SAME character Rexxar the Beastmaster, a rugged half-orc half-ogre wilderness hunter with broad green-brown muscle, a fanged beast-skull mask helm, heavy fur-and-bone armor with animal pelts, wielding twin heavy axes, weathered and wild, seen from BEHIND walking away, the COMPLETE figure head-to-feet fully visible in every frame, the four figures drawn a little smaller and evenly spaced with LARGE EMPTY MARGINS between the figures and at the far left and far right edges of the sheet (and above and below) so the first and last figures sit well inside the image and are NEVER cut off at the edges, identical character size on one shared ground line, successive walking leg positions, no text, no borders, no numbers, no frame dividers."
     }
   ]
 }

@@ -385,7 +385,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.85';
+const BUILD = 'v0.86';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1258,12 +1258,12 @@ const HERO_ART_SIDE_ASPECT = {   // tight-bbox aspect of each keyed side cutout
 // while a unit marches AWAY from the camera so the legs actually stride, Clash-Royale style.
 // Value = frame count; every sliced frame shares WALK_ASPECT.
 const HERO_WALK = {
-  illidan:3, arthas:3, sylvanas:3, uther:2, grommash:2,
+  illidan:3, arthas:3, sylvanas:3, uther:3, grommash:3,
   malfurion:3, thrall:3, tyrande:3, jaina:3, rexxar:3,
 };
 const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced walk frames (per hero)
-  illidan:0.534, arthas:0.500, sylvanas:0.561, uther:0.473, grommash:0.484,
-  malfurion:0.502, thrall:0.626, tyrande:0.502, jaina:0.434, rexxar:0.550,
+  illidan:0.552, arthas:0.500, sylvanas:0.561, uther:0.535, grommash:0.563,
+  malfurion:0.516, thrall:0.618, tyrande:0.505, jaina:0.434, rexxar:0.624,
 };
 // a camera-facing textured quad sized to read like the other heroes; pivot at the feet
 function buildSpriteModel(hero, team){
