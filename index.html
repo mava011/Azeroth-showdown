@@ -385,7 +385,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.89';
+const BUILD = 'v0.90';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1287,9 +1287,9 @@ const HERO_WALK = {
   illidan:3, arthas:3, sylvanas:3, uther:3, grommash:3,
   malfurion:3, thrall:3, tyrande:3, jaina:3, rexxar:3,
 };
-const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced walk frames (per hero)
-  illidan:0.552, arthas:0.500, sylvanas:0.561, uther:0.535, grommash:0.515,
-  malfurion:0.516, thrall:0.618, tyrande:0.505, jaina:0.434, rexxar:0.624,
+const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced 3/4-rear walk frames (per hero)
+  illidan:0.558, arthas:0.585, sylvanas:0.577, uther:0.597, grommash:0.515,
+  malfurion:0.510, thrall:0.644, tyrande:0.527, jaina:0.631, rexxar:0.603,
 };
 // a camera-facing textured quad sized to read like the other heroes; pivot at the feet
 function buildSpriteModel(hero, team){
