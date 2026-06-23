@@ -128,8 +128,8 @@
     "transparent": true,
     "flatBg": false,
     "model": "gpt-image-1",
-    "prompt": "Illidan Stormrage the Betrayer, a tall muscular night-elf demon hunter with lavender-purple skin, huge backswept horns, a cloth blindfold with fierce fel-green eyes blazing through, bare fel-tattooed torso, massive leathery demon wings, dual fel-green Warglaives of Azzinoth, loincloth, clawed hooves, full body, three-quarter front view, heroic idle stance, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
-    "generatedAt": "2026-06-22T09:08:14.997Z"
+    "prompt": "Illidan Stormrage the Betrayer, a tall muscular night-elf demon hunter with lavender-purple skin, huge backswept horns, a cloth blindfold with fierce fel-green eyes blazing through, bare fel-tattooed torso, massive leathery demon wings, dual-wielding the twin Warglaives of Azzinoth — each a fist-gripped DOUBLE-BLADED warglaive with a large curved glowing fel-green blade jutting from BOTH the top and the bottom of the grip (pointed at each end, like a double-ended scythe), one warglaive held in each hand, loincloth, clawed hooves, full body, three-quarter front view, heroic idle stance, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-23T04:58:52.442Z"
   },
   "misha": {
     "filename": "misha.png",
@@ -158,11 +158,11 @@
     "category": "heroes",
     "aspect": "3:4",
     "size": "1024x1536",
-    "transparent": false,
-    "flatBg": true,
+    "transparent": true,
+    "flatBg": false,
     "model": "gpt-image-1",
-    "prompt": "BACK VIEW seen from directly behind: Illidan Stormrage the Betrayer, a tall muscular night-elf demon hunter with lavender-purple skin, huge backswept horns seen from behind, long black hair down his back, bare back covered in glowing fel-green tattoos, massive leathery demon wings spread from his shoulder blades, dual fel-green Warglaives of Azzinoth held at his sides, loincloth, clawed hooves, facing away from viewer, full body rear view, heroic stance, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed. Place the subject on a perfectly flat solid chroma-key lime-green (#00ff00) background, no gradient, no shadow, for later background removal.",
-    "generatedAt": "2026-06-22T11:02:03.315Z"
+    "prompt": "BACK VIEW seen from directly behind: Illidan Stormrage the Betrayer, a tall muscular night-elf demon hunter with lavender-purple skin, huge backswept horns seen from behind, long black hair down his back, bare back covered in glowing fel-green tattoos, massive leathery demon wings spread from his shoulder blades, dual-wielding the twin Warglaives of Azzinoth held at his sides — each a fist-gripped DOUBLE-BLADED warglaive with a curved glowing fel-green blade jutting from BOTH ends of the grip (pointed at top and bottom), one in each hand, loincloth, clawed hooves, facing away from viewer, full body rear view, heroic stance, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-23T05:00:05.288Z"
   },
   "arthas_back": {
     "filename": "arthas_back.png",
@@ -271,8 +271,8 @@
     "transparent": true,
     "flatBg": false,
     "model": "gpt-image-1",
-    "prompt": "SIDE PROFILE VIEW facing right: Illidan Stormrage the Betrayer, a tall muscular night-elf demon hunter with lavender-purple skin, huge backswept horns, a cloth blindfold, bare fel-tattooed torso, one large leathery demon wing visible, a fel-green Warglaive of Azzinoth, loincloth, clawed hooves, full body strict side profile silhouette facing to the right, walking stride, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
-    "generatedAt": "2026-06-23T04:35:22.906Z"
+    "prompt": "SIDE PROFILE VIEW facing right: Illidan Stormrage the Betrayer, a tall muscular night-elf demon hunter with lavender-purple skin, huge backswept horns, a cloth blindfold, bare fel-tattooed torso, one large leathery demon wing visible, dual-wielding both Warglaives of Azzinoth — each a fist-gripped DOUBLE-BLADED warglaive with a curved glowing fel-green blade jutting from BOTH ends of the grip (pointed at top and bottom), one warglaive in each hand, loincloth, clawed hooves, full body strict side profile silhouette facing to the right, walking stride, isolated full-body cutout, no ground, no scenery, vertical. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed.",
+    "generatedAt": "2026-06-23T05:00:54.956Z"
   },
   "illidan_walk": {
     "filename": "illidan_walk.png",
@@ -282,8 +282,8 @@
     "transparent": false,
     "flatBg": true,
     "model": "gpt-image-1",
-    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk-cycle, each frame the SAME character Illidan Stormrage the demon hunter (lavender skin, backswept horns, folded demon wings, dual fel-green warglaives) seen from BEHIND walking away, the COMPLETE figure head-to-hooves fully visible in every frame with clear empty margin above the horns and below the feet so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive leg positions of a walk cycle, large clear gaps separating the frames, no text, no borders, no frame numbers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed. Place the subject on a perfectly flat solid chroma-key lime-green (#00ff00) background, no gradient, no shadow, for later background removal.",
-    "generatedAt": "2026-06-23T04:06:31.360Z"
+    "prompt": "A horizontal game sprite-sheet of 4 equal side-by-side frames of a walk-cycle, each frame the SAME character Illidan Stormrage the demon hunter (lavender skin, backswept horns, folded demon wings, dual-wielding two DOUBLE-BLADED fel-green warglaives — each with a curved glowing blade jutting from both ends of the fist-grip, one in each hand) seen from BEHIND walking away, the COMPLETE figure head-to-hooves fully visible in every frame with clear empty margin above the horns and below the feet so nothing is cropped, identical character size standing on one shared ground line, the four frames showing successive leg positions of a walk cycle, large clear gaps separating the frames, no text, no borders, no frame numbers. Hand-painted stylized Warcraft mobile-game art (Clash-Royale-meets-Warcraft), cohesive painterly rendering with crisp clean edges, slightly heroic-chunky proportions, vibrant but readable colors, soft cinematic dusk lighting with a warm rim light, 4k, highly detailed. Place the subject on a perfectly flat solid chroma-key lime-green (#00ff00) background, no gradient, no shadow, for later background removal.",
+    "generatedAt": "2026-06-23T05:02:07.696Z"
   },
   "arthas_walk": {
     "filename": "arthas_walk.png",

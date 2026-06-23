@@ -385,7 +385,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.84';
+const BUILD = 'v0.85';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1224,7 +1224,7 @@ const HERO_ART = {
 };
 // width/height of each painted cutout (drives the billboard quad's proportions). Default 0.72.
 const HERO_ART_ASPECT = {
-  illidan:0.667, arthas:0.582, sylvanas:0.632, uther:0.586, grommash:0.678,
+  illidan:0.690, arthas:0.582, sylvanas:0.632, uther:0.586, grommash:0.678,
   malfurion:0.650, thrall:0.680, tyrande:0.639, jaina:0.642, rexxar:0.661,
   misha:1.042, treant:0.640,
 };
@@ -1238,7 +1238,7 @@ const HERO_ART_BACK = {
   jaina:'public/assets/heroes/jaina_back.png', rexxar:'public/assets/heroes/rexxar_back.png',
 };
 const HERO_ART_BACK_ASPECT = {   // from the keyed rear-view PNGs; falls back to the front aspect
-  illidan:0.722, arthas:0.612, sylvanas:0.590, uther:0.585, grommash:0.679,
+  illidan:0.659, arthas:0.612, sylvanas:0.590, uther:0.585, grommash:0.679,
   malfurion:0.578, thrall:0.643, tyrande:0.610, jaina:0.594, rexxar:0.663,
 };
 // side-profile art: shown when a unit faces/moves mostly left↔right (flanking). The painting
@@ -1251,7 +1251,7 @@ const HERO_ART_SIDE = {
   jaina:'public/assets/heroes/jaina_side.png', rexxar:'public/assets/heroes/rexxar_side.png',
 };
 const HERO_ART_SIDE_ASPECT = {   // tight-bbox aspect of each keyed side cutout
-  illidan:0.647, arthas:0.657, sylvanas:0.659, uther:0.683, grommash:0.647,
+  illidan:0.646, arthas:0.657, sylvanas:0.659, uther:0.683, grommash:0.647,
   malfurion:0.621, thrall:0.631, tyrande:0.643, jaina:0.637, rexxar:0.685,
 };
 // rear-view WALK CYCLE: frames sliced by scripts/slice-walk.mjs (<id>_walk0.png …). Cycled
@@ -1262,7 +1262,7 @@ const HERO_WALK = {
   malfurion:3, thrall:3, tyrande:3, jaina:3, rexxar:3,
 };
 const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced walk frames (per hero)
-  illidan:0.531, arthas:0.500, sylvanas:0.561, uther:0.473, grommash:0.484,
+  illidan:0.534, arthas:0.500, sylvanas:0.561, uther:0.473, grommash:0.484,
   malfurion:0.502, thrall:0.626, tyrande:0.502, jaina:0.434, rexxar:0.550,
 };
 // a camera-facing textured quad sized to read like the other heroes; pivot at the feet
