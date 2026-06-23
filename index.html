@@ -1284,11 +1284,11 @@ const HERO_ART_SIDE_ASPECT = {   // tight-bbox aspect of each keyed side cutout
 // while a unit marches AWAY from the camera so the legs actually stride, Clash-Royale style.
 // Value = frame count; every sliced frame shares WALK_ASPECT.
 const HERO_WALK = {
-  illidan:3, arthas:3, sylvanas:3, uther:3, grommash:3,
+  illidan:3, arthas:3, sylvanas:3, uther:3, grommash:4,
   malfurion:3, thrall:3, tyrande:3, jaina:3, rexxar:3,
 };
 const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced 3/4-rear walk frames (per hero)
-  illidan:0.558, arthas:0.585, sylvanas:0.577, uther:0.597, grommash:0.515,
+  illidan:0.558, arthas:0.585, sylvanas:0.577, uther:0.597, grommash:0.381,
   malfurion:0.510, thrall:0.644, tyrande:0.527, jaina:0.631, rexxar:0.603,
 };
 // a camera-facing textured quad sized to read like the other heroes; pivot at the feet
@@ -3188,6 +3188,7 @@ window.AZ = {
       CAM.target.set(0.2,1.6,0.9); CAM.base.set(0.2,2.7,7.2);
     } else if(solo){         // single back-walking hero, zoomed (smoothness QA)
       const g=buildSpriteModel(h,0); g.position.set(0,0,0); scene.add(g);
+      g.userData.view='back'; g.userData.showingBack=true; g.userData.moveAmt=1;   // start already marching away (no one-time front→back turn polluting the walk-cycle measurement)
       G.units.push({ hero:h, team:0, x:0, z:0, group:g, state:'march', spdMul:1, frozenT:0,burnT:0,poisonT:0,stunT:0,rootT:0,buffT:0,
         lunge:0,flash:0,castT:0,spin:0, atkT:0, abilT:99, hp:100, maxhp:100, dead:false, dmgMul:1, kbX:0, kbZ:0, target:{x:0,z:-30} });
       CAM.target.set(0,1.95,0); CAM.base.set(0,2.6,6.2);
