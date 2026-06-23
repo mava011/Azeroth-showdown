@@ -34,6 +34,7 @@ function parse(arg){
 const arg = process.argv[2] || 'walk:grommash';
 const N   = +(process.argv[3]) || 48;        // deterministic frames
 const DT  = 1/30;                            // fixed game-time step per frame
+const WARMUP = +(process.env.AZ_WARMUP)||0;  // game-seconds to fast-forward before capturing (reach the melee in a battle)
 const scene = parse(arg);
 const OUT = path.join(ROOT, 'tools', 'shots', 'motion', scene.name);
 fs.rmSync(OUT, { recursive:true, force:true }); fs.mkdirSync(OUT, { recursive:true });
@@ -58,11 +59,12 @@ const errs=[];
 
 // ---------- Phase A: smooth real-time WebM clip for a human to watch ----------
 {
-  const ctx = await browser.newContext({ viewport:VIEW, deviceScaleFactor:2,
+  const ctx = await browser.newContext({ viewport:VIEW, deviceScaleFactor:1,
     recordVideo:{ dir:OUT, size:VIEW } });
   const pg = await ctx.newPage(); pg.on('pageerror',e=>errs.push(String(e)));
   await pg.goto(URL_, { waitUntil:'load' }); await ready(pg);
   await pg.waitForTimeout(1300);                                   // texture decode + settle
+  if(WARMUP>0) await pg.waitForTimeout(WARMUP*1000);              // run at 1x to reach the melee phase
   await pg.evaluate(()=>window.AZ.slowmo&&window.AZ.slowmo(0.5));  // half-speed: motion is easy to judge by eye
   await pg.waitForTimeout(3600);                                   // ~1.8s of game time
   const vid = pg.video();
@@ -72,11 +74,12 @@ const errs=[];
 
 // ---------- Phase B: deterministic fixed-dt frames for metrics + motion-encoded stills ----------
 {
-  const ctx = await browser.newContext({ viewport:VIEW, deviceScaleFactor:2 });
+  const ctx = await browser.newContext({ viewport:VIEW, deviceScaleFactor:1 });
   const pg = await ctx.newPage(); pg.on('pageerror',e=>errs.push(String(e)));
   await pg.goto(URL_, { waitUntil:'load' }); await ready(pg);
   await pg.waitForTimeout(1300);
   await pg.evaluate(()=>window.AZ.pause&&window.AZ.pause());
+  if(WARMUP>0) await pg.evaluate(({dt,n})=>{ for(let i=0;i<n;i++) window.AZ.step&&window.AZ.step(dt); }, {dt:DT, n:Math.round(WARMUP/DT)}); // fast-forward (deterministic, one round-trip) into the melee
   for(let i=0;i<N;i++){
     await pg.evaluate(dt=>window.AZ.step&&window.AZ.step(dt), DT);
     // let the stepped frame render (two rAFs: one to consume the step, one to present)

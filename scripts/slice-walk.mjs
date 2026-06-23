@@ -15,14 +15,46 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { PNG } from 'pngjs';
 
-const file = process.argv[2];
-if (!file) { console.error('usage: node scripts/slice-walk.mjs <sheet.png>'); process.exit(1); }
+const inputs = process.argv.slice(2).filter(a=>!a.startsWith('--'));
+if (!inputs.length) { console.error('usage: node scripts/slice-walk.mjs <sheet.png> [sheet2.png ...] [--out=base] [--w=440] [--h=620]'); process.exit(1); }
 const arg=(k,d)=>{ const a=process.argv.find(x=>x.startsWith('--'+k+'=')); return a?Number(a.split('=')[1]):d; };
 const FRAME_H=arg('h',620);                    // FRAME_W is derived per-sheet from the figures
 const FIG_H_FRAC=0.98, BASE_FRAC=0.992;        // fill the height & sit feet on the floor, like the static art
 const ALPHA = process.argv.includes('--alpha');  // sheet is already transparent (skip the green key/despill)
 
-const png = PNG.sync.read(fs.readFileSync(file));
+// Multi-sheet mode: the AI draws only ~6 figures per sheet, so an 8-frame cycle comes from TWO
+// sheets. Compositing them side-by-side (one wide green canvas, wide gap between) and slicing the
+// UNION in a single pass makes all frames share one scale/baseline/canvas — so the two halves
+// cycle without a size-pulse at the seam. A single input behaves exactly as before.
+let png;
+if (inputs.length > 1) {
+  const sheets = inputs.map(f=>PNG.sync.read(fs.readFileSync(f)));
+  const GAP = 220;                                            // > the slicer's figure-merge gap, so halves never fuse
+  const totalW = sheets.reduce((s,p)=>s+p.width,0) + GAP*(sheets.length-1);
+  const maxH = Math.max(...sheets.map(p=>p.height));
+  png = new PNG({ width: totalW, height: maxH });
+  for (let p=0;p<totalW*maxH;p++){ const i=p*4; png.data[i]=0; png.data[i+1]=177; png.data[i+2]=64; png.data[i+3]=255; } // green fill (keys out)
+  let xoff=0;
+  for (const s of sheets){
+    const yoff = maxH - s.height;                             // bottom-align so feet land on a shared floor
+    for (let y=0;y<s.height;y++) for (let x=0;x<s.width;x++){
+      const si=(y*s.width+x)*4, di=((y+yoff)*totalW+(x+xoff))*4;
+      png.data[di]=s.data[si]; png.data[di+1]=s.data[si+1]; png.data[di+2]=s.data[si+2]; png.data[di+3]=s.data[si+3];
+    }
+    xoff += s.width + GAP;
+  }
+} else {
+  png = PNG.sync.read(fs.readFileSync(inputs[0]));
+}
+// auto-pad green margins so a figure the model drew hard against an edge isn't dropped as "cut off"
+{
+  const PAD=160, sw=png.width, sh=png.height, nw=sw+PAD*2;
+  const padded=new PNG({width:nw,height:sh});
+  for(let p=0;p<nw*sh;p++){ const i=p*4; padded.data[i]=0; padded.data[i+1]=177; padded.data[i+2]=64; padded.data[i+3]=255; }
+  for(let y=0;y<sh;y++) for(let x=0;x<sw;x++){ const si=(y*sw+x)*4, di=(y*nw+(x+PAD))*4;
+    padded.data[di]=png.data[si]; padded.data[di+1]=png.data[si+1]; padded.data[di+2]=png.data[si+2]; padded.data[di+3]=png.data[si+3]; }
+  png=padded;
+}
 const { width: W, height: H, data } = png;
 const A=(x,y)=>data[(y*W+x)*4+3];
 
@@ -80,7 +112,8 @@ const ws = kept.map(f=>(f.maxX-f.minX+1)*scale).sort((a,b)=>a-b);
 const FRAME_W = Math.round(ws[ws.length>>1]*1.08);
 
 // 4. render each figure (masked to its window) onto a normalised frame
-const base = file.replace(/\.png$/i,'');
+const outArg = process.argv.find(a=>a.startsWith('--out='));
+const base = outArg ? outArg.slice(6) : inputs[0].replace(/\.png$/i,'');
 let written=0;
 kept.forEach((f)=>{
   const out = new PNG({ width:FRAME_W, height:FRAME_H });
@@ -114,4 +147,4 @@ kept.forEach((f)=>{
   fs.writeFileSync(base+written+'.png', PNG.sync.write(out));
   written++;
 });
-console.log(`sliced ${path.basename(file)} -> ${written} frames  figures=${merged.length}  scale=${scale.toFixed(3)}  ${FRAME_W}x${FRAME_H}  aspect=${(FRAME_W/FRAME_H).toFixed(3)}`);
+console.log(`sliced ${inputs.map(f=>path.basename(f)).join('+')} -> ${written} frames  figures=${merged.length}  scale=${scale.toFixed(3)}  ${FRAME_W}x${FRAME_H}  aspect=${(FRAME_W/FRAME_H).toFixed(3)}`);
