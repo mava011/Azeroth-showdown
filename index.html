@@ -385,7 +385,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.91';
+const BUILD = 'v0.92';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1284,11 +1284,11 @@ const HERO_ART_SIDE_ASPECT = {   // tight-bbox aspect of each keyed side cutout
 // while a unit marches AWAY from the camera so the legs actually stride, Clash-Royale style.
 // Value = frame count; every sliced frame shares WALK_ASPECT.
 const HERO_WALK = {
-  illidan:3, arthas:3, sylvanas:3, uther:3, grommash:3,
+  illidan:3, arthas:3, sylvanas:3, uther:3, grommash:4,
   malfurion:3, thrall:3, tyrande:3, jaina:3, rexxar:3,
 };
 const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced 3/4-rear walk frames (per hero)
-  illidan:0.558, arthas:0.585, sylvanas:0.577, uther:0.597, grommash:0.515,
+  illidan:0.558, arthas:0.585, sylvanas:0.577, uther:0.597, grommash:0.492,
   malfurion:0.510, thrall:0.644, tyrande:0.527, jaina:0.631, rexxar:0.603,
 };
 // a camera-facing textured quad sized to read like the other heroes; pivot at the feet
@@ -2443,7 +2443,12 @@ function updateBattle(dt){
     if(u.abilT<=0){ if(triggerAbility(u)) u.abilT=ABILITIES[u.hero.ability].cd; else u.abilT=0.5; }
 
     const chill = u.frozenT>0?0.45:1;          // frost slows BOTH attack and movement
-    if(d<=reach){
+    // STATE HYSTERESIS: once in melee, STAY attacking until the target is clearly out of range
+    // (exit band). Without this, the per-frame separation jostle shoves units a hair in/out of
+    // `reach` every frame → state thrashes march↔attack → moveAmt oscillates → the walk frames
+    // stutter on/off and the gait bob pulses (the "flickering / bouncing" in real battles).
+    const exitReach = (u.state==='attack') ? reach*1.35 : reach;
+    if(d<=exitReach){
       u.state='attack';
       // face target
       faceToward(u, tgt.x, tgt.z);
@@ -2652,19 +2657,19 @@ function tick(){
       ud.moveAmt = (ud.moveAmt||0) + ((moving?1:0)-(ud.moveAmt||0))*Math.min(1,dt*8);
       const ma=ud.moveAmt, es=ma*ma*(3-2*ma);                 // smootherstep so the gait grows in
       if(ma>0.01){
-        ud.gaitPhase += dt*6.8*(0.6+0.4*(u.spdMul||1));       // stride cadence (a touch slower → more deliberate, readable steps)
+        ud.gaitPhase += dt*3.4*(u.hero.spd||2)*(u.spdMul||1); // cadence TIED TO REAL SPEED (so legs track the ground, less foot-slide); ≈6.8 at spd 2
         const gp=ud.gaitPhase, s=Math.abs(Math.sin(gp));
-        // the BODY bounces while the feet stay planted: most of the rise is a stretch from the
-        // feet pivot (head lifts), with only a small real lift — so it reads as a stride, not a hop
-        bobLift = Math.pow(s,0.8)*0.07*es;                    // vertical body stretch (feet stay down)
-        bob = Math.pow(s,0.8)*0.04*es;                        // small genuine lift
+        // the BODY rises a little over planted feet so it reads as a stride — but KEPT SMALL: the
+        // old 0.07 stretch swung the head ~0.27u, which read as "bouncing about" in battle, not walking
+        bobLift = Math.pow(s,0.8)*0.03*es;                    // vertical body stretch (feet stay down) — was 0.07
+        bob = Math.pow(s,0.8)*0.015*es;                       // small genuine lift — was 0.04
         gaitFoot = (1-s)*es;                                  // squash as a foot plants
         gaitRock = Math.sin(gp)*0.022*es;                     // gentle weight-roll (was 0.06 — at 3.9u tall that swung the HEAD ~0.23u, reading as a drunk sway not a walk)
         sway = Math.sin(gp)*0.018*es;                         // subtle waddle (was 0.05) — keep the body over the feet
         const foot=Math.floor(gp/Math.PI);
         if(foot!==ud.lastFoot){ ud.lastFoot=foot; if(ma>0.55) footDust(g.position.x, g.position.z); }
       }
-      bob += Math.sin(ud.t*2.2)*0.02*(1-ma);                 // idle breathing, fades as the march takes over
+      bob += Math.sin(ud.t*2.2)*0.008*(1-ma);                // quiet idle breathing (was 0.02), fades as the march takes over
     } else {
       bob=Math.sin(ud.t*(u.state==='march'?9:3))*(u.state==='march'?0.06:0.03);
     }
@@ -3188,6 +3193,7 @@ window.AZ = {
       CAM.target.set(0.2,1.6,0.9); CAM.base.set(0.2,2.7,7.2);
     } else if(solo){         // single back-walking hero, zoomed (smoothness QA)
       const g=buildSpriteModel(h,0); g.position.set(0,0,0); scene.add(g);
+      g.userData.view='back'; g.userData.showingBack=true; g.userData.moveAmt=1;   // start already marching away (no one-time front→back turn polluting the walk-cycle measurement)
       G.units.push({ hero:h, team:0, x:0, z:0, group:g, state:'march', spdMul:1, frozenT:0,burnT:0,poisonT:0,stunT:0,rootT:0,buffT:0,
         lunge:0,flash:0,castT:0,spin:0, atkT:0, abilT:99, hp:100, maxhp:100, dead:false, dmgMul:1, kbX:0, kbZ:0, target:{x:0,z:-30} });
       CAM.target.set(0,1.95,0); CAM.base.set(0,2.6,6.2);
