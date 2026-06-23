@@ -385,7 +385,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.90';
+const BUILD = 'v0.91';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1314,7 +1314,8 @@ function buildSpriteModel(hero, team){
   g.userData = { isSprite:true, sprite:plane, body:plane, bodyMat:mat, hero,
     t:Math.random()*6, bodyBase:{x:1, y:1, z:1}, faceSign:(team===1?-1:1), gaitPhase:Math.random()*6, lastFoot:0,
     texFront:tex, texBack, texSide, frontAspect, backAspect, sideAspect,
-    walkFrames, walkAspect, view:'front', showingBack:false, turnT:0, turnTo:false };
+    walkFrames, walkAspect, view:'front', showingBack:false, turnT:0, turnTo:false,
+    viewHeldT:99, wantPend:false, wantPendT:0, viewFlips:0, faceFlips:0, faceTime:-9 };
   attachHeroFX(g, hero);   // animated signature effects (frost swirl, lightning, holy glow…)
   return g;
 }
@@ -2477,7 +2478,7 @@ function separateUnits(){
       for(let j=i+1;j<units.length;j++){ const b=units[j]; if(b.dead) continue;
         let dx=b.x-a.x, dz=b.z-a.z; let d=Math.hypot(dx,dz);
         if(d>=SEP) continue;
-        if(d<1e-4){ const ang=Math.random()*6.283; dx=Math.cos(ang); dz=Math.sin(ang); d=0.01; }
+        if(d<1e-4){ const ang=(i*1.7+j*0.9); dx=Math.cos(ang); dz=Math.sin(ang); d=0.01; }   // deterministic nudge (was Math.random → per-frame jitter)
         const push=(SEP-d)*0.5, nx=dx/d, nz=dz/d;
         // enemies push a little less on z so the two lines still meet to fight
         const zfac = (a.team!==b.team)?0.4:1;
@@ -2492,7 +2493,10 @@ function faceToward(u, tx, tz){
   if(ud && ud.isSprite){
     // painted billboards stay facing the camera (never edge-on); facing is a left/right flip
     u.group.rotation.y=0;
-    if(tx<u.x-0.2) ud.faceSign=-1; else if(tx>u.x+0.2) ud.faceSign=1;
+    // left/right flip with a WIDE deadzone + min-dwell so a jostling target can't mirror-flutter the
+    // sprite (was a bare ±0.2 with no dwell → flipped every few frames in a melee)
+    const want = (tx < u.x-0.5) ? -1 : (tx > u.x+0.5) ? 1 : ud.faceSign;
+    if(want!==ud.faceSign && (clock.elapsedTime-(ud.faceTime||-9))>0.4){ ud.faceSign=want; ud.faceTime=clock.elapsedTime; ud.faceFlips=(ud.faceFlips||0)+1; }
     return;
   }
   const ang=Math.atan2(tx-u.x, tz-u.z); u.group.rotation.y=ang;
@@ -2578,9 +2582,18 @@ function flash(color, amount){
    ANIMATION LOOP
    ========================================================================= */
 const clock=new THREE.Clock();
+// --- test/QA time controls: deterministic stepping, freeze & slow-mo (drives motioncap + the ?az=qa overlay) ---
+const AZT = { paused:false, stepDt:0, scale:1, fps:60, _acc:0, _n:0 };
 function tick(){
   requestAnimationFrame(tick);
-  let dt=clock.getDelta(); if(dt>0.05) dt=0.05;
+  let dt=clock.getDelta();
+  // rolling FPS estimate from the real (unscaled) frame delta
+  if(dt>0){ AZT._acc+=dt; AZT._n++; if(AZT._acc>=0.25){ AZT.fps=AZT._n/AZT._acc; AZT._acc=0; AZT._n=0; } }
+  if(dt>0.05) dt=0.05;
+  // harness/QA override: a single fixed-dt step, else frozen while paused, else slow-mo scale
+  if(AZT.stepDt>0){ dt=AZT.stepDt; AZT.stepDt=0; }
+  else if(AZT.paused){ dt=0; }
+  else if(AZT.scale!==1){ dt*=AZT.scale; }
   // hit-stop: briefly crunch time so impacts land with weight
   if(G.hitStop){ G.hitStop=Math.max(0,G.hitStop-dt); dt*=0.12; }
 
@@ -2639,15 +2652,15 @@ function tick(){
       ud.moveAmt = (ud.moveAmt||0) + ((moving?1:0)-(ud.moveAmt||0))*Math.min(1,dt*8);
       const ma=ud.moveAmt, es=ma*ma*(3-2*ma);                 // smootherstep so the gait grows in
       if(ma>0.01){
-        ud.gaitPhase += dt*8.2*(0.6+0.4*(u.spdMul||1));       // stride cadence (snappier, scales with speed)
+        ud.gaitPhase += dt*6.8*(0.6+0.4*(u.spdMul||1));       // stride cadence (a touch slower → more deliberate, readable steps)
         const gp=ud.gaitPhase, s=Math.abs(Math.sin(gp));
         // the BODY bounces while the feet stay planted: most of the rise is a stretch from the
         // feet pivot (head lifts), with only a small real lift — so it reads as a stride, not a hop
         bobLift = Math.pow(s,0.8)*0.07*es;                    // vertical body stretch (feet stay down)
         bob = Math.pow(s,0.8)*0.04*es;                        // small genuine lift
         gaitFoot = (1-s)*es;                                  // squash as a foot plants
-        gaitRock = Math.sin(gp)*0.06*es;                      // body ROLLS onto the weighted foot…
-        sway = Math.sin(gp)*0.05*es;                          // …and SHIFTS toward it — the waddle
+        gaitRock = Math.sin(gp)*0.022*es;                     // gentle weight-roll (was 0.06 — at 3.9u tall that swung the HEAD ~0.23u, reading as a drunk sway not a walk)
+        sway = Math.sin(gp)*0.018*es;                         // subtle waddle (was 0.05) — keep the body over the feet
         const foot=Math.floor(gp/Math.PI);
         if(foot!==ud.lastFoot){ ud.lastFoot=foot; if(ma>0.55) footDust(g.position.x, g.position.z); }
       }
@@ -2705,14 +2718,22 @@ function tick(){
       // front while advancing toward camera, side when flanking mostly left↔right. A quick
       // turn-squash masks each swap; the texture flips at the squash midpoint.
       {
+        // desired view WITH HYSTERESIS: a wider band to LEAVE the current view than to enter it,
+        // plus a persistence + min-dwell gate, so a jostling target can't make front/side/back
+        // flip-flop frame-to-frame (the old code had no hysteresis and pinched to 6% width per swap).
         let want='front';
-        if(u.target){ const tdx=u.target.x-u.x, tdz=u.target.z-u.z;
-          if(ud.texSide && Math.abs(tdx) > Math.abs(tdz)*1.15 + 0.5) want='side';
-          else if(tdz < -0.3 && ud.texBack) want='back'; }
-        if(want!==ud.view && ud.turnT<=0){ ud.turnT=0.22; ud.turnTo=want; }
+        if(u.target){ const tdx=u.target.x-u.x, tdz=u.target.z-u.z, ax=Math.abs(tdx);
+          const sideEnter = ud.view==='side' ? 0.15 : 0.85;     // easy to STAY side, hard to enter
+          const backEnter = ud.view==='back' ? -0.05 : -0.65;   // easy to STAY back, hard to enter
+          if(ud.texSide && ax > Math.abs(tdz)*1.15 + sideEnter) want='side';
+          else if(ud.texBack && tdz < backEnter) want='back'; }
+        ud.viewHeldT=(ud.viewHeldT||0)+dt;
+        ud.wantPendT = (ud.wantPend===want ? (ud.wantPendT||0)+dt : 0); ud.wantPend=want;
+        // commit a turn only once the new view has persisted ~0.18s AND the current was held ~0.5s
+        if(want!==ud.view && ud.turnT<=0 && ud.wantPendT>=0.18 && ud.viewHeldT>=0.5){ ud.turnT=0.22; ud.turnTo=want; }
         if(ud.turnT>0){ ud.turnT-=dt;
-          if(ud.turnT<=0.11 && ud.view!==ud.turnTo){ ud.view=ud.turnTo; ud.showingBack=(ud.view==='back'); }
-          bx*=Math.max(0.06, Math.abs(ud.turnT-0.11)/0.11); }
+          if(ud.turnT<=0.11 && ud.view!==ud.turnTo){ ud.view=ud.turnTo; ud.showingBack=(ud.view==='back'); ud.viewFlips=(ud.viewFlips||0)+1; ud.viewHeldT=0; }
+          bx*=Math.max(0.2, Math.abs(ud.turnT-0.11)/0.11); }    // gentler squash floor (was 0.06 — a hard pinch)
         // texture + aspect for the current view; cycle the rear walk frames while marching away
         let viewTex=ud.texFront, viewAspect=ud.frontAspect, blendTex=null, blend=0;
         if(ud.view==='back'){ viewTex=ud.texBack||ud.texFront; viewAspect=ud.backAspect;
@@ -2720,9 +2741,11 @@ function tick(){
           if(ud.moveAmt>0.02 && n){
             // 3/4-rear walk frames, ping-ponged contact→pass→contact and CROSS-FADED between
             // them (Supercell-style: few baked frames, interpolated) for a smooth stride
-            const ph=(ud.gaitPhase/(Math.PI*2))%1, tri=ph<0.5?ph*2:(1-ph)*2;    // 0→1→0 per stride
+            const ph=(ud.gaitPhase/(Math.PI*2))%1, tri=ph<0.5?ph*2:(1-ph)*2;    // 0→1→0 per stride (LINEAR = smoothest cross-fade between the 3 baked frames)
             const ff=tri*(n-1), idx=Math.min(n-1,Math.floor(ff));
-            viewTex=ud.walkFrames[idx]; blendTex=ud.walkFrames[Math.min(n-1,idx+1)]; blend=ff-idx; viewAspect=ud.walkAspect;
+            const bl=ff-idx; viewTex=ud.walkFrames[idx]; blendTex=ud.walkFrames[Math.min(n-1,idx+1)];
+            blend=bl*bl*(3-2*bl);   // CRISP the cross-fade: hold each baked frame sharp, pass quickly through the 50/50 blend where the double-image "ghost" lives (was a slow linear blend that ghosted)
+            viewAspect=ud.walkAspect;
           }
         } else if(ud.view==='side'){ viewTex=ud.texSide||ud.texFront; viewAspect=ud.sideAspect; }
         if(ud.bodyMat.map!==viewTex) ud.bodyMat.map=viewTex;
@@ -2744,7 +2767,7 @@ function tick(){
       if(u.burnT>0){ cr*=1.34; cg*=0.74; cb*=0.5; }
       if(u.poisonT>0){ cr*=0.74; cg*=1.24; cb*=0.72; }
       if(u.buffT>0 && u.dmgMul>1){ cr*=1.26; cg*=0.92; cb*=0.74; }   // rage glow
-      if(u.stunT>0){ const fl=0.7+0.3*Math.sin(clock.elapsedTime*30); cr*=1.3*fl+0.4; cg*=1.25*fl+0.4; cb*=0.5; }  // electric yellow flicker
+      if(u.stunT>0){ const fl=0.78+0.22*Math.sin(clock.elapsedTime*11); cr*=1.3*fl+0.4; cg*=1.25*fl+0.4; cb*=0.5; }  // electric yellow pulse (slower 30→11, less seizurey)
       const f=u.flash>0?(u.flash/0.16):0;                            // hit flash → white
       if(ud.isSprite){ ud.bodyMat.color.setRGB(cr+f*0.9, cg+f*0.9, cb+f*0.9); }
       else { ud.bodyMat.emissive.setRGB(f*0.85 + (u.burnT>0?0.32:0), f*0.85 + (u.poisonT>0?0.3:0), f*0.85 + (u.frozenT>0?0.38:0)); }
@@ -3130,9 +3153,16 @@ tick();
 /* ---- test/automation hooks (used by tools/shoot.mjs; harmless in normal play) ---- */
 window.AZ = {
   ready:true,
-  dbg:()=>({ ended:!!G.ended, proj:projectiles.length,
-    units:G.units.map(u=>({id:u.hero.id, team:u.team, hp:Math.round(u.hp), dead:!!u.dead, st:u.state})) }),
+  dbg:()=>({ ended:!!G.ended, proj:projectiles.length, fps:Math.round(AZT.fps),
+    units:G.units.map(u=>({id:u.hero.id, team:u.team, hp:Math.round(u.hp), dead:!!u.dead, st:u.state,
+      vf:(u.group&&u.group.userData.viewFlips)||0, ff:(u.group&&u.group.userData.faceFlips)||0})) }),
   roster:()=>roster.map(h=>h.id),
+  // deterministic time controls for the motion harness (motioncap.mjs) and the ?az=qa overlay
+  pause(){ AZT.paused=true; return true; },
+  play(){ AZT.paused=false; AZT.scale=1; return true; },
+  step(dt){ AZT.stepDt=(dt>0?dt:1/60); return true; },   // advance exactly one fixed-dt frame, then re-freeze
+  slowmo(s){ AZT.scale=(s>0?s:0.5); AZT.paused=false; return true; },
+  fps(){ return Math.round(AZT.fps); },
   preview(id){ const i=roster.findIndex(h=>h.id===id); if(i<0) return false; hideAllScreens(); show('heroes'); showPreview(i); if(PV){ PV.spin=false; PV.rot=0; PV.manualRot=0; } return true; },
   battle(meIds, foeIds){
     const find=id=>roster.find(h=>h.id===id)||PRESETS.find(h=>h.id===id);
@@ -3172,13 +3202,47 @@ window.AZ = {
     return true;
   }
 };
-try{ const q=new URLSearchParams(location.search); const mode=q.get('az');
+// ---- on-screen QA/test overlay (?az=qa or &qa=1): drive slow-mo / freeze / step / scenarios on a phone ----
+function azQA(hero){
+  if(document.getElementById('azqa')) return;
+  const ROS = AZ.roster();
+  let hi = Math.max(0, ROS.indexOf(hero||'grommash'));
+  const bar=document.createElement('div'); bar.id='azqa';
+  bar.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:9999;display:flex;flex-wrap:wrap;gap:6px;'
+    +'padding:8px;background:rgba(8,10,16,.82);backdrop-filter:blur(4px);font:600 13px/1 system-ui,sans-serif;'
+    +'justify-content:center;align-items:center;color:#cfe0ff;border-top:1px solid #2a3550';
+  const mk=(label,fn,bg)=>{ const b=document.createElement('button'); b.textContent=label;
+    b.style.cssText='padding:9px 11px;border-radius:9px;border:1px solid #38496e;background:'+(bg||'#1a2236')
+      +';color:#dce8ff;font:inherit;touch-action:manipulation'; b.onclick=(e)=>{e.preventDefault();fn();}; bar.appendChild(b); return b; };
+  const go=(q)=>{ location.search=q+'&qa=1'; };
+  const fps=document.createElement('span'); fps.style.cssText='padding:0 8px;color:#8fe39a;min-width:64px;text-align:center';
+  mk('▶ 1×',()=>AZ.play(),'#1f3322'); mk('🐢 .5×',()=>AZ.slowmo(0.5)); mk('🐌 .25×',()=>AZ.slowmo(0.25));
+  mk('⏸',()=>AZ.pause(),'#33261a'); mk('⏭ step',()=>{AZ.pause();AZ.step(1/30);});
+  { const sep=document.createElement('span'); sep.textContent='│'; sep.style.color='#3a456a'; bar.appendChild(sep); }
+  mk('Walk',()=>go('?az=viewtest&hero='+ROS[hi]+'&solo=1'));
+  mk('Attack',()=>go('?az=viewtest&hero='+ROS[hi]+'&solo=2'));
+  mk('Battle',()=>go('?az=battle&me='+ROS[hi]+'&foe=thrall,jaina'));
+  mk('◀ hero',()=>{ hi=(hi-1+ROS.length)%ROS.length; reload(); });
+  const heroLbl=document.createElement('span'); heroLbl.style.cssText='padding:0 6px;color:#ffd98a'; heroLbl.textContent=ROS[hi];
+  bar.appendChild(heroLbl);
+  mk('hero ▶',()=>{ hi=(hi+1)%ROS.length; reload(); });
+  bar.appendChild(fps);
+  function reload(){ const m=new URLSearchParams(location.search).get('az')||'viewtest';
+    const solo=new URLSearchParams(location.search).get('solo');
+    if(m==='battle') go('?az=battle&me='+ROS[hi]+'&foe=thrall,jaina');
+    else go('?az=viewtest&hero='+ROS[hi]+(solo?'&solo='+solo:'&solo=1')); }
+  document.body.appendChild(bar);
+  setInterval(()=>{ fps.textContent='⛶ '+AZ.fps()+' fps'; }, 400);
+}
+try{ const q=new URLSearchParams(location.search); const mode=q.get('az'); const qa=q.get('qa');
   if(mode==='preview') AZ.preview(q.get('hero')||'illidan');
   else if(mode==='viewtest') AZ.viewtest(q.get('hero')||'illidan', q.get('solo')?+q.get('solo'):0);
   else if(mode==='battle') AZ.battle((q.get('me')||'illidan').split(','), (q.get('foe')||'thrall,jaina').split(','));
   else if(mode==='heroes'){ hideAllScreens(); show('heroes'); renderRoster(); }
   else if(mode==='draft'){ startMatch(); }
   else if(mode==='result'){ endMatch(q.get('win')!=='0'); }
+  else if(mode==='qa'){ AZ.viewtest(q.get('hero')||'grommash', 1); }   // default QA scene = a lone walker
+  if(qa || mode==='qa') azQA(q.get('hero'));
 }catch(e){ console.warn('az test hook',e); }
 })();
 </script>
