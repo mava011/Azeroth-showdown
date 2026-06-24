@@ -25,5 +25,9 @@ for(let i=0;i<N;i++){ const gp=i/N*2*Math.PI;
   fs.writeFileSync(path.join(OUT,hero+'_'+String(i).padStart(2,'0')+'.png'), Buffer.from(url.split(',')[1],'base64'));
 }
 console.log('wrote', N, 'phase frames for', hero);
+const meta=await pg.evaluate(()=>window.AZ.rigmeta&&window.AZ.rigmeta());
+console.log('RIG META (frac of bbox):', JSON.stringify(meta));
+const st=await pg.evaluate(()=>window.AZ.rigstatic&&window.AZ.rigstatic());
+if(st){ fs.writeFileSync(path.join(OUT,hero+'_static.png'), Buffer.from(st.split(',')[1],'base64')); console.log('wrote static layer'); }
 console.log('errs:', [...new Set(errs)].slice(0,3));
 await browser.close(); server.close();

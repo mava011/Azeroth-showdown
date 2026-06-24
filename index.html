@@ -1296,7 +1296,7 @@ const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced 3/4-rear wal
 // art at runtime — read its alpha to find the hip/knee lines and the gap between the legs —
 // then redraw hinged sub-rects into a per-unit canvas every frame. Genuine articulation
 // (knees bend, feet step) interpolated continuously, which a frame cross-fade can never do.
-const LEG_RIG = { grommash:{hip:0.50, knee:0.74} };   // per-hero joint lines (frac of bbox height); expand once proven
+const LEG_RIG = { grommash:{ legTop:0.77, knee:0.85, nearSide:1 } };  // legTop = cut BELOW the axe/kilt so they stay whole in the static layer; nearSide +1 = screen-right leg on top
 function buildLegRig(hero){
   const url = HERO_ART_BACK[hero.id], cfg = LEG_RIG[hero.id];
   if(!url || !cfg) return null;
@@ -1305,14 +1305,25 @@ function buildLegRig(hero){
     const iw=rig.img.naturalWidth, ih=rig.img.naturalHeight;
     const ac=document.createElement('canvas'); ac.width=iw; ac.height=ih;
     const ax=ac.getContext('2d'); ax.drawImage(rig.img,0,0);
-    const d=ax.getImageData(0,0,iw,ih).data;
+    const d=ax.getImageData(0,0,iw,ih).data, A=(x,y)=>d[(y*iw+x)*4+3]>40;
     let bx0=iw,by0=ih,bx1=0,by1=0;
-    for(let y=0;y<ih;y++)for(let x=0;x<iw;x++){ if(d[(y*iw+x)*4+3]>40){ if(x<bx0)bx0=x; if(x>bx1)bx1=x; if(y<by0)by0=y; if(y>by1)by1=y; } }
+    for(let y=0;y<ih;y++)for(let x=0;x<iw;x++){ if(A(x,y)){ if(x<bx0)bx0=x; if(x>bx1)bx1=x; if(y<by0)by0=y; if(y>by1)by1=y; } }
     const fw=bx1-bx0+1, fh=by1-by0+1;
-    const hipY=Math.round(by0+fh*cfg.hip), kneeY=Math.round(by0+fh*cfg.knee);
-    let splitX=Math.round((bx0+bx1)/2), best=1e9;                                  // gap between the legs = column with fewest opaque px below the knee
-    for(let x=Math.round(bx0+fw*0.34);x<=Math.round(bx0+fw*0.66);x++){ let c=0; for(let y=kneeY;y<=by1;y++) if(d[(y*iw+x)*4+3]>40)c++; if(c<best){best=c;splitX=x;} }
-    rig.meta={iw,ih,bx0,by0,bx1,by1,fw,fh,hipY,kneeY,splitX,OV:Math.round(fh*0.07)};
+    const legTop=Math.round(by0+fh*cfg.legTop), kneeY=Math.round(by0+fh*cfg.knee);
+    // leg x-band = UNION of opaque columns over the BOOT BAND near the sole (widest boot extent,
+    // and below where the axe/arms reach → they're excluded). One row misses the flared boot sole.
+    let legL=bx1, legR=bx0;
+    for(let yy=Math.round(by0+fh*0.90); yy<=Math.min(by1, Math.round(by0+fh*0.99)); yy++)
+      for(let x=bx0;x<=bx1;x++){ if(A(x,yy)){ if(x<legL)legL=x; if(x>legR)legR=x; } }
+    if(legR<=legL){ legL=Math.round(bx0+fw*0.22); legR=Math.round(bx0+fw*0.72); }     // fallback
+    // inter-leg gap = the column with the fewest opaque px (knee→boot), within the leg band
+    let splitX=Math.round((legL+legR)/2), best=1e9;
+    for(let x=Math.round(legL+(legR-legL)*0.28);x<=Math.round(legL+(legR-legL)*0.72);x++){ let c=0; for(let y=kneeY;y<=by1;y++) if(A(x,y))c++; if(c<best){best=c;splitX=x;} }
+    // STATIC upper layer = the whole figure with the central leg band CLEARED (so no "ghost" original legs show behind a swing)
+    const sc=document.createElement('canvas'); sc.width=iw; sc.height=ih;
+    const sctx=sc.getContext('2d'); sctx.drawImage(rig.img,0,0); sctx.clearRect(legL, legTop, legR-legL+1, by1-legTop+1);
+    rig.staticCanvas=sc;
+    rig.meta={iw,ih,bx0,by0,bx1,by1,fw,fh,legTop,kneeY,legL,legR,splitX,nearSide:cfg.nearSide||1,OV:Math.round(fh*0.05)};
     rig.figAspect=fw/fh;
     const CW=224, CH=Math.round(CW/rig.figAspect);
     rig.canvas=document.createElement('canvas'); rig.canvas.width=CW; rig.canvas.height=CH;
@@ -1325,40 +1336,38 @@ function buildLegRig(hero){
   return rig;
 }
 // tunable amplitudes for the procedural walk (tuned by eye at close-up + battle zoom)
-const RIGTUNE = { thigh:0.19, knee:0.88, lift:0.11, roll:0.05, bob:0.028, shift:0.012 };
+const RIGTUNE = { thigh:0.14, knee:0.42, lift:0.05, roll:0.055, bob:0.028, shift:0.013 };
 function drawRigPose(rig, gp){
   const m=rig.meta, ctx=rig.ctx, S=rig.scale, img=rig.img, CW=rig.canvas.width, CH=rig.canvas.height, T=RIGTUNE;
   const toCx=(sx)=>(sx-m.bx0)*S, toCy=(sy)=>(sy-m.by0)*S;
-  const hipCy=toCy(m.hipY), kneeCy=toCy(m.kneeY);
-  const rect=(rx0,ry0,rx1,ry1)=>{ const sw=rx1-rx0+1, sh=ry1-ry0+1; ctx.drawImage(img, rx0,ry0,sw,sh, toCx(rx0),toCy(ry0), sw*S, sh*S); };
-  const HOV=Math.round(m.fw*0.05);                     // overlap legs past the split so the inter-leg gap can't open up
-  const leg=(side, sw)=>{
-    const sx0=side<0?m.bx0:m.splitX+1-HOV, sx1=side<0?m.splitX+HOV:m.bx1;
-    const hipCx=toCx(side<0?(m.bx0+m.splitX)/2:(m.splitX+m.bx1)/2);
+  const legTopCy=toCy(m.legTop), kneeCy=toCy(m.kneeY);
+  const rect=(src,rx0,ry0,rx1,ry1)=>{ const sw=rx1-rx0+1, sh=ry1-ry0+1; ctx.drawImage(src, rx0,ry0,sw,sh, toCx(rx0),toCy(ry0), sw*S, sh*S); };
+  const leg=(x0,x1, sw)=>{                                // x0,x1 = this leg's CLEAN x-range (below the kilt)
+    const hipCx=toCx((x0+x1)/2);
     const lift=Math.max(0,sw)*m.fh*T.lift*S, thA=sw*T.thigh, knA=Math.max(0,sw)*T.knee;   // swing leg lifts; thigh swings; knee bends on the lift half
     ctx.save();
     ctx.translate(0,-lift);
-    ctx.translate(hipCx,hipCy); ctx.rotate(thA); ctx.translate(-hipCx,-hipCy);
-    ctx.save();                                        // shin nested under thigh (thigh hides the knee seam)
+    ctx.translate(hipCx,legTopCy); ctx.rotate(thA); ctx.translate(-hipCx,-legTopCy);
+    ctx.save();                                          // shin nested under thigh (thigh hides the knee seam)
       ctx.translate(hipCx,kneeCy); ctx.rotate(knA); ctx.translate(-hipCx,-kneeCy);
-      rect(sx0, m.kneeY-m.OV, sx1, m.by1);
+      rect(img, x0, m.kneeY-m.OV, x1, m.by1);
     ctx.restore();
-    rect(sx0, m.hipY-m.OV, sx1, m.kneeY+m.OV);
+    rect(img, x0, m.legTop-m.OV, x1, m.kneeY+m.OV);
     ctx.restore();
   };
   const s=Math.sin(gp), c=Math.cos(gp);
   ctx.clearRect(0,0,CW,CH);
-  // 1) legs stay grounded; the swing leg lifts, swings forward and bends at the knee
-  leg(+1, s);
-  leg(-1, Math.sin(gp+Math.PI));                       // opposite phase
-  // 2) the upper body rides OVER the grounded legs: rises between footfalls (twice/stride),
-  //    sways over the stance foot, and counter-rolls the shoulders. From behind this body
-  //    motion — not leg swing (which foreshortens) — is what reads as a humanoid walk.
-  const bob=-Math.abs(c)*m.fh*T.bob*S, shift=s*m.fh*T.shift*S, hipCx=toCx((m.bx0+m.bx1)/2);
+  // 1) grounded, articulated legs (CLEAN leg band only) — FAR leg first, NEAR leg last (z-order)
+  const drawL=()=>leg(m.legL, m.splitX, Math.sin(gp+Math.PI));
+  const drawR=()=>leg(m.splitX+1, m.legR, Math.sin(gp));
+  if(m.nearSide>0){ drawL(); drawR(); } else { drawR(); drawL(); }
+  // 2) STATIC upper figure (axe / hands / kilt drawn ONCE, leg band cleared) bobs/rolls/sways
+  //    over the grounded legs. From behind, this body motion — not big leg swings — reads as a walk.
+  const bob=-Math.abs(c)*m.fh*T.bob*S, shift=s*m.fh*T.shift*S, cx=toCx((m.bx0+m.bx1)/2);
   ctx.save();
     ctx.translate(shift, bob);
-    ctx.translate(hipCx,hipCy); ctx.rotate(s*T.roll); ctx.translate(-hipCx,-hipCy);
-    rect(m.bx0, m.by0, m.bx1, m.hipY+m.OV);            // torso+head+arms+axe as one block (over the hips → hides the seam)
+    ctx.translate(cx,legTopCy); ctx.rotate(s*T.roll); ctx.translate(-cx,-legTopCy);
+    rect(rig.staticCanvas, m.bx0, m.by0, m.bx1, m.by1);
   ctx.restore();
   rig.tex.needsUpdate=true;
 }
@@ -3246,6 +3255,9 @@ window.AZ = {
   // dump the procedural rig's own canvas (full figure, unaffected by camera framing) at a given gait phase — rig QA
   rigcanvas:(gp)=>{ const u=(G.units||[])[0]; const r=u&&u.group&&u.group.userData.rig; if(!r||!r.ready) return null;
     if(gp!=null){ u.group.userData.gaitPhase=gp; drawRigPose(r, gp); } return r.canvas.toDataURL(); },
+  rigstatic:()=>{ const u=(G.units||[])[0]; const r=u&&u.group&&u.group.userData.rig; return r&&r.staticCanvas ? r.staticCanvas.toDataURL() : null; },
+  rigmeta:()=>{ const u=(G.units||[])[0]; const r=u&&u.group&&u.group.userData.rig; if(!r||!r.meta) return null; const m=r.meta;
+    return {legL:((m.legL-m.bx0)/m.fw).toFixed(3), legR:((m.legR-m.bx0)/m.fw).toFixed(3), split:((m.splitX-m.bx0)/m.fw).toFixed(3), legTop:((m.legTop-m.by0)/m.fh).toFixed(3), knee:((m.kneeY-m.by0)/m.fh).toFixed(3)}; },
   // deterministic time controls for the motion harness (motioncap.mjs) and the ?az=qa overlay
   pause(){ AZT.paused=true; return true; },
   play(){ AZT.paused=false; AZT.scale=1; return true; },
