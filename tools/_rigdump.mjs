@@ -11,7 +11,8 @@ const server=http.createServer((req,res)=>{ let p=decodeURIComponent(req.url.spl
   res.writeHead(200,{'Content-Type':MIME[path.extname(fp)]||'application/octet-stream'}); fs.createReadStream(fp).pipe(res); });
 const PORT=await new Promise(r=>server.listen(0,()=>r(server.address().port)));
 const hero=process.argv[2]||'grommash';
-const URL_=`http://127.0.0.1:${PORT}/index.html?az=viewtest&hero=${hero}&solo=1`;
+const solo=process.argv[3]||'1';   // 1=back, 3=front, 4=side
+const URL_=`http://127.0.0.1:${PORT}/index.html?az=viewtest&hero=${hero}&solo=${solo}`;
 const browser=await chromium.launch({executablePath:findChrome(),headless:true,args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--ignore-gpu-blocklist','--mute-audio']});
 const ctx=await browser.newContext({viewport:{width:402,height:874}}); const pg=await ctx.newPage();
 const errs=[]; pg.on('pageerror',e=>errs.push(String(e)));

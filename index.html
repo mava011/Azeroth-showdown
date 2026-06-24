@@ -1296,11 +1296,22 @@ const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced 3/4-rear wal
 // art at runtime — read its alpha to find the hip/knee lines and the gap between the legs —
 // then redraw hinged sub-rects into a per-unit canvas every frame. Genuine articulation
 // (knees bend, feet step) interpolated continuously, which a frame cross-fade can never do.
-const LEG_RIG = { grommash:{ legTop:0.77, knee:0.85, nearSide:1 } };  // legTop = cut BELOW the axe/kilt so they stay whole in the static layer; nearSide +1 = screen-right leg on top
-function buildLegRig(hero){
-  const url = HERO_ART_BACK[hero.id], cfg = LEG_RIG[hero.id];
-  if(!url || !cfg) return null;
-  const rig = { ready:false, cfg, img:new Image() };
+const LEG_RIG = {
+  grommash:{
+    back: { legTop:0.77, knee:0.85, nearSide:1 },   // APPROVED back walk — do not change without re-review
+    front:{ legTop:0.88, knee:0.93, nearSide:1 },   // cut below the centred axe → plain split of the two boots; axe stays static above
+    side: { legTop:0.81, knee:0.90, nearSide:1, mode:'pendulum' },  // cut below the forward axe blade; scissor the near boot over the static far boot
+  },
+};
+function _artFor(view){ return view==='side'?HERO_ART_SIDE : view==='back'?HERO_ART_BACK : HERO_ART; }
+// Build a procedural walk rig for ONE view of a hero by slicing its art. mode: 'split' (back: two
+// legs cut at the inter-leg gap), 'cols' (front: two boot columns inset outside a centre axe band),
+// 'pendulum' (side: the near boot scissors over a static far boot).
+function buildLegRig(hero, view){
+  const cfgAll = LEG_RIG[hero.id]; if(!cfgAll) return null;
+  const cfg = cfgAll[view]; if(!cfg) return null;
+  const url = _artFor(view)[hero.id]; if(!url) return null;
+  const rig = { ready:false, view, cfg, mode:cfg.mode||'split', img:new Image() };
   rig.img.onload = ()=>{
     const iw=rig.img.naturalWidth, ih=rig.img.naturalHeight;
     const ac=document.createElement('canvas'); ac.width=iw; ac.height=ih;
@@ -1319,11 +1330,27 @@ function buildLegRig(hero){
     // inter-leg gap = the column with the fewest opaque px (knee→boot), within the leg band
     let splitX=Math.round((legL+legR)/2), best=1e9;
     for(let x=Math.round(legL+(legR-legL)*0.28);x<=Math.round(legL+(legR-legL)*0.72);x++){ let c=0; for(let y=kneeY;y<=by1;y++) if(A(x,y))c++; if(c<best){best=c;splitX=x;} }
-    // STATIC upper layer = the whole figure with the central leg band CLEARED (so no "ghost" original legs show behind a swing)
+    // STATIC upper layer = the figure with ONLY the moving pixels cleared (everything else drawn once)
     const sc=document.createElement('canvas'); sc.width=iw; sc.height=ih;
-    const sctx=sc.getContext('2d'); sctx.drawImage(rig.img,0,0); sctx.clearRect(legL, legTop, legR-legL+1, by1-legTop+1);
-    rig.staticCanvas=sc;
-    rig.meta={iw,ih,bx0,by0,bx1,by1,fw,fh,legTop,kneeY,legL,legR,splitX,nearSide:cfg.nearSide||1,OV:Math.round(fh*0.05)};
+    const sctx=sc.getContext('2d'); sctx.drawImage(rig.img,0,0);
+    let mode=rig.mode, legLx0=legL,legLx1=splitX, legRx0=splitX+1,legRx1=legR, nearSeamX=splitX;
+    if(mode==='cols'){                                   // FRONT: boot columns inset OUTSIDE the centre axe band
+      const axeX0=Math.round(bx0+fw*cfg.axeBand[0]), axeX1=Math.round(bx0+fw*cfg.axeBand[1]);
+      legLx1=Math.min(splitX, axeX0-1); legRx0=Math.max(splitX+1, axeX1+1);
+      if(legLx1-legLx0 < fw*0.03 || legRx1-legRx0 < fw*0.03) mode='split';            // a boot got swallowed → degrade
+    }
+    if(mode==='pendulum'){                               // SIDE: clear only the near (forward) boot column
+      nearSeamX=Math.round((legL+legR)/2); let b2=1e9;
+      for(let x=Math.round(legL+(legR-legL)*0.30);x<=Math.round(legL+(legR-legL)*0.70);x++){ let c=0; for(let y=Math.round(by0+fh*0.92);y<=by1;y++) if(A(x,y))c++; if(c<b2){b2=c;nearSeamX=x;} }
+      sctx.clearRect(nearSeamX, legTop, legR-nearSeamX+1, by1-legTop+1);
+    } else if(mode==='cols'){
+      sctx.clearRect(legLx0, legTop, legLx1-legLx0+1, by1-legTop+1);
+      sctx.clearRect(legRx0, legTop, legRx1-legRx0+1, by1-legTop+1);
+    } else {                                             // split (BACK): clear the whole leg band
+      sctx.clearRect(legL, legTop, legR-legL+1, by1-legTop+1);
+    }
+    rig.mode=mode; rig.staticCanvas=sc;
+    rig.meta={iw,ih,bx0,by0,bx1,by1,fw,fh,legTop,kneeY,legL,legR,splitX,nearSide:cfg.nearSide||1,OV:Math.round(fh*0.05),mode,legLx0,legLx1,legRx0,legRx1,nearSeamX};
     rig.figAspect=fw/fh;
     const CW=224, CH=Math.round(CW/rig.figAspect);
     rig.canvas=document.createElement('canvas'); rig.canvas.width=CW; rig.canvas.height=CH;
@@ -1335,14 +1362,18 @@ function buildLegRig(hero){
   rig.img.src=url;
   return rig;
 }
-// tunable amplitudes for the procedural walk (tuned by eye at close-up + battle zoom)
-const RIGTUNE = { thigh:0.14, knee:0.42, lift:0.05, roll:0.055, bob:0.028, shift:0.013 };
+// per-VIEW tunable amplitudes (back = approved; front leans on body bob; side adds a forward lean)
+const RIGTUNE = {
+  back:  { thigh:0.14, knee:0.42, lift:0.05, roll:0.055, bob:0.028, shift:0.013 },
+  front: { thigh:0.10, knee:0.30, lift:0.03, roll:0.030, bob:0.045, shift:0.022 },
+  side:  { thigh:0.15, knee:0.0, lift:0.0, roll:0.045, bob:0.030, shift:0.010, lean:0.022 },  // pure pendulum swing (no knee/lift) → no seam on the short below-axe leg
+};
 function drawRigPose(rig, gp){
-  const m=rig.meta, ctx=rig.ctx, S=rig.scale, img=rig.img, CW=rig.canvas.width, CH=rig.canvas.height, T=RIGTUNE;
+  const m=rig.meta, ctx=rig.ctx, S=rig.scale, img=rig.img, CW=rig.canvas.width, CH=rig.canvas.height, T=RIGTUNE[rig.view]||RIGTUNE.back;
   const toCx=(sx)=>(sx-m.bx0)*S, toCy=(sy)=>(sy-m.by0)*S;
   const legTopCy=toCy(m.legTop), kneeCy=toCy(m.kneeY);
   const rect=(src,rx0,ry0,rx1,ry1)=>{ const sw=rx1-rx0+1, sh=ry1-ry0+1; ctx.drawImage(src, rx0,ry0,sw,sh, toCx(rx0),toCy(ry0), sw*S, sh*S); };
-  const leg=(x0,x1, sw)=>{                                // x0,x1 = this leg's CLEAN x-range (below the kilt)
+  const leg=(x0,x1, sw)=>{                                // x0,x1 = this leg's CLEAN x-range (below legTop)
     const hipCx=toCx((x0+x1)/2);
     const lift=Math.max(0,sw)*m.fh*T.lift*S, thA=sw*T.thigh, knA=Math.max(0,sw)*T.knee;   // swing leg lifts; thigh swings; knee bends on the lift half
     ctx.save();
@@ -1357,15 +1388,20 @@ function drawRigPose(rig, gp){
   };
   const s=Math.sin(gp), c=Math.cos(gp);
   ctx.clearRect(0,0,CW,CH);
-  // 1) grounded, articulated legs (CLEAN leg band only) — FAR leg first, NEAR leg last (z-order)
-  const drawL=()=>leg(m.legL, m.splitX, Math.sin(gp+Math.PI));
-  const drawR=()=>leg(m.splitX+1, m.legR, Math.sin(gp));
-  if(m.nearSide>0){ drawL(); drawR(); } else { drawR(); drawL(); }
-  // 2) STATIC upper figure (axe / hands / kilt drawn ONCE, leg band cleared) bobs/rolls/sways
-  //    over the grounded legs. From behind, this body motion — not big leg swings — reads as a walk.
-  const bob=-Math.abs(c)*m.fh*T.bob*S, shift=s*m.fh*T.shift*S, cx=toCx((m.bx0+m.bx1)/2);
+  // 1) per-mode grounded leg layer
+  if(m.mode==='pendulum'){
+    leg(m.nearSeamX, m.legR, s);                          // SIDE: near boot scissors over the static far boot
+  } else if(m.mode==='cols'){
+    const dL=()=>leg(m.legLx0, m.legLx1, Math.sin(gp+Math.PI)), dR=()=>leg(m.legRx0, m.legRx1, s);
+    if(m.nearSide>0){ dL(); dR(); } else { dR(); dL(); }  // FRONT: two boot columns (axe stays static)
+  } else {
+    const dL=()=>leg(m.legL, m.splitX, Math.sin(gp+Math.PI)), dR=()=>leg(m.splitX+1, m.legR, s);
+    if(m.nearSide>0){ dL(); dR(); } else { dR(); dL(); }  // BACK: FAR leg first, NEAR leg last (z-order)
+  }
+  // 2) shared STATIC upper figure — bob / roll / sway (+ optional forward lean) over the legs
+  const bob=-Math.abs(c)*m.fh*T.bob*S, shift=s*m.fh*T.shift*S, lean=T.lean?s*m.fh*T.lean*S:0, cx=toCx((m.bx0+m.bx1)/2);
   ctx.save();
-    ctx.translate(shift, bob);
+    ctx.translate(shift+lean, bob);
     ctx.translate(cx,legTopCy); ctx.rotate(s*T.roll); ctx.translate(-cx,-legTopCy);
     rect(rig.staticCanvas, m.bx0, m.by0, m.bx1, m.by1);
   ctx.restore();
@@ -1396,7 +1432,7 @@ function buildSpriteModel(hero, team){
     texFront:tex, texBack, texSide, frontAspect, backAspect, sideAspect,
     walkFrames, walkAspect, view:'front', showingBack:false, turnT:0, turnTo:false,
     viewHeldT:99, wantPend:false, wantPendT:0, viewFlips:0, faceFlips:0, faceTime:-9,
-    rig: buildLegRig(hero) };                                   // procedural skeletal walk (Grommash; null for the rest until rollout)
+    rigs:{ back:buildLegRig(hero,'back'), front:buildLegRig(hero,'front'), side:buildLegRig(hero,'side') } };  // per-view procedural walk rigs (null view → static fallback)
   attachHeroFX(g, hero);   // animated signature effects (frost swirl, lightning, holy glow…)
   return g;
 }
@@ -2749,7 +2785,7 @@ function tick(){
         sway = Math.sin(gp)*0.018*es;                         // subtle waddle (was 0.05) — keep the body over the feet
         // the back-walk RIG already bobs/rolls/sways the figure INSIDE its canvas — damp the whole-billboard
         // versions for rigged units so the motion isn't doubled (that doubling read as a drunk head-sway).
-        if(ud.rig && ud.rig.ready && ud.view==='back'){ bobLift*=0.2; bob*=0.2; gaitRock*=0.25; sway*=0.25; }
+        { const aR=ud.rigs&&ud.rigs[ud.view]; if(aR && aR.ready){ bobLift*=0.2; bob*=0.2; gaitRock*=0.25; sway*=0.25; } }  // any active rig view: damp the whole-billboard motion (no doubling)
         const foot=Math.floor(gp/Math.PI);
         if(foot!==ud.lastFoot){ ud.lastFoot=foot; if(ma>0.55) footDust(g.position.x, g.position.z); }
       }
@@ -2823,22 +2859,21 @@ function tick(){
         if(ud.turnT>0){ ud.turnT-=dt;
           if(ud.turnT<=0.11 && ud.view!==ud.turnTo){ ud.view=ud.turnTo; ud.showingBack=(ud.view==='back'); ud.viewFlips=(ud.viewFlips||0)+1; ud.viewHeldT=0; }
           bx*=Math.max(0.2, Math.abs(ud.turnT-0.11)/0.11); }    // gentler squash floor (was 0.06 — a hard pinch)
-        // texture + aspect for the current view; cycle the rear walk frames while marching away
+        // texture + aspect for the current view; a per-view rig animates whichever view is showing
         let viewTex=ud.texFront, viewAspect=ud.frontAspect, blendTex=null, blend=0;
-        if(ud.view==='back'){ viewTex=ud.texBack||ud.texFront; viewAspect=ud.backAspect;
-          if(ud.rig && ud.rig.ready && ud.moveAmt>0.02){
-            // TRUE skeletal walk: redraw the hinged figure into its canvas (articulation a cross-fade can't do)
-            drawRigPose(ud.rig, ud.gaitPhase); viewTex=ud.rig.tex; viewAspect=ud.rig.figAspect; blendTex=null;
-          } else {
-            const n=ud.walkFrames.length;
-            if(ud.moveAmt>0.02 && n){
-              // fallback (heroes without a rig yet): ping-pong baked walk frames with a crisp cross-fade
-              const ph=(ud.gaitPhase/(Math.PI*2))%1, tri=ph<0.5?ph*2:(1-ph)*2;    // 0→1→0 per stride
-              const ff=tri*(n-1), idx=Math.min(n-1,Math.floor(ff));
-              const bl=ff-idx; viewTex=ud.walkFrames[idx]; blendTex=ud.walkFrames[Math.min(n-1,idx+1)];
-              blend=bl*bl*(3-2*bl);
-              viewAspect=ud.walkAspect;
-            }
+        const aRig = ud.rigs && ud.rigs[ud.view];
+        if(aRig && aRig.ready && ud.moveAmt>0.02){
+          // TRUE skeletal walk for this view: redraw the hinged figure into its canvas
+          drawRigPose(aRig, ud.gaitPhase); viewTex=aRig.tex; viewAspect=aRig.figAspect; blendTex=null;
+        } else if(ud.view==='back'){ viewTex=ud.texBack||ud.texFront; viewAspect=ud.backAspect;
+          const n=ud.walkFrames.length;
+          if(ud.moveAmt>0.02 && n){
+            // fallback (heroes without a back rig yet): ping-pong baked walk frames with a crisp cross-fade
+            const ph=(ud.gaitPhase/(Math.PI*2))%1, tri=ph<0.5?ph*2:(1-ph)*2;    // 0→1→0 per stride
+            const ff=tri*(n-1), idx=Math.min(n-1,Math.floor(ff));
+            const bl=ff-idx; viewTex=ud.walkFrames[idx]; blendTex=ud.walkFrames[Math.min(n-1,idx+1)];
+            blend=bl*bl*(3-2*bl);
+            viewAspect=ud.walkAspect;
           }
         } else if(ud.view==='side'){ viewTex=ud.texSide||ud.texFront; viewAspect=ud.sideAspect; }
         if(ud.bodyMat.map!==viewTex) ud.bodyMat.map=viewTex;
@@ -3248,16 +3283,16 @@ window.AZ = {
   ready:true,
   dbg:()=>({ ended:!!G.ended, proj:projectiles.length, fps:Math.round(AZT.fps),
     units:G.units.map(u=>({id:u.hero.id, team:u.team, hp:Math.round(u.hp), dead:!!u.dead, st:u.state,
-      view:(u.group&&u.group.userData.view), rig:!!(u.group&&u.group.userData.rig&&u.group.userData.rig.ready),
+      view:(u.group&&u.group.userData.view), rig:!!(u.group&&u.group.userData.rigs&&u.group.userData.rigs[u.group.userData.view]&&u.group.userData.rigs[u.group.userData.view].ready),
       mv:+((u.group&&u.group.userData.moveAmt)||0).toFixed(2), tz:(u.target&&u.target.z),
       vf:(u.group&&u.group.userData.viewFlips)||0, ff:(u.group&&u.group.userData.faceFlips)||0})) }),
   roster:()=>roster.map(h=>h.id),
   // dump the procedural rig's own canvas (full figure, unaffected by camera framing) at a given gait phase — rig QA
-  rigcanvas:(gp)=>{ const u=(G.units||[])[0]; const r=u&&u.group&&u.group.userData.rig; if(!r||!r.ready) return null;
-    if(gp!=null){ u.group.userData.gaitPhase=gp; drawRigPose(r, gp); } return r.canvas.toDataURL(); },
-  rigstatic:()=>{ const u=(G.units||[])[0]; const r=u&&u.group&&u.group.userData.rig; return r&&r.staticCanvas ? r.staticCanvas.toDataURL() : null; },
-  rigmeta:()=>{ const u=(G.units||[])[0]; const r=u&&u.group&&u.group.userData.rig; if(!r||!r.meta) return null; const m=r.meta;
-    return {legL:((m.legL-m.bx0)/m.fw).toFixed(3), legR:((m.legR-m.bx0)/m.fw).toFixed(3), split:((m.splitX-m.bx0)/m.fw).toFixed(3), legTop:((m.legTop-m.by0)/m.fh).toFixed(3), knee:((m.kneeY-m.by0)/m.fh).toFixed(3)}; },
+  rigcanvas:(gp)=>{ const u=(G.units||[])[0], ud=u&&u.group&&u.group.userData; const r=ud&&ud.rigs&&ud.rigs[ud.view]; if(!r||!r.ready) return null;
+    if(gp!=null){ ud.gaitPhase=gp; drawRigPose(r, gp); } return r.canvas.toDataURL(); },
+  rigstatic:()=>{ const u=(G.units||[])[0], ud=u&&u.group&&u.group.userData; const r=ud&&ud.rigs&&ud.rigs[ud.view]; return r&&r.staticCanvas ? r.staticCanvas.toDataURL() : null; },
+  rigmeta:()=>{ const u=(G.units||[])[0], ud=u&&u.group&&u.group.userData; const r=ud&&ud.rigs&&ud.rigs[ud.view]; if(!r||!r.meta) return null; const m=r.meta;
+    return {view:r.view, mode:m.mode, legL:((m.legL-m.bx0)/m.fw).toFixed(3), legR:((m.legR-m.bx0)/m.fw).toFixed(3), split:((m.splitX-m.bx0)/m.fw).toFixed(3), legTop:((m.legTop-m.by0)/m.fh).toFixed(3), knee:((m.kneeY-m.by0)/m.fh).toFixed(3)}; },
   // deterministic time controls for the motion harness (motioncap.mjs) and the ?az=qa overlay
   pause(){ AZT.paused=true; return true; },
   play(){ AZT.paused=false; AZT.scale=1; return true; },
@@ -3287,11 +3322,13 @@ window.AZ = {
       const dummy=mk(PRESETS.find(x=>x.id==='grommash')||h, 1, 1.0, 1.6, null);
       const hh=mk(h, 0, -0.6, 0.2, dummy); dummy.target=hh;
       CAM.target.set(0.2,1.6,0.9); CAM.base.set(0.2,2.7,7.2);
-    } else if(solo){         // single back-walking hero, zoomed (smoothness QA)
+    } else if(solo){         // single zoomed walker for gait QA — solo=1 back, solo=3 front, solo=4 side
+      const view = solo===3?'front' : solo===4?'side' : 'back';
+      const tgt  = view==='front'?{x:0,z:30} : view==='side'?{x:30,z:0} : {x:0,z:-30};   // target dir → view-hysteresis keeps this view
       const g=buildSpriteModel(h,0); g.position.set(0,0,0); scene.add(g);
-      g.userData.view='back'; g.userData.showingBack=true; g.userData.moveAmt=1;   // start already marching away (no one-time front→back turn polluting the walk-cycle measurement)
+      g.userData.view=view; g.userData.showingBack=(view==='back'); g.userData.moveAmt=1;
       G.units.push({ hero:h, team:0, x:0, z:0, group:g, state:'march', spdMul:1, frozenT:0,burnT:0,poisonT:0,stunT:0,rootT:0,buffT:0,
-        lunge:0,flash:0,castT:0,spin:0, atkT:0, abilT:99, hp:100, maxhp:100, dead:false, dmgMul:1, kbX:0, kbZ:0, target:{x:0,z:-30} });
+        lunge:0,flash:0,castT:0,spin:0, atkT:0, abilT:99, hp:100, maxhp:100, dead:false, dmgMul:1, kbX:0, kbZ:0, target:tgt });
       CAM.target.set(0,1.75,0); CAM.base.set(0,2.7,7.7);   // frame the FULL body (feet→head) so the leg walk is visible
     } else {                 // front / side / back side-by-side
       [['front',0,30],['side',30,0],['back',0,-30]].forEach(([v,tx,tz],i)=>{

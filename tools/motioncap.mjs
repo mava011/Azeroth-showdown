@@ -25,6 +25,8 @@ const MIME={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png'
 // scenario string -> { name, url }
 function parse(arg){
   if(arg.startsWith('walk:'))   return { name:'walk_'+arg.slice(5),   url:`/index.html?az=viewtest&hero=${arg.slice(5)}&solo=1` };
+  if(arg.startsWith('walkfront:')) return { name:'walkfront_'+arg.slice(10), url:`/index.html?az=viewtest&hero=${arg.slice(10)}&solo=3` };
+  if(arg.startsWith('walkside:'))  return { name:'walkside_'+arg.slice(9),  url:`/index.html?az=viewtest&hero=${arg.slice(9)}&solo=4` };
   if(arg.startsWith('attack:')) return { name:'attack_'+arg.slice(7), url:`/index.html?az=viewtest&hero=${arg.slice(7)}&solo=2` };
   if(arg.startsWith('battle:')){ const [me,foe]=arg.slice(7).split('/');
     return { name:'battle_'+me.replace(/,/g,'-'), url:`/index.html?az=battle&me=${me}&foe=${foe||'thrall,jaina'}` }; }
