@@ -1299,7 +1299,7 @@ const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced 3/4-rear wal
 const LEG_RIG = {
   grommash:{
     back: { legTop:0.77, knee:0.85, nearSide:1 },   // APPROVED back walk — do not change without re-review
-    front:{ legTop:0.88, knee:0.93, nearSide:1 },   // cut below the centred axe → plain split of the two boots; axe stays static above
+    front:{ legTop:0.80, knee:0.90, nearSide:1, axeBand:[0.24,0.50] },  // axe erased from the leg source (axeBand) → legs march behind the static axe
     side: { legTop:0.81, knee:0.90, nearSide:1, mode:'pendulum' },  // cut below the forward axe blade; scissor the near boot over the static far boot
   },
 };
@@ -1339,17 +1339,32 @@ function buildLegRig(hero, view){
       legLx1=Math.min(splitX, axeX0-1); legRx0=Math.max(splitX+1, axeX1+1);
       if(legLx1-legLx0 < fw*0.03 || legRx1-legRx0 < fw*0.03) mode='split';            // a boot got swallowed → degrade
     }
-    if(mode==='pendulum'){                               // SIDE: clear only the near (forward) boot column
+    if(mode==='pendulum'){                               // SIDE: split the two profile boots at their gap; BOTH scissor
       nearSeamX=Math.round((legL+legR)/2); let b2=1e9;
       for(let x=Math.round(legL+(legR-legL)*0.30);x<=Math.round(legL+(legR-legL)*0.70);x++){ let c=0; for(let y=Math.round(by0+fh*0.92);y<=by1;y++) if(A(x,y))c++; if(c<b2){b2=c;nearSeamX=x;} }
-      sctx.clearRect(nearSeamX, legTop, legR-nearSeamX+1, by1-legTop+1);
+      sctx.clearRect(legL, legTop, legR-legL+1, by1-legTop+1);   // clear BOTH boots (both move)
     } else if(mode==='cols'){
       sctx.clearRect(legLx0, legTop, legLx1-legLx0+1, by1-legTop+1);
       sctx.clearRect(legRx0, legTop, legRx1-legRx0+1, by1-legTop+1);
     } else {                                             // split (BACK): clear the whole leg band
       sctx.clearRect(legL, legTop, legR-legL+1, by1-legTop+1);
     }
-    rig.mode=mode; rig.staticCanvas=sc;
+    if(cfg.axeBand){   // restore the held axe ON TOP of the cleared leg band so it stays whole & static (legs animate behind it)
+      const ax0=Math.round(bx0+fw*cfg.axeBand[0]), ax1=Math.round(bx0+fw*cfg.axeBand[1]), ayTop=legTop-Math.round(fh*0.22);
+      sctx.drawImage(rig.img, ax0,ayTop, ax1-ax0,by1-ayTop, ax0,ayTop, ax1-ax0,by1-ayTop);
+    }
+    // LEG SOURCE = the art with a held weapon ERASED through the leg zone, so the moving legs never
+    // carry it (the weapon stays in the static layer, drawn ON TOP). Used when a weapon overlaps the
+    // legs front-on (Grommash's centred axe). The legs animate behind the still axe.
+    let legSource = rig.img;
+    if(cfg.axeBand){
+      const ls=document.createElement('canvas'); ls.width=iw; ls.height=ih;
+      const lx=ls.getContext('2d'); lx.drawImage(rig.img,0,0);
+      const ax0=Math.round(bx0+fw*cfg.axeBand[0]), ax1=Math.round(bx0+fw*cfg.axeBand[1]), ayTop=legTop-Math.round(fh*0.14);
+      lx.clearRect(ax0, ayTop, ax1-ax0+1, by1-ayTop+1);   // erase the axe column down through the leg zone (above legTop to cover OV)
+      legSource = ls;
+    }
+    rig.legSource = legSource; rig.mode=mode; rig.staticCanvas=sc;
     rig.meta={iw,ih,bx0,by0,bx1,by1,fw,fh,legTop,kneeY,legL,legR,splitX,nearSide:cfg.nearSide||1,OV:Math.round(fh*0.05),mode,legLx0,legLx1,legRx0,legRx1,nearSeamX};
     rig.figAspect=fw/fh;
     const CW=224, CH=Math.round(CW/rig.figAspect);
@@ -1365,11 +1380,11 @@ function buildLegRig(hero, view){
 // per-VIEW tunable amplitudes (back = approved; front leans on body bob; side adds a forward lean)
 const RIGTUNE = {
   back:  { thigh:0.14, knee:0.42, lift:0.05, roll:0.055, bob:0.028, shift:0.013 },
-  front: { thigh:0.10, knee:0.30, lift:0.03, roll:0.030, bob:0.045, shift:0.022 },
+  front: { thigh:0.06, knee:0.0, lift:0.07, roll:0.030, bob:0.035, shift:0.020 },   // mostly a vertical alternating march (legs splaying sideways read unnatural head-on)
   side:  { thigh:0.15, knee:0.0, lift:0.0, roll:0.045, bob:0.030, shift:0.010, lean:0.022 },  // pure pendulum swing (no knee/lift) → no seam on the short below-axe leg
 };
 function drawRigPose(rig, gp){
-  const m=rig.meta, ctx=rig.ctx, S=rig.scale, img=rig.img, CW=rig.canvas.width, CH=rig.canvas.height, T=RIGTUNE[rig.view]||RIGTUNE.back;
+  const m=rig.meta, ctx=rig.ctx, S=rig.scale, img=rig.img, legSrc=rig.legSource||rig.img, CW=rig.canvas.width, CH=rig.canvas.height, T=RIGTUNE[rig.view]||RIGTUNE.back;
   const toCx=(sx)=>(sx-m.bx0)*S, toCy=(sy)=>(sy-m.by0)*S;
   const legTopCy=toCy(m.legTop), kneeCy=toCy(m.kneeY);
   const rect=(src,rx0,ry0,rx1,ry1)=>{ const sw=rx1-rx0+1, sh=ry1-ry0+1; ctx.drawImage(src, rx0,ry0,sw,sh, toCx(rx0),toCy(ry0), sw*S, sh*S); };
@@ -1381,16 +1396,17 @@ function drawRigPose(rig, gp){
     ctx.translate(hipCx,legTopCy); ctx.rotate(thA); ctx.translate(-hipCx,-legTopCy);
     ctx.save();                                          // shin nested under thigh (thigh hides the knee seam)
       ctx.translate(hipCx,kneeCy); ctx.rotate(knA); ctx.translate(-hipCx,-kneeCy);
-      rect(img, x0, m.kneeY-m.OV, x1, m.by1);
+      rect(legSrc, x0, m.kneeY-m.OV, x1, m.by1);
     ctx.restore();
-    rect(img, x0, m.legTop-m.OV, x1, m.kneeY+m.OV);
+    rect(legSrc, x0, m.legTop-m.OV, x1, m.kneeY+m.OV);
     ctx.restore();
   };
   const s=Math.sin(gp), c=Math.cos(gp);
   ctx.clearRect(0,0,CW,CH);
   // 1) per-mode grounded leg layer
-  if(m.mode==='pendulum'){
-    leg(m.nearSeamX, m.legR, s);                          // SIDE: near boot scissors over the static far boot
+  if(m.mode==='pendulum'){                                // SIDE: both boots scissor in opposition (far behind, near in front)
+    leg(m.legL, m.nearSeamX, Math.sin(gp+Math.PI));
+    leg(m.nearSeamX, m.legR, s);
   } else if(m.mode==='cols'){
     const dL=()=>leg(m.legLx0, m.legLx1, Math.sin(gp+Math.PI)), dR=()=>leg(m.legRx0, m.legRx1, s);
     if(m.nearSide>0){ dL(); dR(); } else { dR(); dL(); }  // FRONT: two boot columns (axe stays static)
