@@ -385,7 +385,7 @@ const THREE = window.THREE;
 if(!THREE){ document.getElementById('boot').textContent='Failed to load 3D engine.'; return; }
 
 /* Build/version tag — bump on every build so it's unambiguous which build is live. */
-const BUILD = 'v0.92';
+const BUILD = 'v0.93';
 (function showBuild(){
   const b=document.getElementById('verBadge'); if(b) b.textContent=BUILD;
   const t=document.getElementById('verText'); if(t) t.textContent=BUILD;
@@ -1291,6 +1291,77 @@ const HERO_WALK_ASPECT = {       // tight-bbox aspect of the sliced 3/4-rear wal
   illidan:0.558, arthas:0.585, sylvanas:0.577, uther:0.597, grommash:0.492,
   malfurion:0.510, thrall:0.644, tyrande:0.527, jaina:0.631, rexxar:0.603,
 };
+// ---- TRUE 2D skeletal walk rig (revived from #90 / commit 91fe496, extended below) ----
+// Instead of cross-fading whole-character frames (which MORPHS the hero), slice the rear-view
+// art at runtime — read its alpha to find the hip/knee lines and the gap between the legs —
+// then redraw hinged sub-rects into a per-unit canvas every frame. Genuine articulation
+// (knees bend, feet step) interpolated continuously, which a frame cross-fade can never do.
+const LEG_RIG = { grommash:{hip:0.50, knee:0.74} };   // per-hero joint lines (frac of bbox height); expand once proven
+function buildLegRig(hero){
+  const url = HERO_ART_BACK[hero.id], cfg = LEG_RIG[hero.id];
+  if(!url || !cfg) return null;
+  const rig = { ready:false, cfg, img:new Image() };
+  rig.img.onload = ()=>{
+    const iw=rig.img.naturalWidth, ih=rig.img.naturalHeight;
+    const ac=document.createElement('canvas'); ac.width=iw; ac.height=ih;
+    const ax=ac.getContext('2d'); ax.drawImage(rig.img,0,0);
+    const d=ax.getImageData(0,0,iw,ih).data;
+    let bx0=iw,by0=ih,bx1=0,by1=0;
+    for(let y=0;y<ih;y++)for(let x=0;x<iw;x++){ if(d[(y*iw+x)*4+3]>40){ if(x<bx0)bx0=x; if(x>bx1)bx1=x; if(y<by0)by0=y; if(y>by1)by1=y; } }
+    const fw=bx1-bx0+1, fh=by1-by0+1;
+    const hipY=Math.round(by0+fh*cfg.hip), kneeY=Math.round(by0+fh*cfg.knee);
+    let splitX=Math.round((bx0+bx1)/2), best=1e9;                                  // gap between the legs = column with fewest opaque px below the knee
+    for(let x=Math.round(bx0+fw*0.34);x<=Math.round(bx0+fw*0.66);x++){ let c=0; for(let y=kneeY;y<=by1;y++) if(d[(y*iw+x)*4+3]>40)c++; if(c<best){best=c;splitX=x;} }
+    rig.meta={iw,ih,bx0,by0,bx1,by1,fw,fh,hipY,kneeY,splitX,OV:Math.round(fh*0.07)};
+    rig.figAspect=fw/fh;
+    const CW=224, CH=Math.round(CW/rig.figAspect);
+    rig.canvas=document.createElement('canvas'); rig.canvas.width=CW; rig.canvas.height=CH;
+    rig.ctx=rig.canvas.getContext('2d'); rig.scale=CW/fw;
+    rig.tex=new THREE.CanvasTexture(rig.canvas); rig.tex.colorSpace=THREE.SRGBColorSpace;
+    rig.tex.minFilter=THREE.LinearMipmapLinearFilter; rig.tex.magFilter=THREE.LinearFilter; rig.tex.anisotropy=8;
+    rig.ready=true;
+  };
+  rig.img.src=url;
+  return rig;
+}
+// tunable amplitudes for the procedural walk (tuned by eye at close-up + battle zoom)
+const RIGTUNE = { thigh:0.19, knee:0.88, lift:0.11, roll:0.05, bob:0.028, shift:0.012 };
+function drawRigPose(rig, gp){
+  const m=rig.meta, ctx=rig.ctx, S=rig.scale, img=rig.img, CW=rig.canvas.width, CH=rig.canvas.height, T=RIGTUNE;
+  const toCx=(sx)=>(sx-m.bx0)*S, toCy=(sy)=>(sy-m.by0)*S;
+  const hipCy=toCy(m.hipY), kneeCy=toCy(m.kneeY);
+  const rect=(rx0,ry0,rx1,ry1)=>{ const sw=rx1-rx0+1, sh=ry1-ry0+1; ctx.drawImage(img, rx0,ry0,sw,sh, toCx(rx0),toCy(ry0), sw*S, sh*S); };
+  const HOV=Math.round(m.fw*0.05);                     // overlap legs past the split so the inter-leg gap can't open up
+  const leg=(side, sw)=>{
+    const sx0=side<0?m.bx0:m.splitX+1-HOV, sx1=side<0?m.splitX+HOV:m.bx1;
+    const hipCx=toCx(side<0?(m.bx0+m.splitX)/2:(m.splitX+m.bx1)/2);
+    const lift=Math.max(0,sw)*m.fh*T.lift*S, thA=sw*T.thigh, knA=Math.max(0,sw)*T.knee;   // swing leg lifts; thigh swings; knee bends on the lift half
+    ctx.save();
+    ctx.translate(0,-lift);
+    ctx.translate(hipCx,hipCy); ctx.rotate(thA); ctx.translate(-hipCx,-hipCy);
+    ctx.save();                                        // shin nested under thigh (thigh hides the knee seam)
+      ctx.translate(hipCx,kneeCy); ctx.rotate(knA); ctx.translate(-hipCx,-kneeCy);
+      rect(sx0, m.kneeY-m.OV, sx1, m.by1);
+    ctx.restore();
+    rect(sx0, m.hipY-m.OV, sx1, m.kneeY+m.OV);
+    ctx.restore();
+  };
+  const s=Math.sin(gp), c=Math.cos(gp);
+  ctx.clearRect(0,0,CW,CH);
+  // 1) legs stay grounded; the swing leg lifts, swings forward and bends at the knee
+  leg(+1, s);
+  leg(-1, Math.sin(gp+Math.PI));                       // opposite phase
+  // 2) the upper body rides OVER the grounded legs: rises between footfalls (twice/stride),
+  //    sways over the stance foot, and counter-rolls the shoulders. From behind this body
+  //    motion — not leg swing (which foreshortens) — is what reads as a humanoid walk.
+  const bob=-Math.abs(c)*m.fh*T.bob*S, shift=s*m.fh*T.shift*S, hipCx=toCx((m.bx0+m.bx1)/2);
+  ctx.save();
+    ctx.translate(shift, bob);
+    ctx.translate(hipCx,hipCy); ctx.rotate(s*T.roll); ctx.translate(-hipCx,-hipCy);
+    rect(m.bx0, m.by0, m.bx1, m.hipY+m.OV);            // torso+head+arms+axe as one block (over the hips → hides the seam)
+  ctx.restore();
+  rig.tex.needsUpdate=true;
+}
 // a camera-facing textured quad sized to read like the other heroes; pivot at the feet
 function buildSpriteModel(hero, team){
   const g = new THREE.Group();
@@ -1315,7 +1386,8 @@ function buildSpriteModel(hero, team){
     t:Math.random()*6, bodyBase:{x:1, y:1, z:1}, faceSign:(team===1?-1:1), gaitPhase:Math.random()*6, lastFoot:0,
     texFront:tex, texBack, texSide, frontAspect, backAspect, sideAspect,
     walkFrames, walkAspect, view:'front', showingBack:false, turnT:0, turnTo:false,
-    viewHeldT:99, wantPend:false, wantPendT:0, viewFlips:0, faceFlips:0, faceTime:-9 };
+    viewHeldT:99, wantPend:false, wantPendT:0, viewFlips:0, faceFlips:0, faceTime:-9,
+    rig: buildLegRig(hero) };                                   // procedural skeletal walk (Grommash; null for the rest until rollout)
   attachHeroFX(g, hero);   // animated signature effects (frost swirl, lightning, holy glow…)
   return g;
 }
@@ -2666,6 +2738,9 @@ function tick(){
         gaitFoot = (1-s)*es;                                  // squash as a foot plants
         gaitRock = Math.sin(gp)*0.022*es;                     // gentle weight-roll (was 0.06 — at 3.9u tall that swung the HEAD ~0.23u, reading as a drunk sway not a walk)
         sway = Math.sin(gp)*0.018*es;                         // subtle waddle (was 0.05) — keep the body over the feet
+        // the back-walk RIG already bobs/rolls/sways the figure INSIDE its canvas — damp the whole-billboard
+        // versions for rigged units so the motion isn't doubled (that doubling read as a drunk head-sway).
+        if(ud.rig && ud.rig.ready && ud.view==='back'){ bobLift*=0.2; bob*=0.2; gaitRock*=0.25; sway*=0.25; }
         const foot=Math.floor(gp/Math.PI);
         if(foot!==ud.lastFoot){ ud.lastFoot=foot; if(ma>0.55) footDust(g.position.x, g.position.z); }
       }
@@ -2742,15 +2817,19 @@ function tick(){
         // texture + aspect for the current view; cycle the rear walk frames while marching away
         let viewTex=ud.texFront, viewAspect=ud.frontAspect, blendTex=null, blend=0;
         if(ud.view==='back'){ viewTex=ud.texBack||ud.texFront; viewAspect=ud.backAspect;
-          const n=ud.walkFrames.length;
-          if(ud.moveAmt>0.02 && n){
-            // 3/4-rear walk frames, ping-ponged contact→pass→contact and CROSS-FADED between
-            // them (Supercell-style: few baked frames, interpolated) for a smooth stride
-            const ph=(ud.gaitPhase/(Math.PI*2))%1, tri=ph<0.5?ph*2:(1-ph)*2;    // 0→1→0 per stride (LINEAR = smoothest cross-fade between the 3 baked frames)
-            const ff=tri*(n-1), idx=Math.min(n-1,Math.floor(ff));
-            const bl=ff-idx; viewTex=ud.walkFrames[idx]; blendTex=ud.walkFrames[Math.min(n-1,idx+1)];
-            blend=bl*bl*(3-2*bl);   // CRISP the cross-fade: hold each baked frame sharp, pass quickly through the 50/50 blend where the double-image "ghost" lives (was a slow linear blend that ghosted)
-            viewAspect=ud.walkAspect;
+          if(ud.rig && ud.rig.ready && ud.moveAmt>0.02){
+            // TRUE skeletal walk: redraw the hinged figure into its canvas (articulation a cross-fade can't do)
+            drawRigPose(ud.rig, ud.gaitPhase); viewTex=ud.rig.tex; viewAspect=ud.rig.figAspect; blendTex=null;
+          } else {
+            const n=ud.walkFrames.length;
+            if(ud.moveAmt>0.02 && n){
+              // fallback (heroes without a rig yet): ping-pong baked walk frames with a crisp cross-fade
+              const ph=(ud.gaitPhase/(Math.PI*2))%1, tri=ph<0.5?ph*2:(1-ph)*2;    // 0→1→0 per stride
+              const ff=tri*(n-1), idx=Math.min(n-1,Math.floor(ff));
+              const bl=ff-idx; viewTex=ud.walkFrames[idx]; blendTex=ud.walkFrames[Math.min(n-1,idx+1)];
+              blend=bl*bl*(3-2*bl);
+              viewAspect=ud.walkAspect;
+            }
           }
         } else if(ud.view==='side'){ viewTex=ud.texSide||ud.texFront; viewAspect=ud.sideAspect; }
         if(ud.bodyMat.map!==viewTex) ud.bodyMat.map=viewTex;
@@ -3160,8 +3239,13 @@ window.AZ = {
   ready:true,
   dbg:()=>({ ended:!!G.ended, proj:projectiles.length, fps:Math.round(AZT.fps),
     units:G.units.map(u=>({id:u.hero.id, team:u.team, hp:Math.round(u.hp), dead:!!u.dead, st:u.state,
+      view:(u.group&&u.group.userData.view), rig:!!(u.group&&u.group.userData.rig&&u.group.userData.rig.ready),
+      mv:+((u.group&&u.group.userData.moveAmt)||0).toFixed(2), tz:(u.target&&u.target.z),
       vf:(u.group&&u.group.userData.viewFlips)||0, ff:(u.group&&u.group.userData.faceFlips)||0})) }),
   roster:()=>roster.map(h=>h.id),
+  // dump the procedural rig's own canvas (full figure, unaffected by camera framing) at a given gait phase — rig QA
+  rigcanvas:(gp)=>{ const u=(G.units||[])[0]; const r=u&&u.group&&u.group.userData.rig; if(!r||!r.ready) return null;
+    if(gp!=null){ u.group.userData.gaitPhase=gp; drawRigPose(r, gp); } return r.canvas.toDataURL(); },
   // deterministic time controls for the motion harness (motioncap.mjs) and the ?az=qa overlay
   pause(){ AZT.paused=true; return true; },
   play(){ AZT.paused=false; AZT.scale=1; return true; },
@@ -3196,7 +3280,7 @@ window.AZ = {
       g.userData.view='back'; g.userData.showingBack=true; g.userData.moveAmt=1;   // start already marching away (no one-time front→back turn polluting the walk-cycle measurement)
       G.units.push({ hero:h, team:0, x:0, z:0, group:g, state:'march', spdMul:1, frozenT:0,burnT:0,poisonT:0,stunT:0,rootT:0,buffT:0,
         lunge:0,flash:0,castT:0,spin:0, atkT:0, abilT:99, hp:100, maxhp:100, dead:false, dmgMul:1, kbX:0, kbZ:0, target:{x:0,z:-30} });
-      CAM.target.set(0,1.95,0); CAM.base.set(0,2.6,6.2);
+      CAM.target.set(0,1.75,0); CAM.base.set(0,2.7,7.7);   // frame the FULL body (feet→head) so the leg walk is visible
     } else {                 // front / side / back side-by-side
       [['front',0,30],['side',30,0],['back',0,-30]].forEach(([v,tx,tz],i)=>{
         const g=buildSpriteModel(h,0); g.position.set((i-1)*3.1,0,0); scene.add(g); g.userData.gaitPhase=i*1.9;
